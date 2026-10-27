@@ -1,0 +1,477 @@
+{
+  "sqlite_quick_check": "ok",
+  "scope": {
+    "physical_transaction_rows": 16824,
+    "entities_with_rows": {
+      "DepositTransaction": 592,
+      "ReconcileTransaction": 19,
+      "RefundTransaction": 630,
+      "TransferDepositTransaction": 590,
+      "TransferWithdrawTransaction": 590,
+      "WithdrawTransaction": 14403
+    },
+    "transaction_account_count": 19,
+    "account_owner_domains": 1,
+    "transaction_account_refs_missing": 0,
+    "core_data_account_entity_alias_matches": 16824,
+    "scheduled_handler_rows": 0,
+    "status_values": [
+      {
+        "value": 2,
+        "rows": 16824
+      }
+    ],
+    "flags_values": [
+      {
+        "value": 0,
+        "rows": 16824
+      }
+    ],
+    "void_cheque_values": [
+      {
+        "value": 0,
+        "rows": 16824
+      }
+    ],
+    "limitations": "No explicit deleted/template flag identified for these transaction entities. Status enum meanings were not independently decoded. No active/deleted distinction is invented."
+  },
+  "time_encoding": {
+    "occurrence_field": "ZSYNCOBJECT.ZDATE1",
+    "reference_epoch": "2001-01-01T00:00:00Z",
+    "source_type": "SQLite TIMESTAMP values stored as numeric seconds, some with fractional seconds",
+    "interpretation_evidence": "Core Data model and plausible aggregate 2017–2026 dates under Apple reference epoch; Unix interpretation produces 1986–1995.",
+    "apple_reference": "https://developer.apple.com/documentation/foundation/date/timeintervalsincereferencedate-swift.property",
+    "precision": "Convert Decimal(str(raw)) seconds to nearest integer microsecond (ROUND_HALF_UP), at most 0.5 microsecond quantization tolerance. No direct floating-point modulo or broad epsilon is used. exact_minute requires canonical microseconds modulo 60,000,000 == 0; display_seconds_00 uses floor(canonical microseconds / 1,000,000) modulo 60 == 0.",
+    "raw_decimal_exact_minute_count": 160,
+    "canonical_exact_minute_disagrees_with_raw_decimal": 0,
+    "largest_quantization_error_microseconds": "0",
+    "timezone": "Asia/Shanghai for yearly buckets. Its +08:00 offset over the observed range does not change seconds-of-minute or account-minute collision counts.",
+    "other_date_fields_population": {
+      "ZDATE": 0,
+      "ZCREATIONDATE": 0,
+      "ZCREATIONDATE1": 0,
+      "ZOBJECTCREATIONDATE": 16824
+    }
+  },
+  "physical_time": {
+    "rows": 16824,
+    "display_seconds_00": 288,
+    "display_seconds_00_percent": 1.7118,
+    "exact_minute": 160,
+    "integer_second": 8823,
+    "fractional_second": 8001,
+    "per_year_asia_shanghai": {
+      "2017": {
+        "rows": 1875,
+        "display_seconds_00": 29,
+        "display_seconds_00_percent": 1.5467,
+        "exact_minute": 29,
+        "integer_second": 1875,
+        "fractional_second": 0
+      },
+      "2018": {
+        "rows": 2030,
+        "display_seconds_00": 35,
+        "display_seconds_00_percent": 1.7241,
+        "exact_minute": 35,
+        "integer_second": 2030,
+        "fractional_second": 0
+      },
+      "2019": {
+        "rows": 2032,
+        "display_seconds_00": 39,
+        "display_seconds_00_percent": 1.9193,
+        "exact_minute": 39,
+        "integer_second": 2032,
+        "fractional_second": 0
+      },
+      "2020": {
+        "rows": 1477,
+        "display_seconds_00": 25,
+        "display_seconds_00_percent": 1.6926,
+        "exact_minute": 15,
+        "integer_second": 1055,
+        "fractional_second": 422
+      },
+      "2021": {
+        "rows": 1787,
+        "display_seconds_00": 33,
+        "display_seconds_00_percent": 1.8467,
+        "exact_minute": 11,
+        "integer_second": 356,
+        "fractional_second": 1431
+      },
+      "2022": {
+        "rows": 1511,
+        "display_seconds_00": 20,
+        "display_seconds_00_percent": 1.3236,
+        "exact_minute": 6,
+        "integer_second": 298,
+        "fractional_second": 1213
+      },
+      "2023": {
+        "rows": 1650,
+        "display_seconds_00": 33,
+        "display_seconds_00_percent": 2.0,
+        "exact_minute": 7,
+        "integer_second": 363,
+        "fractional_second": 1287
+      },
+      "2024": {
+        "rows": 1664,
+        "display_seconds_00": 30,
+        "display_seconds_00_percent": 1.8029,
+        "exact_minute": 6,
+        "integer_second": 339,
+        "fractional_second": 1325
+      },
+      "2025": {
+        "rows": 1661,
+        "display_seconds_00": 28,
+        "display_seconds_00_percent": 1.6857,
+        "exact_minute": 9,
+        "integer_second": 281,
+        "fractional_second": 1380
+      },
+      "2026": {
+        "rows": 1137,
+        "display_seconds_00": 16,
+        "display_seconds_00_percent": 1.4072,
+        "exact_minute": 3,
+        "integer_second": 194,
+        "fractional_second": 943
+      }
+    },
+    "same_account_minute": {
+      "repeated_account_buckets": 180,
+      "rows_in_repeated_buckets": 372,
+      "extra_rows_beyond_one_per_bucket": 192,
+      "largest_bucket_rows": 5,
+      "all_display_seconds_00_buckets": 0,
+      "all_exact_minute_buckets": 0,
+      "all_nonzero_display_seconds_buckets": 177,
+      "mixed_zero_and_nonzero_display_seconds_buckets": 3,
+      "buckets_with_multiple_distinct_seconds": 180,
+      "buckets_with_multiple_distinct_full_timestamps": 180,
+      "buckets_with_an_exact_timestamp_tie": 0,
+      "buckets_all_at_identical_full_timestamp": 0,
+      "exact_timestamp_tie_subgroups": 0,
+      "exact_tie_subgroups_with_distinct_valid_creation_times": 0
+    },
+    "same_account_whole_second": {
+      "repeated_account_buckets": 0,
+      "rows_in_repeated_buckets": 0,
+      "extra_rows_beyond_one_per_bucket": 0,
+      "largest_bucket_rows": 0,
+      "all_display_seconds_00_buckets": 0,
+      "all_exact_minute_buckets": 0,
+      "all_nonzero_display_seconds_buckets": 0,
+      "mixed_zero_and_nonzero_display_seconds_buckets": 0,
+      "buckets_with_multiple_distinct_seconds": 0,
+      "buckets_with_multiple_distinct_full_timestamps": 0,
+      "buckets_with_an_exact_timestamp_tie": 0,
+      "buckets_all_at_identical_full_timestamp": 0,
+      "exact_timestamp_tie_subgroups": 0,
+      "exact_tie_subgroups_with_distinct_valid_creation_times": 0
+    }
+  },
+  "transfer_pairs": {
+    "withdraw_rows": 590,
+    "deposit_rows": 590,
+    "reciprocal_valid_pairs": 590,
+    "same_account_pairs": 0,
+    "different_full_timestamp_pairs": 2,
+    "different_timestamp_absolute_delta_seconds_range": [
+      0.081342,
+      54000.0
+    ],
+    "different_asia_shanghai_natural_day_pairs": 0,
+    "different_account_minute_pairs": 2,
+    "logical_rows_after_pair_merge": 16234,
+    "logical_time_scope": "One representative per reciprocal transfer pair, choosing its withdraw endpoint. Each real account timeline must still retain its own endpoint and its own date."
+  },
+  "logical_representative_time": {
+    "rows": 16234,
+    "display_seconds_00": 278,
+    "display_seconds_00_percent": 1.7125,
+    "exact_minute": 154,
+    "integer_second": 8451,
+    "fractional_second": 7783,
+    "per_year_asia_shanghai": {
+      "2017": {
+        "rows": 1754,
+        "display_seconds_00": 28,
+        "display_seconds_00_percent": 1.5964,
+        "exact_minute": 28,
+        "integer_second": 1754,
+        "fractional_second": 0
+      },
+      "2018": {
+        "rows": 1929,
+        "display_seconds_00": 34,
+        "display_seconds_00_percent": 1.7626,
+        "exact_minute": 34,
+        "integer_second": 1929,
+        "fractional_second": 0
+      },
+      "2019": {
+        "rows": 1956,
+        "display_seconds_00": 38,
+        "display_seconds_00_percent": 1.9427,
+        "exact_minute": 38,
+        "integer_second": 1956,
+        "fractional_second": 0
+      },
+      "2020": {
+        "rows": 1431,
+        "display_seconds_00": 23,
+        "display_seconds_00_percent": 1.6073,
+        "exact_minute": 14,
+        "integer_second": 1024,
+        "fractional_second": 407
+      },
+      "2021": {
+        "rows": 1743,
+        "display_seconds_00": 32,
+        "display_seconds_00_percent": 1.8359,
+        "exact_minute": 10,
+        "integer_second": 346,
+        "fractional_second": 1397
+      },
+      "2022": {
+        "rows": 1468,
+        "display_seconds_00": 20,
+        "display_seconds_00_percent": 1.3624,
+        "exact_minute": 6,
+        "integer_second": 292,
+        "fractional_second": 1176
+      },
+      "2023": {
+        "rows": 1609,
+        "display_seconds_00": 33,
+        "display_seconds_00_percent": 2.051,
+        "exact_minute": 7,
+        "integer_second": 357,
+        "fractional_second": 1252
+      },
+      "2024": {
+        "rows": 1618,
+        "display_seconds_00": 28,
+        "display_seconds_00_percent": 1.7305,
+        "exact_minute": 6,
+        "integer_second": 333,
+        "fractional_second": 1285
+      },
+      "2025": {
+        "rows": 1626,
+        "display_seconds_00": 26,
+        "display_seconds_00_percent": 1.599,
+        "exact_minute": 8,
+        "integer_second": 275,
+        "fractional_second": 1351
+      },
+      "2026": {
+        "rows": 1100,
+        "display_seconds_00": 16,
+        "display_seconds_00_percent": 1.4545,
+        "exact_minute": 3,
+        "integer_second": 185,
+        "fractional_second": 915
+      }
+    },
+    "same_account_minute": {
+      "repeated_account_buckets": 116,
+      "rows_in_repeated_buckets": 244,
+      "extra_rows_beyond_one_per_bucket": 128,
+      "largest_bucket_rows": 5,
+      "all_display_seconds_00_buckets": 0,
+      "all_exact_minute_buckets": 0,
+      "all_nonzero_display_seconds_buckets": 115,
+      "mixed_zero_and_nonzero_display_seconds_buckets": 1,
+      "buckets_with_multiple_distinct_seconds": 116,
+      "buckets_with_multiple_distinct_full_timestamps": 116,
+      "buckets_with_an_exact_timestamp_tie": 0,
+      "buckets_all_at_identical_full_timestamp": 0,
+      "exact_timestamp_tie_subgroups": 0,
+      "exact_tie_subgroups_with_distinct_valid_creation_times": 0
+    },
+    "same_account_whole_second": {
+      "repeated_account_buckets": 0,
+      "rows_in_repeated_buckets": 0,
+      "extra_rows_beyond_one_per_bucket": 0,
+      "largest_bucket_rows": 0,
+      "all_display_seconds_00_buckets": 0,
+      "all_exact_minute_buckets": 0,
+      "all_nonzero_display_seconds_buckets": 0,
+      "mixed_zero_and_nonzero_display_seconds_buckets": 0,
+      "buckets_with_multiple_distinct_seconds": 0,
+      "buckets_with_multiple_distinct_full_timestamps": 0,
+      "buckets_with_an_exact_timestamp_tie": 0,
+      "buckets_all_at_identical_full_timestamp": 0,
+      "exact_timestamp_tie_subgroups": 0,
+      "exact_tie_subgroups_with_distinct_valid_creation_times": 0
+    }
+  },
+  "refunds": {
+    "link_table": "ZWITHDRAWREFUNDTRANSACTIONLINK",
+    "refund_field": "ZREFUNDTRANSACTION",
+    "original_field": "ZWITHDRAWTRANSACTION",
+    "sqlite_declared_foreign_keys": 0,
+    "link_rows": 630,
+    "refund_entity_rows": 630,
+    "unique_linked_refunds": 630,
+    "unique_linked_original_expenses": 578,
+    "valid_typed_links": 630,
+    "missing_refund_references": 0,
+    "missing_original_references": 0,
+    "wrong_refund_entity_type": 0,
+    "wrong_original_entity_type": 0,
+    "refunds_without_link": 0,
+    "refunds_with_multiple_links": 0,
+    "duplicate_link_pairs": 0,
+    "original_expenses_with_multiple_refunds": 42,
+    "refunds_per_original_distribution": {
+      "1": 536,
+      "2": 37,
+      "3": 3,
+      "4": 1,
+      "7": 1
+    },
+    "missing_owner_links": 0,
+    "cross_owner_links": 0,
+    "linked_refund_original_different_account": 359,
+    "limitations": "Direct transaction-level links are recoverable. This table has no original-split allocation or historical CNY-cost linkage columns, and this audit does not infer either from names or amounts."
+  },
+  "original_currency_fields": [
+    {
+      "rows": 592,
+      "currency_missing": 0,
+      "currency_same_as_account": 592,
+      "currency_differs_from_account": 0,
+      "amount_missing": 0,
+      "amount_same_as_account_transaction": 592,
+      "amount_differs_from_account_transaction": 0,
+      "entity_name": "DepositTransaction"
+    },
+    {
+      "rows": 19,
+      "currency_missing": 2,
+      "currency_same_as_account": 17,
+      "currency_differs_from_account": 0,
+      "amount_missing": 0,
+      "amount_same_as_account_transaction": 17,
+      "amount_differs_from_account_transaction": 2,
+      "entity_name": "ReconcileTransaction"
+    },
+    {
+      "rows": 630,
+      "currency_missing": 0,
+      "currency_same_as_account": 630,
+      "currency_differs_from_account": 0,
+      "amount_missing": 0,
+      "amount_same_as_account_transaction": 630,
+      "amount_differs_from_account_transaction": 0,
+      "entity_name": "RefundTransaction"
+    },
+    {
+      "rows": 590,
+      "currency_missing": 54,
+      "currency_same_as_account": 536,
+      "currency_differs_from_account": 0,
+      "amount_missing": 54,
+      "amount_same_as_account_transaction": 530,
+      "amount_differs_from_account_transaction": 6,
+      "entity_name": "TransferDepositTransaction"
+    },
+    {
+      "rows": 590,
+      "currency_missing": 0,
+      "currency_same_as_account": 590,
+      "currency_differs_from_account": 0,
+      "amount_missing": 0,
+      "amount_same_as_account_transaction": 590,
+      "amount_differs_from_account_transaction": 0,
+      "entity_name": "TransferWithdrawTransaction"
+    },
+    {
+      "rows": 14403,
+      "currency_missing": 0,
+      "currency_same_as_account": 14403,
+      "currency_differs_from_account": 0,
+      "amount_missing": 0,
+      "amount_same_as_account_transaction": 14403,
+      "amount_differs_from_account_transaction": 0,
+      "entity_name": "WithdrawTransaction"
+    }
+  ],
+  "ordering": {
+    "explicit_sort_columns_nonnull_counts": {
+      "ZDISPLAYORDER": 0,
+      "ZDISPLAYORDER1": 0,
+      "ZDISPLAYORDER2": 0,
+      "ZDISPLAYORDER3": 0,
+      "ZDISPLAYORDER4": 0,
+      "ZORDER": 0,
+      "ZPOSITION": 0
+    },
+    "account_display_sort_settings": [
+      {
+        "attribute": "date",
+        "ascending": 0,
+        "accounts": 19
+      }
+    ],
+    "unique_transaction_global_ids": 16824,
+    "unique_creation_timestamps": 16810,
+    "creation_dates_before_reference_epoch": 15,
+    "interpretation": "Z_PK and ZGID provide stable identity, not proven business order. ZOBJECTCREATIONDATE is distinguishable metadata but may reflect creation/import and contains sentinel values; it cannot establish real-world order for same-time records. All 19 account settings say date descending, without a demonstrated tie-break rule."
+  },
+  "provenance": {
+    "source_fingerprints_before": {
+      "ipadMoneyWiz.sqlite": {
+        "size": 25698304,
+        "sha256": "985768b601447d4365d6f64ca34a272e9a03678bc3587d2c3a2358696666db72"
+      },
+      "ipadMoneyWiz.sqlite-wal": {
+        "size": 3823392,
+        "sha256": "df6e2d1e52714ec88d83f85bb3397aba98ccfb3e23bb9cf9ab2d51bfc3cb472d"
+      },
+      "ipadMoneyWiz.sqlite-shm": {
+        "size": 32768,
+        "sha256": "abef9b00e89c3e3cee62d8ee60e6248e5e97221e8f40ee676f9bfeecbe30f480"
+      }
+    },
+    "source_fingerprints_after_copy": {
+      "ipadMoneyWiz.sqlite": {
+        "size": 25698304,
+        "sha256": "985768b601447d4365d6f64ca34a272e9a03678bc3587d2c3a2358696666db72"
+      },
+      "ipadMoneyWiz.sqlite-wal": {
+        "size": 3823392,
+        "sha256": "df6e2d1e52714ec88d83f85bb3397aba98ccfb3e23bb9cf9ab2d51bfc3cb472d"
+      },
+      "ipadMoneyWiz.sqlite-shm": {
+        "size": 32768,
+        "sha256": "abef9b00e89c3e3cee62d8ee60e6248e5e97221e8f40ee676f9bfeecbe30f480"
+      }
+    },
+    "source_fingerprints_after_audit": {
+      "ipadMoneyWiz.sqlite": {
+        "size": 25698304,
+        "sha256": "985768b601447d4365d6f64ca34a272e9a03678bc3587d2c3a2358696666db72"
+      },
+      "ipadMoneyWiz.sqlite-wal": {
+        "size": 3823392,
+        "sha256": "df6e2d1e52714ec88d83f85bb3397aba98ccfb3e23bb9cf9ab2d51bfc3cb472d"
+      },
+      "ipadMoneyWiz.sqlite-shm": {
+        "size": 32768,
+        "sha256": "abef9b00e89c3e3cee62d8ee60e6248e5e97221e8f40ee676f9bfeecbe30f480"
+      }
+    },
+    "source_unchanged": true,
+    "opened_source_with_sqlite": false,
+    "copied_sqlite_wal_shm": true,
+    "temporary_copy_removed": true
+  }
+}
