@@ -2,7 +2,7 @@
 
 状态：依据本轮反馈修订，供产品 review；未修改前端、账本数据、服务端口或访问方式。
 
-主文档：[产品设计 0.4](product-design.md)。配套修订：[需求 0.9](requirements.md)、[技术设计 0.6](technical-design.md)、[实施计划 0.6](implementation-plan.md)。本文件记录决定及其证据，不将文档完成计为实现或真机验收通过。
+主文档：[产品设计 0.5](product-design.md)。配套修订：[需求 0.9](requirements.md)、[技术设计 0.6](technical-design.md)、[实施计划 0.6](implementation-plan.md)。本文件记录决定及其证据，不将文档完成计为实现或真机验收通过。
 
 ## 1. 归档账户，保留账本历史
 

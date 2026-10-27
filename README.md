@@ -1,6 +1,6 @@
 # 厘序 · fine-ledger
 
-当前优先评审 [面向使用者的产品设计 0.4](docs/product-design.md)：账户与交易管理、返回导航、同步配置、主币种及两类核心报表。本轮已确认同步认证、主币锁定、外部报价移出 MVP、转账区间折算及只计已入账；剩余计算边界见产品设计第 15 节，前端开发保持暂停。
+当前优先评审 [面向使用者的产品设计 0.5](docs/product-design.md)：账户与交易管理、返回导航、同步配置、主币种及两类核心报表。本轮已确认同步认证、主币锁定、外部报价移出 MVP、转账区间折算及只计已入账；剩余计算边界见产品设计第 15 节，前端开发保持暂停。
 
 当前版本 0.3.1。启动时自动构建完整发布；运行中的服务更新源码后执行 `npm run build` 发布。以紧凑分组账户为起点，评审快速连续记账体验。仅使用合成数据，记录保存在当前浏览器；尚未接入 NAS 或真实账本。
 
@@ -22,6 +22,7 @@ npm test
 - [产品设计与交互流程](docs/product-design.md)
 - [2026-10-28 六项反馈、确认结论与数据核验](docs/product-feedback-2026-10-28.md)
 - [MoneyWiz 时间精度与退款关系聚合审计](docs/evidence/2026-10-28-moneywiz-audit/README.md)
+- [分期付款的后续产品提案](docs/installment-design.md)
 - [首版需求](docs/requirements.md)
 - [技术设计](docs/technical-design.md)
 - [实施计划与当前阶段](docs/implementation-plan.md)
