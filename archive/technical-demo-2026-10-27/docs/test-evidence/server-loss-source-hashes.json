@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-10-27T11:52:29.545Z",
+  "files": {
+    "lib/recovery.mjs": "3d7e3ebcb41999444e0229b0c95e1f826510d8ff30bb3600deb89652f5304d3a",
+    "scripts/recovery.mjs": "b15af4657c7a037d68ba74b4e64e8af2f234c74248b8e7c0bbad3afd01d0dd62",
+    "scripts/reliability-demo.mjs": "10cbf857e30848a85d8d578e157f0474662132068d6c8d690145232654116342",
+    "public/reliability.js": "ebe718ce9f32ed9b9fe3d17a55ddbbdf4de896445782ad53ad4a4013b004c0ce",
+    "public/reliability.html": "133a5a048f37bca26d27b7c2f87809ac5d5ee80293d4afcacb9c315023d2a90b",
+    "public/sw.js": "d7cff2dedd3d2a08c07b429f73dcdd99a7785a1dddeac8d2ea6c8bbbb2a38e0c",
+    "test/reliability.test.mjs": "6de46a44aa6ec1cdb529a6806bee9237afeeaa459c436ee9e90d7a8f4a9a3c7a"
+  }
+}

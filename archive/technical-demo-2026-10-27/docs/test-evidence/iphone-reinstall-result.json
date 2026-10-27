@@ -1,0 +1,1504 @@
+{
+  "result": {
+    "verifiedAt": "2026-10-27T11:39:58.822Z",
+    "passed": true,
+    "classification": "fresh-local-recovery",
+    "origin": "https://zhangkaidemac-mini.local:8444",
+    "baselineId": "170df107-7b92-4008-973f-2346aa7480ad",
+    "preparedAt": "2026-10-27T11:34:34.889Z",
+    "phoneVerifiedAt": "2026-10-27T11:39:00.668Z",
+    "serverReceivedAt": "2026-10-27T11:39:00.522Z",
+    "fullStateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+    "allFieldsMatch": {
+      "frozenBaseline": true,
+      "preflight": true,
+      "preDeleteSnapshot": true,
+      "serverSQLite": true,
+      "replayedJournal": true,
+      "phoneReportedHash": true
+    },
+    "counts": {
+      "accounts": 6,
+      "categories": 12,
+      "projects": 1,
+      "transactions": 33,
+      "sources": 3,
+      "sessions": 3,
+      "rates": 2,
+      "legacy": 1
+    },
+    "relationalCounts": {
+      "postings": 36,
+      "splits": 27,
+      "refundLinks": 4,
+      "costAllocations": 6
+    },
+    "beforeInitialization": {
+      "ledgerPresent": false,
+      "deviceId": null,
+      "marker": null,
+      "cursor": null,
+      "pending": 0,
+      "conflicts": 0,
+      "bookId": null,
+      "stateHash": null,
+      "localStorageMarker": null
+    },
+    "afterInitialization": {
+      "ledgerPresent": true,
+      "deviceId": "1c3a6fca-be20-44b7-ab7b-6fdbb2684344",
+      "marker": "cefd4413-b650-4641-9911-7d5411254d8d",
+      "cursor": 35,
+      "pending": 0,
+      "conflicts": 0,
+      "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+      "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+      "localStorageMarker": "c98c0cbe-7def-4dc4-9d93-87bb57f1d379"
+    },
+    "standalone": true,
+    "deviceChanged": true,
+    "idbMarkerChanged": true,
+    "operationsBefore": 20,
+    "operationsAfter": 20,
+    "journalBatchesBefore": 9,
+    "journalBatchesAfter": 9,
+    "uniqueTransactions": 33,
+    "original8443Unchanged": true,
+    "userConfirmed": {
+      "deletionPrompt": "删除此书签将同时删除其数据",
+      "deletedAndReinstalled": true,
+      "safariRequiredToken": false,
+      "reinstalledHomeScreenRequiredToken": true,
+      "reportedResult": "本机账本不存在、已从服务恢复完整字段"
+    }
+  },
+  "reinstall": {
+    "baseline": {
+      "id": "170df107-7b92-4008-973f-2346aa7480ad",
+      "pageSessionId": "e2232d71-0415-4b6e-ad5b-8f1c84391445",
+      "preparedAt": "2026-10-27T11:34:34.889Z",
+      "origin": "https://zhangkaidemac-mini.local:8444",
+      "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+      "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+      "state": {
+        "schemaVersion": 1,
+        "accounts": [
+          {
+            "id": "bank-cny",
+            "name": "招商银行 · 储蓄卡",
+            "type": "bank",
+            "currency": "CNY",
+            "group": "日常资金",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "cash-cny",
+            "name": "日常现金",
+            "type": "cash",
+            "currency": "CNY",
+            "group": "日常资金",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "cc-cny",
+            "name": "招商信用卡 · 人民币",
+            "type": "credit",
+            "currency": "CNY",
+            "group": "信用卡",
+            "limit": "5000000",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "cc-usd",
+            "name": "海外信用卡 · 美元",
+            "type": "credit",
+            "currency": "USD",
+            "group": "信用卡",
+            "limit": "1000000",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "bank-usd",
+            "name": "外币储蓄 · 美元",
+            "type": "bank",
+            "currency": "USD",
+            "group": "外币资金",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "cash-jpy",
+            "name": "旅行现金 · 日元",
+            "type": "cash",
+            "currency": "JPY",
+            "group": "外币资金",
+            "netWorth": true,
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          }
+        ],
+        "categories": [
+          {
+            "id": "food",
+            "name": "餐饮",
+            "type": "expense",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "coffee",
+            "name": "咖啡茶饮",
+            "type": "expense",
+            "parentId": "food",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "meal",
+            "name": "三餐",
+            "type": "expense",
+            "parentId": "food",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "travel",
+            "name": "交通住宿",
+            "type": "expense",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "hotel",
+            "name": "住宿",
+            "type": "expense",
+            "parentId": "travel",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "transport",
+            "name": "交通",
+            "type": "expense",
+            "parentId": "travel",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "shopping",
+            "name": "购物",
+            "type": "expense",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "daily",
+            "name": "生活日用",
+            "type": "expense",
+            "parentId": "shopping",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "digital",
+            "name": "数码订阅",
+            "type": "expense",
+            "parentId": "shopping",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "fee",
+            "name": "手续费",
+            "type": "expense",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "salary",
+            "name": "工资薪金",
+            "type": "income",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "other-income",
+            "name": "其他收入",
+            "type": "income",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          }
+        ],
+        "projects": [
+          {
+            "id": "japan",
+            "name": "京都秋日旅行",
+            "start": "2026-10-01",
+            "end": "2026-10-31",
+            "notes": "合成样例 · 预订和退款可在旅行日期之外",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "opening-bank",
+            "type": "adjustment",
+            "amount": "2800000",
+            "currency": "CNY",
+            "date": "2026-10-01",
+            "description": "期初余额",
+            "notes": "演示账本期初资金",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "opening-bank-p",
+                "accountId": "bank-cny",
+                "amount": "2800000",
+                "date": "2026-10-01"
+              }
+            ],
+            "splits": [],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "opening-cash",
+            "type": "adjustment",
+            "amount": "50000",
+            "currency": "CNY",
+            "date": "2026-10-01",
+            "description": "期初余额",
+            "notes": "演示现金期初",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "opening-cash-p",
+                "accountId": "cash-cny",
+                "amount": "50000",
+                "date": "2026-10-01"
+              }
+            ],
+            "splits": [],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "opening-jpy",
+            "type": "adjustment",
+            "amount": "20000",
+            "currency": "JPY",
+            "date": "2026-10-01",
+            "description": "旅行现金期初",
+            "notes": "期初资产，CNY 成本待核定",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "opening-jpy-p",
+                "accountId": "cash-jpy",
+                "amount": "20000",
+                "date": "2026-10-01"
+              }
+            ],
+            "splits": [],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "salary-demo",
+            "type": "income",
+            "amount": "1800000",
+            "currency": "CNY",
+            "date": "2026-10-10",
+            "description": "本月工资",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "salary-demo-p",
+                "accountId": "bank-cny",
+                "amount": "1800000",
+                "date": "2026-10-10"
+              }
+            ],
+            "splits": [
+              {
+                "id": "salary-demo-s",
+                "amount": "1800000",
+                "categoryId": "salary",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "hotel-demo",
+            "type": "expense",
+            "amount": "10000",
+            "currency": "JPY",
+            "date": "2026-10-19",
+            "description": "京都酒店 · 待银行确认",
+            "notes": "",
+            "state": "pending",
+            "postings": [
+              {
+                "id": "hotel-demo-p",
+                "accountId": "cc-cny",
+                "amount": null,
+                "date": null
+              }
+            ],
+            "splits": [
+              {
+                "id": "hotel-demo-s",
+                "amount": "10000",
+                "categoryId": "hotel",
+                "projectId": "japan"
+              }
+            ],
+            "estimatedCost": "48240",
+            "observations": [
+              {
+                "currency": "USD",
+                "amount": "6700",
+                "date": "2026-10-19",
+                "source": "银行 App 显示"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "usd-40",
+            "type": "expense",
+            "amount": "4000",
+            "currency": "USD",
+            "date": "2026-10-12",
+            "description": "海外订阅 · 工作软件",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "usd-40-p",
+                "accountId": "cc-usd",
+                "amount": "-4000",
+                "date": "2026-10-12"
+              }
+            ],
+            "splits": [
+              {
+                "id": "usd-40-s",
+                "amount": "4000",
+                "categoryId": "digital",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "usd-60",
+            "type": "expense",
+            "amount": "6000",
+            "currency": "USD",
+            "date": "2026-10-14",
+            "description": "旅行用品 · 海外订单",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "usd-60-p",
+                "accountId": "cc-usd",
+                "amount": "-6000",
+                "date": "2026-10-14"
+              }
+            ],
+            "splits": [
+              {
+                "id": "usd-60-s",
+                "amount": "6000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "daily-split",
+            "type": "expense",
+            "amount": "12880",
+            "currency": "CNY",
+            "date": "2026-10-23",
+            "description": "超市采购",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "daily-split-p",
+                "accountId": "bank-cny",
+                "amount": "-12880",
+                "date": "2026-10-23"
+              }
+            ],
+            "splits": [
+              {
+                "id": "split-food",
+                "amount": "4880",
+                "categoryId": "meal",
+                "projectId": null
+              },
+              {
+                "id": "split-daily",
+                "amount": "8000",
+                "categoryId": "daily",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "coffee-demo",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "街角咖啡",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "coffee-demo-p",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "coffee-demo-s",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "refund-demo",
+            "type": "refund",
+            "amount": "2000",
+            "currency": "CNY",
+            "date": "2026-10-24",
+            "description": "超市退货",
+            "notes": "",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "refund-demo-p",
+                "accountId": "bank-cny",
+                "amount": "2000",
+                "date": "2026-10-24"
+              }
+            ],
+            "splits": [],
+            "refunds": [
+              {
+                "transactionId": "daily-split",
+                "splitId": "split-daily",
+                "amount": "2000",
+                "received": "2000",
+                "categoryId": "daily",
+                "projectId": null,
+                "actualCost": "2000",
+                "estimatedCost": "0",
+                "unsettledAccountAmount": "0",
+                "settledAccountAmount": "2000",
+                "unpriced": false,
+                "originalCurrency": "CNY"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-receipt",
+            "type": "expense",
+            "amount": "12345",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 合成票据采购",
+            "notes": "原始票据 #R-只有票据可见\n手写分类：餐食 23.45 + 工具 100.00\n商户：合成商户 / 🧾 café\n修订：工具归属旅行项目",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-posting",
+                "accountId": "bank-cny",
+                "amount": "-12345",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-s1",
+                "amount": "2345",
+                "categoryId": "meal",
+                "projectId": "japan"
+              },
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-s2",
+                "amount": "10000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 2,
+            "updatedAt": "2026-10-27T11:16:52.502Z"
+          },
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-40",
+            "type": "expense",
+            "amount": "4000",
+            "currency": "USD",
+            "date": "2026-10-12",
+            "description": "海外订阅 · 工作软件",
+            "notes": "合成外币原始票据 iphone-68e71d36-d911-4f81-a93c-ada1765b63a6",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-40-p",
+                "accountId": "cc-usd",
+                "amount": "-4000",
+                "date": "2026-10-12"
+              }
+            ],
+            "splits": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-40-s",
+                "amount": "4000",
+                "categoryId": "digital",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.485Z"
+          },
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-60",
+            "type": "expense",
+            "amount": "6000",
+            "currency": "USD",
+            "date": "2026-10-14",
+            "description": "旅行用品 · 海外订单",
+            "notes": "合成外币原始票据 iphone-68e71d36-d911-4f81-a93c-ada1765b63a6",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-60-p",
+                "accountId": "cc-usd",
+                "amount": "-6000",
+                "date": "2026-10-14"
+              }
+            ],
+            "splits": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-60-s",
+                "amount": "6000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.485Z"
+          },
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-repayment",
+            "type": "transfer",
+            "amount": "72000",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 外币还款",
+            "notes": "合成汇兑凭据",
+            "state": "posted",
+            "splits": [],
+            "postings": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-from",
+                "accountId": "bank-cny",
+                "amount": "-72000",
+                "date": "2026-10-27"
+              },
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-to",
+                "accountId": "cc-usd",
+                "amount": "10000",
+                "date": "2026-10-27"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.511Z"
+          },
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-refund",
+            "type": "refund",
+            "amount": "1234",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "state": "posted",
+            "description": "P0 票据部分退款",
+            "notes": "退货凭据 #ONLY-RECEIPT-02",
+            "postings": [
+              {
+                "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-refund-p",
+                "accountId": "bank-cny",
+                "amount": "1234",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [],
+            "refunds": [
+              {
+                "transactionId": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-receipt",
+                "splitId": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-s2",
+                "amount": "1234",
+                "received": "1234",
+                "categoryId": "daily",
+                "projectId": "japan",
+                "actualCost": "1234",
+                "estimatedCost": "0",
+                "unsettledAccountAmount": "0",
+                "settledAccountAmount": "1234",
+                "unpriced": false,
+                "originalCurrency": "CNY"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.519Z"
+          },
+          {
+            "id": "30fca392-507a-491e-810d-cb706aaf0710",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 提交后",
+            "notes": "仅原始票据存在：4d5fb57d-92dc-4aee-96fa-c20f8f0f5999",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "d4d26eb1-f428-4c82-9562-e90e0af302b1",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "01a16aa9-d284-4622-89f0-040fe4f1edb9",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.569Z"
+          },
+          {
+            "id": "6a1f0959-4842-4353-8b7b-fde105afcf9f",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 计时失败",
+            "notes": "仅原始票据存在：b8579295-2c64-4a15-8180-f835b73fe929",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "12f5114a-111d-41ab-82f8-13e679159dc6",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "c319c3b8-6a8e-4f29-9c3a-51903bc0ca5b",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.581Z"
+          },
+          {
+            "id": "66514599-b4a2-414e-ac1a-06a00f157611",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 回执事务",
+            "notes": "仅原始票据存在：1a07682b-0ec4-426a-85dd-255ac0a5e724",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "0a901ac1-a354-41d8-b350-c1e5d725dbe5",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "376bc777-5be1-46af-b8ed-1e1ca97bf00a",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.658Z"
+          },
+          {
+            "id": "951e7df1-5806-4a6c-8062-207fa011414b",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 出队后",
+            "notes": "仅原始票据存在：156b28a4-db22-4f69-8d32-e95d41621348",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "54b4c27a-6684-4e67-8cd4-86c8f5b8e839",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "49f6bf9c-a8b2-4f0d-86f7-c76523b559b8",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.719Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-receipt",
+            "type": "expense",
+            "amount": "12345",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 合成票据采购",
+            "notes": "原始票据 #R-只有票据可见\n手写分类：餐食 23.45 + 工具 100.00\n商户：合成商户 / 🧾 café\n修订：工具归属旅行项目",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-posting",
+                "accountId": "bank-cny",
+                "amount": "-12345",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-s1",
+                "amount": "2345",
+                "categoryId": "meal",
+                "projectId": "japan"
+              },
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-s2",
+                "amount": "10000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 2,
+            "updatedAt": "2026-10-27T11:17:51.815Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-40",
+            "type": "expense",
+            "amount": "4000",
+            "currency": "USD",
+            "date": "2026-10-12",
+            "description": "海外订阅 · 工作软件",
+            "notes": "合成外币原始票据 browser-9420d2be-acac-4359-a38d-b91d1a210e58",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-40-p",
+                "accountId": "cc-usd",
+                "amount": "-4000",
+                "date": "2026-10-12"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-40-s",
+                "amount": "4000",
+                "categoryId": "digital",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.807Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-60",
+            "type": "expense",
+            "amount": "6000",
+            "currency": "USD",
+            "date": "2026-10-14",
+            "description": "旅行用品 · 海外订单",
+            "notes": "合成外币原始票据 browser-9420d2be-acac-4359-a38d-b91d1a210e58",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-60-p",
+                "accountId": "cc-usd",
+                "amount": "-6000",
+                "date": "2026-10-14"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-60-s",
+                "amount": "6000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.807Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-repayment",
+            "type": "transfer",
+            "amount": "72000",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 外币还款",
+            "notes": "合成汇兑凭据",
+            "state": "posted",
+            "splits": [],
+            "postings": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-from",
+                "accountId": "bank-cny",
+                "amount": "-72000",
+                "date": "2026-10-27"
+              },
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-to",
+                "accountId": "cc-usd",
+                "amount": "10000",
+                "date": "2026-10-27"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.823Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-refund",
+            "type": "refund",
+            "amount": "1234",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "state": "posted",
+            "description": "P0 票据部分退款",
+            "notes": "退货凭据 #ONLY-RECEIPT-02",
+            "postings": [
+              {
+                "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-refund-p",
+                "accountId": "bank-cny",
+                "amount": "1234",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [],
+            "refunds": [
+              {
+                "transactionId": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-receipt",
+                "splitId": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-s2",
+                "amount": "1234",
+                "received": "1234",
+                "categoryId": "daily",
+                "projectId": "japan",
+                "actualCost": "1234",
+                "estimatedCost": "0",
+                "unsettledAccountAmount": "0",
+                "settledAccountAmount": "1234",
+                "unpriced": false,
+                "originalCurrency": "CNY"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.831Z"
+          },
+          {
+            "id": "63825b53-4e9d-40e4-90d8-42cc79adc31e",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 提交后",
+            "notes": "仅原始票据存在：f4141813-dffe-4b40-a1e1-886618f281e2",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "d30496d1-1cb0-4753-bb58-7a7934a6c507",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "f296c17c-afa7-451b-9138-846864e793c2",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:36.842Z"
+          },
+          {
+            "id": "9dcd53dc-4065-4e17-b533-f45bc34d1cc1",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 计时失败",
+            "notes": "仅原始票据存在：ce9b65f1-3e5d-4639-a6c9-2fe67d3bffea",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "19f0356c-6c4f-4b7b-b060-072f28421493",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "f0574255-6145-426e-be9a-33595334c91b",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:36.851Z"
+          },
+          {
+            "id": "bc2a627d-1f53-4f16-9594-14a1c3c9427c",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 回执事务",
+            "notes": "仅原始票据存在：666b286d-9fb4-45ee-a3d6-db6011ff8385",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "30f81d47-ceb5-438b-ac81-05aa8f3abb40",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "7f8491fa-f4d1-4d54-bafa-eb34272f18e3",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:36.911Z"
+          },
+          {
+            "id": "7356c9e0-82c4-40fe-a129-72340be9782d",
+            "type": "expense",
+            "amount": "2800",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 出队后",
+            "notes": "仅原始票据存在：0a3bdb75-4707-41d2-9d86-7b47b706dc2d",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "39ef8908-92cb-4817-b49b-a6bbfca16868",
+                "accountId": "bank-cny",
+                "amount": "-2800",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "e710dd4a-908e-4998-b1f6-1f15692ad1ce",
+                "amount": "2800",
+                "categoryId": "coffee",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:36.968Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-receipt",
+            "type": "expense",
+            "amount": "12345",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 合成票据采购",
+            "notes": "原始票据 #R-只有票据可见\n手写分类：餐食 23.45 + 工具 100.00\n商户：合成商户 / 🧾 café\n修订：工具归属旅行项目",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-posting",
+                "accountId": "bank-cny",
+                "amount": "-12345",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-s1",
+                "amount": "2345",
+                "categoryId": "meal",
+                "projectId": "japan"
+              },
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-s2",
+                "amount": "10000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 2,
+            "updatedAt": "2026-10-27T11:25:37.077Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-40",
+            "type": "expense",
+            "amount": "4000",
+            "currency": "USD",
+            "date": "2026-10-12",
+            "description": "海外订阅 · 工作软件",
+            "notes": "合成外币原始票据 browser-c7e39539-5876-44d1-9b2c-39c6536c64d8",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-40-p",
+                "accountId": "cc-usd",
+                "amount": "-4000",
+                "date": "2026-10-12"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-40-s",
+                "amount": "4000",
+                "categoryId": "digital",
+                "projectId": null
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.069Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-60",
+            "type": "expense",
+            "amount": "6000",
+            "currency": "USD",
+            "date": "2026-10-14",
+            "description": "旅行用品 · 海外订单",
+            "notes": "合成外币原始票据 browser-c7e39539-5876-44d1-9b2c-39c6536c64d8",
+            "state": "posted",
+            "postings": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-60-p",
+                "accountId": "cc-usd",
+                "amount": "-6000",
+                "date": "2026-10-14"
+              }
+            ],
+            "splits": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-60-s",
+                "amount": "6000",
+                "categoryId": "daily",
+                "projectId": "japan"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.069Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-repayment",
+            "type": "transfer",
+            "amount": "72000",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "description": "P0 外币还款",
+            "notes": "合成汇兑凭据",
+            "state": "posted",
+            "splits": [],
+            "postings": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-from",
+                "accountId": "bank-cny",
+                "amount": "-72000",
+                "date": "2026-10-27"
+              },
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-to",
+                "accountId": "cc-usd",
+                "amount": "10000",
+                "date": "2026-10-27"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.085Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-refund",
+            "type": "refund",
+            "amount": "1234",
+            "currency": "CNY",
+            "date": "2026-10-27",
+            "state": "posted",
+            "description": "P0 票据部分退款",
+            "notes": "退货凭据 #ONLY-RECEIPT-02",
+            "postings": [
+              {
+                "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-refund-p",
+                "accountId": "bank-cny",
+                "amount": "1234",
+                "date": "2026-10-27"
+              }
+            ],
+            "splits": [],
+            "refunds": [
+              {
+                "transactionId": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-receipt",
+                "splitId": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-s2",
+                "amount": "1234",
+                "received": "1234",
+                "categoryId": "daily",
+                "projectId": "japan",
+                "actualCost": "1234",
+                "estimatedCost": "0",
+                "unsettledAccountAmount": "0",
+                "settledAccountAmount": "1234",
+                "unpriced": false,
+                "originalCurrency": "CNY"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.094Z"
+          }
+        ],
+        "sources": [
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-cost",
+            "transactionId": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-repayment",
+            "accountId": "cc-usd",
+            "currency": "USD",
+            "principal": "10000",
+            "cny": "72000",
+            "date": "2026-10-27",
+            "allocations": [
+              {
+                "transactionId": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-40",
+                "amount": "4000",
+                "cny": "28800"
+              },
+              {
+                "transactionId": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-usd-60",
+                "amount": "6000",
+                "cny": "43200"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.511Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-cost",
+            "transactionId": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-repayment",
+            "accountId": "cc-usd",
+            "currency": "USD",
+            "principal": "10000",
+            "cny": "72000",
+            "date": "2026-10-27",
+            "allocations": [
+              {
+                "transactionId": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-40",
+                "amount": "4000",
+                "cny": "28800"
+              },
+              {
+                "transactionId": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-usd-60",
+                "amount": "6000",
+                "cny": "43200"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.823Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-cost",
+            "transactionId": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-repayment",
+            "accountId": "cc-usd",
+            "currency": "USD",
+            "principal": "10000",
+            "cny": "72000",
+            "date": "2026-10-27",
+            "allocations": [
+              {
+                "transactionId": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-40",
+                "amount": "4000",
+                "cny": "28800"
+              },
+              {
+                "transactionId": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-usd-60",
+                "amount": "6000",
+                "cny": "43200"
+              }
+            ],
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.085Z"
+          }
+        ],
+        "sessions": [
+          {
+            "id": "iphone-68e71d36-d911-4f81-a93c-ada1765b63a6-session",
+            "accountId": "bank-usd",
+            "cutoff": "2026-10-27",
+            "external": "0",
+            "status": "completed",
+            "checked": [],
+            "notes": "P0 对账原始结论",
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:16:52.520Z"
+          },
+          {
+            "id": "browser-9420d2be-acac-4359-a38d-b91d1a210e58-session",
+            "accountId": "bank-usd",
+            "cutoff": "2026-10-27",
+            "external": "0",
+            "status": "completed",
+            "checked": [],
+            "notes": "P0 对账原始结论",
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:17:51.831Z"
+          },
+          {
+            "id": "browser-c7e39539-5876-44d1-9b2c-39c6536c64d8-session",
+            "accountId": "bank-usd",
+            "cutoff": "2026-10-27",
+            "external": "0",
+            "status": "completed",
+            "checked": [],
+            "notes": "P0 对账原始结论",
+            "revision": 1,
+            "updatedAt": "2026-10-27T11:25:37.094Z"
+          }
+        ],
+        "rates": [
+          {
+            "id": "usd-ref",
+            "currency": "USD",
+            "rate": "7.20",
+            "date": "2026-10-01",
+            "source": "Demo 人工参考汇率",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          },
+          {
+            "id": "jpy-ref",
+            "currency": "JPY",
+            "rate": "0.048",
+            "date": "2026-10-01",
+            "source": "Demo 人工参考汇率",
+            "revision": 1,
+            "updatedAt": "2026-10-27T10:59:06.773Z"
+          }
+        ],
+        "legacy": [
+          {
+            "id": "legacy-budget",
+            "type": "预算历史示例",
+            "name": "演示预算（仅归档）",
+            "raw": {
+              "limit": "200000",
+              "currency": "CNY",
+              "tags": [
+                "旧旅行标签"
+              ],
+              "note": "合成占位记录，不是真实 MoneyWiz 数据"
+            },
+            "revision": 4,
+            "updatedAt": "2026-10-27T11:25:37.094Z",
+            "deleted": true
+          }
+        ]
+      },
+      "deviceId": "f712f05f-77cf-49d2-a87b-b019591ee3e7",
+      "marker": "3c9f2689-1cab-4f71-af24-921426ef2c83",
+      "localStorageMarker": "38d0e862-637c-4344-83cd-e5b479eab439",
+      "cursor": 35
+    },
+    "observations": [
+      {
+        "pageSessionId": "e2232d71-0415-4b6e-ad5b-8f1c84391445",
+        "startedAt": "2026-10-27T11:34:25.277Z",
+        "origin": "https://zhangkaidemac-mini.local:8444",
+        "standalone": true,
+        "before": {
+          "ledgerPresent": true,
+          "deviceId": "f712f05f-77cf-49d2-a87b-b019591ee3e7",
+          "marker": null,
+          "cursor": 35,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+          "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+          "localStorageMarker": null
+        },
+        "serviceWorkerAtBoot": true,
+        "after": {
+          "ledgerPresent": true,
+          "deviceId": "f712f05f-77cf-49d2-a87b-b019591ee3e7",
+          "marker": "3c9f2689-1cab-4f71-af24-921426ef2c83",
+          "cursor": 35,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+          "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+          "localStorageMarker": "38d0e862-637c-4344-83cd-e5b479eab439"
+        }
+      },
+      {
+        "pageSessionId": "851a08c0-e963-4ee6-8c03-c0cde9eec0fd",
+        "startedAt": "2026-10-27T11:37:25.496Z",
+        "origin": "https://zhangkaidemac-mini.local:8444",
+        "standalone": false,
+        "before": {
+          "ledgerPresent": true,
+          "deviceId": "3c557659-b59f-4860-8fe3-d55a62c27a7c",
+          "marker": null,
+          "cursor": 9,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+          "stateHash": "2c002fe80a2316e5e6da7f2c0795934deb41f0ca720f18cd585dcc3e56a49328",
+          "localStorageMarker": null
+        },
+        "serviceWorkerAtBoot": true,
+        "after": {
+          "ledgerPresent": true,
+          "deviceId": "3c557659-b59f-4860-8fe3-d55a62c27a7c",
+          "marker": "cdee8cfe-c6b0-4668-b31c-6a6adc29d756",
+          "cursor": 9,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+          "stateHash": "2c002fe80a2316e5e6da7f2c0795934deb41f0ca720f18cd585dcc3e56a49328",
+          "localStorageMarker": "a6f74b01-58de-4f8a-b82c-446a84059d28"
+        }
+      },
+      {
+        "pageSessionId": "a94321df-1bb7-4dc1-8769-47bb18551c43",
+        "startedAt": "2026-10-27T11:37:47.447Z",
+        "origin": "https://zhangkaidemac-mini.local:8444",
+        "standalone": true,
+        "before": {
+          "ledgerPresent": false,
+          "deviceId": null,
+          "marker": null,
+          "cursor": null,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": null,
+          "stateHash": null,
+          "localStorageMarker": null
+        },
+        "serviceWorkerAtBoot": false,
+        "after": {
+          "ledgerPresent": true,
+          "deviceId": "1c3a6fca-be20-44b7-ab7b-6fdbb2684344",
+          "marker": "cefd4413-b650-4641-9911-7d5411254d8d",
+          "cursor": 35,
+          "pending": 0,
+          "conflicts": 0,
+          "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+          "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+          "localStorageMarker": "c98c0cbe-7def-4dc4-9d93-87bb57f1d379"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "businessStateMatched": true,
+        "storageEffect": "fresh-local-recovery",
+        "observedAt": "2026-10-27T11:37:47.447Z",
+        "pageSessionId": "a94321df-1bb7-4dc1-8769-47bb18551c43",
+        "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+        "systemDeletionRequiresHumanConfirmation": true,
+        "verifiedAt": "2026-10-27T11:39:00.668Z",
+        "observation": {
+          "pageSessionId": "a94321df-1bb7-4dc1-8769-47bb18551c43",
+          "startedAt": "2026-10-27T11:37:47.447Z",
+          "origin": "https://zhangkaidemac-mini.local:8444",
+          "standalone": true,
+          "before": {
+            "ledgerPresent": false,
+            "deviceId": null,
+            "marker": null,
+            "cursor": null,
+            "pending": 0,
+            "conflicts": 0,
+            "bookId": null,
+            "stateHash": null,
+            "localStorageMarker": null
+          },
+          "serviceWorkerAtBoot": false,
+          "after": {
+            "ledgerPresent": true,
+            "deviceId": "1c3a6fca-be20-44b7-ab7b-6fdbb2684344",
+            "marker": "cefd4413-b650-4641-9911-7d5411254d8d",
+            "cursor": 35,
+            "pending": 0,
+            "conflicts": 0,
+            "bookId": "891c9e06-1701-44f6-907f-72eece469130",
+            "stateHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50",
+            "localStorageMarker": "c98c0cbe-7def-4dc4-9d93-87bb57f1d379"
+          },
+          "remoteHash": "0ff58924e67a99650117d51886dc4fccc6389cbc6aee984da9dc09be20f10f50"
+        }
+      }
+    ]
+  }
+}

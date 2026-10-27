@@ -1,0 +1,144 @@
+TAP version 13
+# Subtest: seed is valid and pending amount is null, not zero; adjustments excluded from report
+ok 1 - seed is valid and pending amount is null, not zero; adjustments excluded from report
+  ---
+  duration_ms: 10.935458
+  type: 'test'
+  ...
+# Subtest: money parses exactly, JPY forbids decimals, and very large integers round trip
+ok 2 - money parses exactly, JPY forbids decimals, and very large integers round trip
+  ---
+  duration_ms: 0.261792
+  type: 'test'
+  ...
+# Subtest: deterministic remainder conserves every CNY cent
+ok 3 - deterministic remainder conserves every CNY cent
+  ---
+  duration_ms: 1.125583
+  type: 'test'
+  ...
+# Subtest: same pending JPY transaction updates to actual CNY 490 without double count; USD observation preserved
+ok 4 - same pending JPY transaction updates to actual CNY 490 without double count; USD observation preserved
+  ---
+  duration_ms: 1.55175
+  type: 'test'
+  ...
+# Subtest: pending void removes expense estimate and creates no refund; posted void rejected
+ok 5 - pending void removes expense estimate and creates no refund; posted void rejected
+  ---
+  duration_ms: 0.286625
+  type: 'test'
+  ...
+# Subtest: splits must balance exactly, category cycles rejected, account currency immutable after posting
+ok 6 - splits must balance exactly, category cycles rejected, account currency immutable after posting
+  ---
+  duration_ms: 0.216166
+  type: 'test'
+  ...
+# Subtest: 100 USD / 720 CNY repayment allocates 288 + 432 without adding an expense
+ok 7 - 100 USD / 720 CNY repayment allocates 288 + 432 without adding an expense
+  ---
+  duration_ms: 0.451666
+  type: 'test'
+  ...
+# Subtest: partial settlement preserves first confirmed cost; second source adds actual cost
+ok 8 - partial settlement preserves first confirmed cost; second source adds actual cost
+  ---
+  duration_ms: 0.464416
+  type: 'test'
+  ...
+# Subtest: linked partial refunds inherit category/project, enforce cap and retain settlement allocations
+ok 9 - linked partial refunds inherit category/project, enforce cap and retain settlement allocations
+  ---
+  duration_ms: 0.474541
+  type: 'test'
+  ...
+# Subtest: unsettled refund prevents repayment allocation to refunded debt
+ok 10 - unsettled refund prevents repayment allocation to refunded debt
+  ---
+  duration_ms: 0.447667
+  type: 'test'
+  ...
+# Subtest: FX purchase then repayment passes original cost source exactly once
+ok 11 - FX purchase then repayment passes original cost source exactly once
+  ---
+  duration_ms: 0.492166
+  type: 'test'
+  ...
+# Subtest: unpriced amount marks report incomplete instead of quietly counting as zero
+ok 12 - unpriced amount marks report incomplete instead of quietly counting as zero
+  ---
+  duration_ms: 2.296708
+  type: 'test'
+  ...
+# Subtest: reconciliation excludes pending, rejects nonzero difference and catches late bank posting date
+ok 13 - reconciliation excludes pending, rejects nonzero difference and catches late bank posting date
+  ---
+  duration_ms: 1.704791
+  type: 'test'
+  ...
+# Subtest: completed reconciliations reject pending, unknown or duplicate postings
+ok 14 - completed reconciliations reject pending, unknown or duplicate postings
+  ---
+  duration_ms: 0.387625
+  type: 'test'
+  ...
+# Subtest: linked originals cannot be deleted and tombstones do not break backup state validation
+ok 15 - linked originals cannot be deleted and tombstones do not break backup state validation
+  ---
+  duration_ms: 0.166333
+  type: 'test'
+  ...
+# Subtest: category and project filters count matching split amounts, never the full transaction twice
+ok 16 - category and project filters count matching split amounts, never the full transaction twice
+  ---
+  duration_ms: 0.192167
+  type: 'test'
+  ...
+# Subtest: LAN HTTPS: trusted SAN certificate, authentication, same-origin sync, receipts and public certificate only
+ok 17 - LAN HTTPS: trusted SAN certificate, authentication, same-origin sync, receipts and public certificate only
+  ---
+  duration_ms: 368.801083
+  type: 'test'
+  ...
+# (node:4924) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P0: 旧快照 + 增量日志在空数据库逐字段恢复；回执保留；SQLite 丢失可自动重放
+ok 18 - P0: 旧快照 + 增量日志在空数据库逐字段恢复；回执保留；SQLite 丢失可自动重放
+  ---
+  duration_ms: 288.331417
+  type: 'test'
+  ...
+# Subtest: P0: SQLite 提交前/日志持久化后/数据库提交后 SIGKILL 与丢响应，重试仅一笔
+ok 19 - P0: SQLite 提交前/日志持久化后/数据库提交后 SIGKILL 与丢响应，重试仅一笔
+  ---
+  duration_ms: 221.103959
+  type: 'test'
+  ...
+# Subtest: P0: 日志 ENOSPC 不回执且整批回滚；同操作 ID 不同内容拒绝；服务端回退/分叉不静默同步
+ok 20 - P0: 日志 ENOSPC 不回执且整批回滚；同操作 ID 不同内容拒绝；服务端回退/分叉不静默同步
+  ---
+  duration_ms: 73.314459
+  type: 'test'
+  ...
+# Subtest: P0: 恢复日志损坏/缺段/缺目录与错误快照 fail closed；不覆盖已有恢复目标
+ok 21 - P0: 恢复日志损坏/缺段/缺目录与错误快照 fail closed；不覆盖已有恢复目标
+  ---
+  duration_ms: 138.752291
+  type: 'test'
+  ...
+# Subtest: SQLite sync: atomic aggregates, lost response retry, conflicts, cursor, restart and auth
+ok 22 - SQLite sync: atomic aggregates, lost response retry, conflicts, cursor, restart and auth
+  ---
+  duration_ms: 190.3305
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 756.989875

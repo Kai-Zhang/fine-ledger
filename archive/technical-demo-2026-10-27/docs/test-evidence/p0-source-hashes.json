@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-10-27T11:24:53.294Z",
+  "files": {
+    "server.mjs": "63ab6d27b9ac8d4e0a54fa72f0804c011db940d75594e96e023dea1e8e527def",
+    "lib/recovery.mjs": "67f8335b82de95ebbda432e2668d8ad4dfdf168a9df05830c336016ebc5435fb",
+    "public/storage.js": "5b0026c175621bce9e646ad9e1b00f2ae6860f9040673cfc68df9250a5a69718",
+    "public/app.js": "44ec0cb700f87654e7468b2a13b7a92b7f87cd93ecf9629e2c19bc46078fd665",
+    "public/sw.js": "4be407574581725fc934956fbdee19d486da6d5b8aa10213789443910c38f94e",
+    "public/reliability.html": "dc519d14d59d4e6ffcc3be61eef62b116d906f47aff0ec330fa4604e8e320f1e",
+    "public/reliability.js": "1517e365e0bb5c3b084b943f02cc675d564b59da75fb107426d960386a80179a",
+    "public/reliability-fixture.js": "0cf62c3d2d7f4c7f22f76e91fa3fe48752088ffc33b053b8848e19f5289ae236",
+    "scripts/recovery.mjs": "b15af4657c7a037d68ba74b4e64e8af2f234c74248b8e7c0bbad3afd01d0dd62",
+    "scripts/reliability-demo.mjs": "10cbf857e30848a85d8d578e157f0474662132068d6c8d690145232654116342",
+    "test/reliability.test.mjs": "0317a70a959f06de882ed7cdfb8bd74dc2704838917ebdf5f5ce6dd920d3c17c"
+  }
+}

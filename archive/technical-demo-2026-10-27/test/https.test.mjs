@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { once } from 'node:events';
+import https from 'node:https';
+import http from 'node:http';
+import { uid, today } from '../public/domain.js';
+
+test('LAN HTTPS: trusted SAN certificate, authentication, same-origin sync, receipts and public certificate only', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'fine-ledger-https-'));
+  const base = 35000 + Math.floor(Math.random() * 10000);
+  const child = spawn(process.execPath, ['scripts/iphone-demo.mjs', 'start'], { cwd: process.cwd(), env: { ...process.env, IPHONE_DEMO_DIR: dir, IPHONE_HTTPS_PORT: String(base), IPHONE_SETUP_PORT: String(base + 1), IPHONE_BACKEND_PORT: String(base + 2) }, stdio: ['ignore', 'pipe', 'pipe'] });
+  t.after(async () => { if (child.exitCode === null) { const ended = once(child, 'exit'); child.kill('SIGTERM'); await ended; } await rm(dir, { recursive: true, force: true }); });
+  let stderr = '';
+  child.stderr.on('data', b => { stderr += b; });
+  await new Promise((r, j) => { const timer = setTimeout(() => j(Error('HTTPS 启动超时: ' + stderr)), 15000); child.once('exit', code => { clearTimeout(timer); j(Error(`HTTPS exited ${code}: ${stderr}`)); }); child.stdout.on('data', b => { if (String(b).includes('iPhone HTTPS:')) { clearTimeout(timer); r(); } }); });
+  const c = JSON.parse(await readFile(join(dir, 'config.json'), 'utf8'));
+  const ca = await readFile(join(dir, 'ca.pem')), token = (await readFile(join(dir, 'token.txt'), 'utf8')).trim();
+  const request = (path, { auth = false, trusted = true, method = 'GET', origin, payload, servername = c.dns } = {}) => new Promise((r, j) => {
+    const req = https.request({ hostname: c.ip, servername, port: base, method, path, ...(trusted ? { ca } : {}), headers: { Host: `${c.dns}:${base}`, ...(auth ? { Authorization: `Bearer ${token}` } : {}), ...(origin ? { Origin: origin } : {}), ...(payload ? { 'Content-Type': 'application/json' } : {}) } }, res => {
+      let body = ''; res.on('data', b => body += b); res.on('end', () => r({ status: res.statusCode, body, headers: res.headers }));
+    }); req.on('error', j); req.end(payload ? JSON.stringify(payload) : undefined);
+  });
+  assert.equal((await stat(join(dir, 'ca-key.pem'))).mode & 0o777, 0o600);
+  assert.equal((await stat(join(dir, 'connection.txt'))).mode & 0o777, 0o600);
+  await assert.rejects(request('/', { trusted: false }));
+  await assert.rejects(request('/', { servername: 'wrong.local' }));
+  assert.equal((await request('/')).status, 200);
+  assert.equal((await request('/api/snapshot')).status, 401);
+  const state = JSON.parse((await request('/api/snapshot', { auth: true })).body).state;
+  for (const path of ['/sw.js', '/validation.js', '/manifest.webmanifest', '/icon-192.png']) assert.equal((await request(path)).status, 200);
+  assert.equal((await request('/sw.js')).headers['service-worker-allowed'], '/');
+  const id = uid(), original = state.transactions.find(t => t.id === 'coffee-demo');
+  const sample = { ...original, id, revision: 1, date: today(), description: 'iPhone验证 tls-test · 联网', amount: '1234', postings: [{ ...original.postings[0], id: uid(), amount: '-1234' }], splits: [{ ...original.splits[0], id: uid(), amount: '1234' }] };
+  const op = { id: uid(), changes: [{ collection: 'transactions', baseRevision: 0, entity: sample }] };
+  const payload = { deviceId: 'https-test-device', deviceName: 'HTTPs test', cursor: 0, operations: [op], verification: { schemaVersion: 1, runId: 'tls-test', boots: [], saves: [{ transactionId: id }] } };
+  assert.equal((await request('/api/sync', { method: 'POST', auth: true, origin: 'https://unrelated.example', payload })).status, 403);
+  const valid = await request('/api/sync', { method: 'POST', auth: true, origin: c.url, payload });
+  assert.equal(valid.status, 200); assert.deepEqual(JSON.parse(valid.body).acknowledged, [op.id]);
+  const report = JSON.parse((await request('/api/verification', { auth: true })).body);
+  assert.equal(report.reports[0].serverConfirmed[0].amount, '1234');
+  assert.equal(report.reports[0].serverConfirmed[0].id, id);
+  const publicGet = path => new Promise((r, j) => http.get({ hostname: c.ip, port: base + 1, path }, res => { let body = ''; res.on('data', b => body += b); res.on('end', () => r({ status: res.statusCode, body })); }).on('error', j));
+  const onboarding = await publicGet('/');
+  assert.equal(onboarding.status, 200); assert.equal(onboarding.body.includes(token), false); assert.equal(onboarding.body.includes('PRIVATE KEY'), false);
+  assert.equal((await publicGet('/ca.cer')).status, 200);
+  for (const path of ['/api/snapshot', '/server-key.pem', '/ca-key.pem', '/token.txt']) assert.equal((await publicGet(path)).status, 404);
+});

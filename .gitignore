@@ -3,3 +3,6 @@ data/*
 .DS_Store
 coverage/
 .local/
+node_modules/
+artifacts/
+*.log

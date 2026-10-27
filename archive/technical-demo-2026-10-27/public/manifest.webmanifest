@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Fine Ledger · 个人账本",
+  "short_name": "Fine Ledger",
+  "description": "本机优先的多币种个人账本交互 Demo",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f3",
+  "theme_color": "#214e40",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

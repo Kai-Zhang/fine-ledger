@@ -1,0 +1,23 @@
+{
+  "name": "fine-ledger-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "iphone:setup": "node scripts/iphone-demo.mjs setup",
+    "iphone:start": "node scripts/iphone-demo.mjs start",
+    "iphone:status": "node scripts/iphone-demo.mjs status",
+    "iphone:stop": "node scripts/iphone-demo.mjs stop",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check server.mjs && node --check scripts/iphone-demo.mjs && node --check public/app.js && node --check public/domain.js && node --check public/storage.js && node --check public/validation.js && node --check public/sw.js && node --check lib/recovery.mjs && node --check scripts/recovery.mjs && node --check public/reliability.js && node --check public/reliability-fixture.js && node --check public/reinstall.js",
+    "test:reliability": "node --test test/reliability.test.mjs",
+    "recovery": "node scripts/recovery.mjs",
+    "reliability:iphone:start": "node scripts/reliability-demo.mjs start",
+    "reliability:iphone:stop": "node scripts/reliability-demo.mjs stop"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

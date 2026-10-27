@@ -1,0 +1,74 @@
+{
+  "recordedAt": "2026-10-27T11:24:53.279Z",
+  "origin": "http://127.0.0.1:4177",
+  "method": "two actual IAB browser tabs open to the same origin, both connected; first ran 14 tests, second verified full state afterwards",
+  "firstTabResults": [
+    {
+      "name": "并发打开只保留一个连接，第二连接收到 versionchange 后可清空恢复",
+      "passed": true
+    },
+    {
+      "name": "真实 blocked 事件等待占用者释放，完成后才重新初始化",
+      "passed": true
+    },
+    {
+      "name": "保存事务提交前中断：账目 / 队列 / 历史全部回滚",
+      "passed": true
+    },
+    {
+      "name": "保存提交后界面确认前中断：重开账目与队列完整",
+      "passed": true
+    },
+    {
+      "name": "计时写入失败不会误报业务保存失败",
+      "passed": true
+    },
+    {
+      "name": "NAS 已提交，客户端回执应用前中断；重试不重复",
+      "passed": true
+    },
+    {
+      "name": "回执、游标与出队的本机事务被中断：全部回滚",
+      "passed": true
+    },
+    {
+      "name": "出队事务提交后中断：重开无残留队列、无重复",
+      "passed": true
+    },
+    {
+      "name": "服务端拒绝回退游标时本机状态和队列保持原样",
+      "passed": true
+    },
+    {
+      "name": "合成完整业务及仅票据可见文字同步",
+      "passed": true
+    },
+    {
+      "name": "旧备份缺少新账目时不删除新账目，也不改变已有对账",
+      "passed": true
+    },
+    {
+      "name": "旧本机备份不得删除或覆盖较新数据",
+      "passed": true
+    },
+    {
+      "name": "真实删除 IndexedDB 后从 NAS 重建，所有业务字段完全一致",
+      "passed": true
+    },
+    {
+      "name": "清空未同步本机的边界：没有外部副本的样例不可恢复，保护状态明确",
+      "passed": true
+    }
+  ],
+  "secondTabVerification": {
+    "lastVerifiedAt": "2026-10-27T11:24:23.785Z",
+    "standalone": false,
+    "verifications": [
+      {
+        "at": "2026-10-27T11:24:23.785Z",
+        "afterLocalClear": false
+      }
+    ]
+  },
+  "fullStateHash": "6597277658103ee5ccd382b21761c90a8495dd5d16b69a98e7a6528c40355b4d"
+}

@@ -1,0 +1,11 @@
+{
+  "recordedAt": "2026-10-27T11:40:59.297Z",
+  "files": {
+    "public/reliability.html": "953e52a19f63a858d01353a2b29e2af088c439f1f4106b21b3db02f4b4e7021b",
+    "public/reliability.js": "8237416ba310ac84208a1a8f57e5be2a0cd906ac9ae6a310f049342d6c671569",
+    "public/reinstall.js": "246a7128de1f29aeaa3d43795e6a40ad1c332a568c0e548612869fa3335ed511",
+    "public/storage.js": "5b0026c175621bce9e646ad9e1b00f2ae6860f9040673cfc68df9250a5a69718",
+    "public/sw.js": "2b9e11452109be22b24819e306800f39bb01d5ec9e0ebd6a307b7ba878594b3d",
+    "test/reinstall.test.mjs": "5f836903b2940be8173c1b26d45242b0aa980b21f013ad80595583cbbc9df8ba"
+  }
+}
