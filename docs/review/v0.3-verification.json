@@ -1,0 +1,94 @@
+{
+  "verifiedAt": "2026-10-27T13:40:38.319Z",
+  "version": "0.3.0",
+  "url": "https://zhangkaidemac-mini.local:8445/?v=0.3.0",
+  "certificateValidated": true,
+  "allResourcesMatchSource": true,
+  "cache": "fine-ledger-p0-shell-v7",
+  "assets": [
+    {
+      "path": "/",
+      "status": 200,
+      "sha256": "d91c3313401f8d5a3a0bd4a242f045746afbdfba5c6d75a787bae05436657e35"
+    },
+    {
+      "path": "/?v=0.3.0",
+      "status": 200,
+      "sha256": "d91c3313401f8d5a3a0bd4a242f045746afbdfba5c6d75a787bae05436657e35"
+    },
+    {
+      "path": "/index.html",
+      "status": 200,
+      "sha256": "d91c3313401f8d5a3a0bd4a242f045746afbdfba5c6d75a787bae05436657e35"
+    },
+    {
+      "path": "/style.css?v=0.3.0",
+      "status": 200,
+      "sha256": "5978d4aa9e4f235b17f929e9c0830ef21479e66b74025005497a95ecab2280ea"
+    },
+    {
+      "path": "/app.js?v=0.3.0",
+      "status": 200,
+      "sha256": "f2f0106772a6a76c2af4af514dffdf5e3de2c6a5cb2579b0dec23443cbe8eec6"
+    },
+    {
+      "path": "/domain.js?v=0.3.0",
+      "status": 200,
+      "sha256": "f3a35364cdd8dc4807c11fd20865464aa756c4a3ef74cdac464e6864d44e42bb"
+    },
+    {
+      "path": "/storage.js?v=0.3.0",
+      "status": 200,
+      "sha256": "23b426cdebbd6e820c1ed45de9bb120b77739abc2652c9149228283e9d5a243b"
+    },
+    {
+      "path": "/seed.js?v=0.3.0",
+      "status": 200,
+      "sha256": "1ec2ebcb104d74c15c54fdbc92e63ab67a6264e32e1d7297273c831a8eaebab3"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "sha256": "87ffababcb569249610e91e68ab29cfacc3a9430becebe98d913f5566b6fe137"
+    },
+    {
+      "path": "/icon.svg",
+      "status": 200,
+      "sha256": "f00f24b5f354da861ee0667751fba14afb09d91891ddc71431bab5785436e0f9"
+    },
+    {
+      "path": "/icon-192.png",
+      "status": 200,
+      "sha256": "fc86f63018761984fba2a6a2b976ee34d89f873aaf3f436eff7ae3704815dd29"
+    },
+    {
+      "path": "/icon-512.png",
+      "status": 200,
+      "sha256": "601eed68e457ac3931615f1a74fb58a74a81782f4a9465e83b9bc6a58e12fac6"
+    }
+  ],
+  "automatedTests": 16,
+  "browserChecks": [
+    "six-account-rows-visible-at-390x844",
+    "no-privacy-control-or-prototype-label-in-normal-page",
+    "description-substring-chips-and-category-fill",
+    "viewport-height-470-input-and-save-visible",
+    "soft-delete-balance-update",
+    "undo-delete",
+    "reload-deleted-state",
+    "restore-from-recently-deleted",
+    "original-with-active-refund-rejected-with-visible-dialog-message",
+    "IndexedDB-v1-to-v2-existing-balance-and-records-preserved"
+  ],
+  "viewportObservation": {
+    "width": 390,
+    "initialHeight": 844,
+    "lastAccountBottom": 555,
+    "navigationTop": 780.5,
+    "reducedHeight": 470,
+    "descriptionBottom": 344,
+    "actionsBottom": 424,
+    "candidatesBottom": 470
+  },
+  "limits": "Desktop browser sizes and reduced-viewport simulation; real iPhone keyboard placement still requires review."
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { minor, decimal, money, balance, delta, suggestions, refundable, validateEntry, localMinute } from '../public/domain.js';
+import { minor, decimal, money, balance, delta, suggestions, refundable, validateEntry, localMinute, activeEntries, accountGroups, setEntryDeleted } from '../public/domain.js';
 import { createBook } from '../public/seed.js';
 const input = (overrides = {}) => ({ id: 'new', accountId: 'cmb', kind: 'expense', description: '测试消费', amountMinor: '100', categoryId: 'meal', occurredAt: '2026-10-27T10:20:00.000Z', project: '', note: '', ...overrides });
 
@@ -56,4 +56,58 @@ test('stored occurrence times require ISO seconds, zero amounts and missing desc
   const book = createBook(); validateEntry(book, input());
   for (const overrides of [{ occurredAt: '2026-10-27T10:20' }, { amountMinor: '0' }, { description: '  ' }, { kind: 'unknown' }, { accountId: 'missing' }]) assert.throws(() => validateEntry(book, input(overrides)));
   assert.match(localMinute(new Date('2026-10-27T10:20:30Z')), /^2026-10-27T\d{2}:20$/);
+});
+
+test('account groups include every account once and keep totals in each original currency', () => {
+  const book = createBook(), groups = accountGroups(book);
+  assert.equal(new Set(groups.flatMap(g => g.accounts.map(a => a.id))).size, book.accounts.length);
+  const credit = groups.find(g => g.id === 'credit');
+  assert.deepEqual(credit.totals, { CNY: balance(book, 'credit'), USD: balance(book, 'usd') });
+  for (const group of groups) for (const [currency, total] of Object.entries(group.totals)) assert.equal(total, group.accounts.filter(a => a.currency === currency).reduce((sum, a) => sum + BigInt(balance(book, a.id)), 0n).toString());
+});
+test('deleting and restoring every transaction type reverses exactly its account postings', () => {
+  for (const kind of ['expense', 'income', 'transfer', 'adjustment']) {
+    const original = createBook(); original.entries.push(input({ id: 'delete-me', kind, amountMinor: kind === 'adjustment' ? '-150' : '150', categoryId: kind === 'income' ? 'salary' : 'meal', toAccountId: kind === 'transfer' ? 'alipay' : undefined }));
+    const before = new Map(original.accounts.map(a => [a.id, BigInt(balance(original, a.id))]));
+    const result = setEntryDeleted(original, 'delete-me', true);
+    for (const a of original.accounts) assert.equal(BigInt(balance(result.book, a.id)), before.get(a.id) - delta(original.entries.at(-1), a.id));
+    const restored = setEntryDeleted(result.book, 'delete-me', false);
+    for (const a of original.accounts) assert.equal(BigInt(balance(restored.book, a.id)), before.get(a.id));
+    assert.equal(original.entries.at(-1).deletedAt, undefined);
+    assert.equal(result.entry.revision, 2); assert.equal(restored.entry.revision, 3);
+  }
+});
+test('deleting a refund releases its remaining allowance and never orphans an active refund', () => {
+  const book = createBook(), expense = book.entries[0];
+  const refund = input({ id: 'refund', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '800' });
+  book.entries.push(refund);
+  assert.throws(() => setEntryDeleted(book, expense.id, true), /先删除退款/);
+  const removedRefund = setEntryDeleted(book, refund.id, true).book;
+  assert.equal(refundable(removedRefund, expense.id), expense.amountMinor);
+  const removedExpense = setEntryDeleted(removedRefund, expense.id, true).book;
+  assert.throws(() => setEntryDeleted(removedExpense, refund.id, false), /有效消费/);
+  const restoredExpense = setEntryDeleted(removedExpense, expense.id, false).book;
+  assert.equal(refundable(setEntryDeleted(restoredExpense, refund.id, false).book, expense.id), '1000');
+});
+test('refund restore checks the latest allowance after a replacement refund', () => {
+  const book = createBook(), expense = book.entries[0];
+  book.entries.push(input({ id: 'refund-old', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '1000' }));
+  const removed = setEntryDeleted(book, 'refund-old', true).book;
+  removed.entries.push(input({ id: 'refund-new', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '1200' }));
+  assert.throws(() => setEntryDeleted(removed, 'refund-old', false), /超过/);
+  assert(removed.entries.find(e => e.id === 'refund-old').deletedAt);
+});
+test('deleted transactions leave lists and description suggestions and stay in exportable history', () => {
+  const book = createBook(); const id = book.entries[0].id;
+  const deleted = setEntryDeleted(book, id, true).book;
+  assert.equal(deleted.entries.length, book.entries.length);
+  assert.equal(activeEntries(deleted).length, book.entries.length - 1);
+  assert.equal(suggestions(deleted.entries, 'Manner').length, 0);
+  assert.equal(suggestions(setEntryDeleted(deleted, id, false).book.entries, 'Manner').length, 1);
+});
+test('repeated deletion is idempotent and a missing ID fails without a new revision', () => {
+  const book = createBook(); const first = setEntryDeleted(book, book.entries[0].id, true);
+  const again = setEntryDeleted(first.book, first.entry.id, true);
+  assert.equal(again.changed, false); assert.equal(again.entry.revision, 2);
+  assert.throws(() => setEntryDeleted(book, 'missing-id', true), /找不到/);
 });

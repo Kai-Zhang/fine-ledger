@@ -1,14 +1,21 @@
-import { createBook } from './seed.js';
-import { validateEntry, balance, minor } from './domain.js';
+import { createBook } from './seed.js?v=0.3.0';
+import { validateEntry, balance, minor, setEntryDeleted } from './domain.js?v=0.3.0';
 export const DB_NAME = 'fine-ledger-p0-review-v1';
+export const DB_VERSION = 2;
 let handle;
 function db() {
   if (!handle) handle = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => { request.result.createObjectStore('state'); request.result.createObjectStore('outbox', { keyPath: 'id' }); request.result.createObjectStore('drafts'); };
-    request.onsuccess = () => { const result = request.result; result.onversionchange = () => { result.close(); handle = null; }; resolve(result); };
+    let abandoned = false;
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const result = request.result;
+      if (!result.objectStoreNames.contains('state')) result.createObjectStore('state');
+      if (!result.objectStoreNames.contains('outbox')) result.createObjectStore('outbox', { keyPath: 'id' });
+      if (!result.objectStoreNames.contains('drafts')) result.createObjectStore('drafts');
+    };
+    request.onsuccess = () => { const result = request.result; if (abandoned) { result.close(); return; } result.onversionchange = () => { result.close(); handle = null; }; resolve(result); };
     request.onerror = () => { handle = null; reject(request.error); };
-    request.onblocked = () => { handle = null; reject(Error('请关闭其他旧版厘序页面后重试')); };
+    request.onblocked = () => { abandoned = true; handle = null; reject(Error('请关闭其他旧版厘序页面后重试')); };
   });
   return handle;
 }
@@ -40,6 +47,25 @@ export async function saveEntry(input) {
     };
     tx.oncomplete = () => resolve({ book, entry });
     tx.onabort = () => reject(failure || tx.error || Error('保存失败，输入已保留，请重试'));
+  });
+}
+export async function changeEntryDeleted(id, deleted) {
+  const database = await db();
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(['state', 'outbox'], 'readwrite'); let result, failure;
+    const request = tx.objectStore('state').get('book');
+    request.onsuccess = () => {
+      try {
+        const timestamp = new Date().toISOString();
+        result = setEntryDeleted(request.result, id, deleted, timestamp);
+        if (result.changed) {
+          tx.objectStore('state').put(result.book, 'book');
+          tx.objectStore('outbox').put({ id: crypto.randomUUID(), kind: deleted ? 'delete-entry' : 'restore-entry', schema: 1, entry: result.entry, createdAt: timestamp });
+        }
+      } catch (error) { failure = error; tx.abort(); }
+    };
+    tx.oncomplete = () => resolve(result);
+    tx.onabort = () => reject(failure || tx.error || Error('记录未能修改，请重试'));
   });
 }
 async function draftOperation(accountId, value, write) {
