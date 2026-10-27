@@ -121,7 +121,7 @@ function settings() {
   <section class="settings-card"><div class="setting-row"><div><strong>开发者信息</strong><small>查看本地存储、离线资源及版本</small></div><label class="switch"><input type="checkbox" id="developer-toggle" ${getPreference('developer') ? 'checked' : ''} aria-label="显示开发者信息"><span></span></label></div><div id="developer-panel" ${getPreference('developer') ? '' : 'hidden'}>${developerPanel()}</div></section>
   <div class="settings-signature"><span class="brand-icon">${icon('list')}</span><strong>厘序</strong><span>把日常的账，记清楚。</span><small>P0 · 0.2.0</small></div>`;
 }
-function developerPanel() { return `<dl class="developer-info"><dt>本地账本</dt><dd>IndexedDB · schema 1</dd><dt>本机事务</dt><dd>账目与操作意图同事务提交</dd><dt>离线应用壳</dt><dd>${swReady ? '缓存已就绪' : '等待 Service Worker 就绪'}</dd><dt>NAS 同步</dt><dd>未实现 · P2</dd><dt>独立来源</dt><dd>4180 / fine-ledger-p0-review-v1</dd><dt>金额与时间</dt><dd>整数最小单位 / UTC ISO 秒</dd></dl>`; }
+function developerPanel() { return `<dl class="developer-info"><dt>本地账本</dt><dd>IndexedDB · schema 1</dd><dt>本机事务</dt><dd>账目与操作意图同事务提交</dd><dt>离线应用壳</dt><dd>${swReady ? '缓存已就绪' : '等待 Service Worker 就绪'}</dd><dt>NAS 同步</dt><dd>未实现 · P2</dd><dt>独立来源</dt><dd>${esc(location.origin)} / fine-ledger-p0-review-v1</dd><dt>金额与时间</dt><dd>整数最小单位 / UTC ISO 秒</dd></dl>`; }
 function getPreference(key) { try { return localStorage.getItem('fine-ledger-p0-' + key) === 'true'; } catch { return false; } }
 function toast(message) { const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3600); }
 function showSheet(content, cls = '') {

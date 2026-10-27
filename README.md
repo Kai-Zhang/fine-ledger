@@ -8,6 +8,8 @@ npm start
 
 需要 Node.js 24+，无需安装依赖。打开 [本地原型](http://127.0.0.1:4180/)。修改代码后需关闭该来源的所有页面再重新打开，让新离线缓存接管；录入中不会强制刷新。手机安装需要受信任 HTTPS，普通局域网 HTTP 无法验证完整 PWA。
 
+已有 HTTPS 配置的 iPhone review：`npm run iphone:start`。复用 `.local/iphone/` 原证书，新入口为 [iPhone HTTPS 原型](https://zhangkaidemac-mini.local:8445/)，与旧 8443/8444 来源隔离。通过 `npm run iphone:status` 查看状态，`npm run iphone:stop` 仅停止新版。详见 [安装与真机 review](docs/p0-iphone-review.md)。
+
 ```sh
 npm run check
 npm test

@@ -1,4 +1,4 @@
-const CACHE = 'fine-ledger-p0-shell-v3';
+const CACHE = 'fine-ledger-p0-shell-v4';
 const FILES = ['/', '/index.html', '/style.css', '/app.js', '/domain.js', '/storage.js', '/seed.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES))));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([

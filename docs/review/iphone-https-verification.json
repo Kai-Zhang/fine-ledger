@@ -1,0 +1,66 @@
+{
+  "verifiedAt": "2026-10-27T13:07:36.218Z",
+  "url": "https://zhangkaidemac-mini.local:8445/",
+  "ipUrl": "https://192.168.0.241:8445/",
+  "certificateValidatedForDNSAndIP": true,
+  "resourcesMatchCurrentSource": true,
+  "standaloneManifest": true,
+  "serviceWorkerAssets": [
+    {
+      "path": "/",
+      "status": 200,
+      "sha256": "f288c30cb66dd57de298845f1c71b3f5aa13f8c111cc8113fdc4d6d9eb0b4422"
+    },
+    {
+      "path": "/index.html",
+      "status": 200,
+      "sha256": "f288c30cb66dd57de298845f1c71b3f5aa13f8c111cc8113fdc4d6d9eb0b4422"
+    },
+    {
+      "path": "/style.css",
+      "status": 200,
+      "sha256": "f7e20a8a9545bb8951c829972cd366fb671af4f27273b6feedefb296439ee288"
+    },
+    {
+      "path": "/app.js",
+      "status": 200,
+      "sha256": "5f1911fdc0676644bbc805a03f48f70b02856c83ff725866aeb83fccd933afc3"
+    },
+    {
+      "path": "/domain.js",
+      "status": 200,
+      "sha256": "91cfbd61966c147923d64516c102697c458b43786ac09fc14d0ab81019ce1ec3"
+    },
+    {
+      "path": "/storage.js",
+      "status": 200,
+      "sha256": "bba16fd70737a6f04bdad9c160b1bc4312367a0240532d6fb529d50ef429735b"
+    },
+    {
+      "path": "/seed.js",
+      "status": 200,
+      "sha256": "1ec2ebcb104d74c15c54fdbc92e63ab67a6264e32e1d7297273c831a8eaebab3"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "sha256": "87ffababcb569249610e91e68ab29cfacc3a9430becebe98d913f5566b6fe137"
+    },
+    {
+      "path": "/icon.svg",
+      "status": 200,
+      "sha256": "f00f24b5f354da861ee0667751fba14afb09d91891ddc71431bab5785436e0f9"
+    },
+    {
+      "path": "/icon-192.png",
+      "status": 200,
+      "sha256": "fc86f63018761984fba2a6a2b976ee34d89f873aaf3f436eff7ae3704815dd29"
+    },
+    {
+      "path": "/icon-512.png",
+      "status": 200,
+      "sha256": "601eed68e457ac3931615f1a74fb58a74a81782f4a9465e83b9bc6a58e12fac6"
+    }
+  ],
+  "limits": "Endpoint and PWA-resource verification on Mac; iPhone installation and keyboard review pending user."
+}
