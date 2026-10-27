@@ -1,5 +1,7 @@
 # 厘序 · fine-ledger
 
+当前优先评审 [面向使用者的产品设计 0.1](docs/product-design.md)：账户与交易管理、返回导航、同步配置、主币种及两类核心报表。产品设计确认后，再继续扩展前端。
+
 当前版本 0.3.1。启动时自动构建完整发布；运行中的服务更新源码后执行 `npm run build` 发布。以紧凑分组账户为起点，评审快速连续记账体验。仅使用合成数据，记录保存在当前浏览器；尚未接入 NAS 或真实账本。
 
 ```sh
@@ -17,6 +19,7 @@ npm test
 
 先 review：[0.3 交互修订](docs/interaction-review-v0.3.md)；缓存更新修复见 [0.3.1 固定入口更新](docs/update-delivery-v0.3.1.md)。账户 → 交易记录 → 记一笔；点击描述候选自动带入类目，保存后可连续记账。退款从原支出详情发起；余额调整从具体账户右上角“更多”进入。旅游项目、备注默认折叠，开发者信息默认关闭。
 
+- [产品设计与交互流程](docs/product-design.md)
 - [首版需求](docs/requirements.md)
 - [技术设计](docs/technical-design.md)
 - [实施计划与当前阶段](docs/implementation-plan.md)
