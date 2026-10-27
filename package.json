@@ -1,0 +1,13 @@
+{
+  "name": "fine-ledger",
+  "version": "0.2.0-p0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/domain.js && node --check public/storage.js && node --check public/sw.js",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": { "node": ">=24" }
+}

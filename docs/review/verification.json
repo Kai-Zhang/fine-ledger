@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-27",
+  "origin": "http://127.0.0.1:4180",
+  "scope": "synthetic P0 review prototype",
+  "automatedDomainTests": 10,
+  "browserChecks": [
+    "account-context",
+    "continuous-save",
+    "description-substring",
+    "hierarchical-category",
+    "manual-category-retention",
+    "draft-reopen",
+    "partial-refund",
+    "over-refund-rejected",
+    "balance-adjustment",
+    "developer-hidden",
+    "server-stopped-new-tab",
+    "offline-save-reload",
+    "json-export"
+  ],
+  "exportVerification": {
+    "entries": 19,
+    "createdEntries": 4,
+    "outbox": 4,
+    "drafts": 0,
+    "newIdsUnique": true,
+    "minuteTimesStoredWithSeconds": true,
+    "refundRelationshipAndOptionalFieldsVerified": true
+  },
+  "limits": [
+    "Desktop browser and 390x844 responsive simulation only",
+    "Not a new iPhone/NAS acceptance",
+    "Offline interaction test ran v2; final v3 only corrects restored manual-category hint"
+  ],
+  "sourceSha256": {
+    "server.mjs": "99862615d20ffe4b24dd50a27d1e23e68b17dd225d07e031930895bd4837335e",
+    "package.json": "804e217df2b725eb79e6467c4f48b99fa0e653da0ec4d4707520c6e65899f3d0",
+    "public/app.js": "f19e433a25d2e851117650c0a5f537ece308fee1d060e1ca3de3de30b606eb9d",
+    "public/domain.js": "91cfbd61966c147923d64516c102697c458b43786ac09fc14d0ab81019ce1ec3",
+    "public/icon-192.png": "fc86f63018761984fba2a6a2b976ee34d89f873aaf3f436eff7ae3704815dd29",
+    "public/icon-512.png": "601eed68e457ac3931615f1a74fb58a74a81782f4a9465e83b9bc6a58e12fac6",
+    "public/icon.svg": "f00f24b5f354da861ee0667751fba14afb09d91891ddc71431bab5785436e0f9",
+    "public/index.html": "f288c30cb66dd57de298845f1c71b3f5aa13f8c111cc8113fdc4d6d9eb0b4422",
+    "public/manifest.webmanifest": "87ffababcb569249610e91e68ab29cfacc3a9430becebe98d913f5566b6fe137",
+    "public/seed.js": "1ec2ebcb104d74c15c54fdbc92e63ab67a6264e32e1d7297273c831a8eaebab3",
+    "public/storage.js": "bba16fd70737a6f04bdad9c160b1bc4312367a0240532d6fb529d50ef429735b",
+    "public/style.css": "f7e20a8a9545bb8951c829972cd366fb671af4f27273b6feedefb296439ee288",
+    "public/sw.js": "408e7cf842275a948b74b9c239f8f2fa30e0ef64601c4ccd56c404d98facce1b",
+    "test/domain.test.mjs": "31c37ec3a299f64c94d00b14ab6c83b406c52c5f69e9ab9505b826234391143d"
+  }
+}
