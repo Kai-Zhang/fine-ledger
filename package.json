@@ -1,15 +1,16 @@
 {
   "name": "fine-ledger",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
+    "build": "node scripts/build-preview.mjs",
     "iphone:start": "node scripts/iphone-review.mjs start",
     "iphone:status": "node scripts/iphone-review.mjs status",
     "iphone:stop": "node scripts/iphone-review.mjs stop",
-    "check": "node --check server.mjs && node --check scripts/iphone-review.mjs && node --check public/app.js && node --check public/domain.js && node --check public/storage.js && node --check public/sw.js",
+    "check": "node --check server.mjs && node --check scripts/build-preview.mjs && node --check scripts/iphone-review.mjs && node --check public/app.js && node --check public/domain.js && node --check public/storage.js && node --check public/sw.js",
     "test": "node --test test/*.test.mjs"
   },
   "engines": { "node": ">=24" }

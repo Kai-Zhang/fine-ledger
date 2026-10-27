@@ -1,5 +1,7 @@
-import { money, decimal, minor, balance, suggestions, refundable, localMinute, normalize, activeEntries, accountGroups } from './domain.js?v=0.3.0';
-import { loadBook, saveEntry, changeEntryDeleted, readDraft, writeDraft, exportBook } from './storage.js?v=0.3.0';
+import { money, decimal, minor, balance, suggestions, refundable, localMinute, normalize, activeEntries, accountGroups } from './domain.js';
+import { loadBook, saveEntry, changeEntryDeleted, readDraft, writeDraft, exportBook } from './storage.js';
+
+const APP_BUILD = '__BUILD_ID__';
 
 const paths = {
   accounts: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18m-5 5h2"/>',
@@ -33,7 +35,8 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;
 const app = document.querySelector('#app'), sheet = document.querySelector('#sheet');
 let book, view = 'accounts', currentAccount = null, filter = 'all', search = '';
 let descriptionEditing = false, viewportFrame = 0;
-let layoutViewportHeight = window.innerHeight, pendingRegistration = null, applyingUpdate = false;
+let layoutViewportHeight = window.innerHeight, updateRegistration = null, updatePending = false;
+let latestDraftWrite = Promise.resolve();
 const collapsedGroups = new Set();
 let editor = null, focusBeforeSheet, saveBusy = false, suggestionIndex = -1, toastTimer, swReady = false;
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('fine-ledger-p0-review') : null;
@@ -118,7 +121,7 @@ function settings() {
   <section class="settings-card"><div class="settings-title">${icon('home')}<h2>添加到主屏幕</h2></div><p>Safari → 分享 → 添加到主屏幕</p><button class="text-button" data-action="persist">保留本机账本 ${icon('arrow')}</button></section>
   <section class="settings-card"><div class="setting-row"><strong>开发者信息</strong><label class="switch"><input type="checkbox" id="developer-toggle" ${getPreference('developer') ? 'checked' : ''} aria-label="显示开发者信息"><span></span></label></div><div id="developer-panel" ${getPreference('developer') ? '' : 'hidden'}>${developerPanel()}</div></section>`;
 }
-function developerPanel() { return `<dl class="developer-info"><dt>版本</dt><dd>0.3.0</dd><dt>数据集</dt><dd>示例账本</dd><dt>本地账本</dt><dd>IndexedDB · 版本 2</dd><dt>本机事务</dt><dd>账目与操作意图同事务提交</dd><dt>离线应用壳</dt><dd>${swReady ? '缓存已就绪' : '等待 Service Worker 就绪'}</dd><dt>NAS 同步</dt><dd>未连接</dd><dt>来源</dt><dd>${esc(location.origin)}</dd></dl>`; }
+function developerPanel() { return `<dl class="developer-info"><dt>版本</dt><dd>0.3.1</dd><dt>数据集</dt><dd>示例账本</dd><dt>本地账本</dt><dd>IndexedDB · 版本 2</dd><dt>本机事务</dt><dd>账目与操作意图同事务提交</dd><dt>离线应用壳</dt><dd>${swReady ? '缓存已就绪' : '等待 Service Worker 就绪'}</dd><dt>NAS 同步</dt><dd>未连接</dd><dt>来源</dt><dd>${esc(location.origin)}</dd></dl>`; }
 function getPreference(key) { try { return localStorage.getItem('fine-ledger-p0-' + key) === 'true'; } catch { return false; } }
 function toast(message, undoId = null) {
   const el = document.querySelector('#toast');
@@ -140,7 +143,7 @@ function showSheet(content, cls = '') {
   scheduleViewport();
 }
 function sheetHeader(kicker, title) { return `<div class="sheet-header"><div><h2 id="sheet-title">${title}</h2></div><button class="icon-button" data-action="close" aria-label="关闭">${icon('close')}</button></div>`; }
-function closeSheet() { if (saveBusy) return; sheet.close(); editor = null; descriptionEditing = false; document.body.classList.remove('modal-open'); if (focusBeforeSheet?.isConnected) focusBeforeSheet.focus(); }
+function closeSheet() { if (saveBusy) return; sheet.close(); editor = null; descriptionEditing = false; document.body.classList.remove('modal-open'); if (focusBeforeSheet?.isConnected) focusBeforeSheet.focus(); void maybeReloadForUpdate(); }
 function finishDescription() {
   descriptionEditing = false;
   const target = sheet.querySelector('#amount')?.value ? sheet.querySelector('.category-trigger, #to-account') : sheet.querySelector('#amount');
@@ -234,7 +237,7 @@ function collectEditor() {
 async function rememberDraft() {
   if (!editor || editor.mode !== 'entry' || saveBusy) return;
   collectEditor(); const snapshot = { ...editor };
-  try { await writeDraft(snapshot.accountId, snapshot); } catch { toast('草稿未能保存，请保留当前页面并导出账本'); }
+  try { latestDraftWrite = writeDraft(snapshot.accountId, snapshot); await latestDraftWrite; } catch { toast('草稿未能保存，请保留当前页面并导出账本'); }
 }
 async function submitEntry(another = false) {
   if (saveBusy || !editor) return;
@@ -284,10 +287,6 @@ async function action(name) {
   if (name === 'close') return closeSheet();
   if (name === 'description-done') return finishDescription();
   if (name === 'deleted') return showDeleted();
-  if (name === 'update') {
-    if (sheet.open || saveBusy) { toast('请先完成当前记录'); return; }
-    if (pendingRegistration?.waiting) { applyingUpdate = true; pendingRegistration.waiting.postMessage('APPLY_UPDATE'); }
-  }
   if (name === 'home') { view = 'accounts'; currentAccount = null; search = ''; filter = 'all'; render(); }
   if (name === 'new') await openEditor(currentAccount || 'cmb');
   if (name === 'account-menu') showAccountMenu();
@@ -372,21 +371,48 @@ sheet.addEventListener('keydown', event => {
 });
 channel?.addEventListener('message', async () => { book = await loadBook(); render(); });
 window.addEventListener('focus', async () => { if (book && !sheet.open) { book = await loadBook(); render(); } });
+async function maybeReloadForUpdate() {
+  if (!updatePending || sheet.open || saveBusy) return;
+  try { await latestDraftWrite; } catch { return; }
+  if (!sheet.open && !saveBusy) location.replace(new URL('/', location.href).href);
+}
+async function controllerRelease() {
+  const controller = navigator.serviceWorker.controller;
+  if (!controller) return;
+  const release = await new Promise(resolve => {
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => { channel.port1.close(); resolve(null); }, 2000);
+    channel.port1.onmessage = event => { clearTimeout(timer); channel.port1.close(); resolve(event.data?.release); };
+    controller.postMessage({ type: 'GET_RELEASE' }, [channel.port2]);
+  });
+  if (release && release !== APP_BUILD) { updatePending = true; void maybeReloadForUpdate(); }
+}
+function setupUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type !== 'PREPARE_UPDATE') return;
+    const safe = !sheet.open && !saveBusy;
+    if (event.data.release !== APP_BUILD) updatePending = true;
+    event.ports[0]?.postMessage({ build: APP_BUILD, safe });
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => void controllerRelease());
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(async registration => {
+    updateRegistration = registration;
+    await registration.update().catch(() => {});
+    await navigator.serviceWorker.ready;
+    swReady = true;
+    const panel = document.querySelector('#developer-panel'); if (panel) panel.innerHTML = developerPanel();
+    void controllerRelease();
+  }).catch(() => toast('离线资源尚未缓存，请联网后重试'));
+  const check = () => {
+    if (document.visibilityState !== 'visible') return;
+    void updateRegistration?.update().catch(() => {});
+    void controllerRelease();
+  };
+  window.addEventListener('pageshow', check);
+  document.addEventListener('visibilitychange', check);
+}
+setupUpdates();
 try {
   book = await loadBook(); render();
-  if ('serviceWorker' in navigator) {
-    const announceUpdate = registration => {
-      pendingRegistration = registration;
-      const el = document.querySelector('#toast'); clearTimeout(toastTimer);
-      el.innerHTML = '<span>有新版本可用</span><button data-action="update">更新</button>'; el.classList.add('show');
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (applyingUpdate) location.reload(); });
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      if (registration.waiting) announceUpdate(registration);
-      registration.addEventListener('updatefound', () => {
-        registration.installing?.addEventListener('statechange', event => { if (event.target.state === 'installed' && navigator.serviceWorker.controller && registration.waiting) announceUpdate(registration); });
-      });
-      return navigator.serviceWorker.ready;
-    }).then(() => { swReady = true; const panel = document.querySelector('#developer-panel'); if (panel) panel.innerHTML = developerPanel(); }).catch(() => toast('离线资源尚未缓存，请联网后重试'));
-  }
 } catch (error) { app.innerHTML = `<div class="startup"><strong>暂时无法打开账本</strong><p>浏览器存储不可用。请使用普通浏览模式，并保留此页面重试。</p><small>${esc(error.message)}</small><button class="button primary" id="retry">重新打开</button></div>`; document.querySelector('#retry').onclick = () => location.reload(); }

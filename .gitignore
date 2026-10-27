@@ -6,3 +6,5 @@ coverage/
 node_modules/
 artifacts/
 *.log
+public/assets/
+public/__update-test/

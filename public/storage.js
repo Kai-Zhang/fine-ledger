@@ -1,5 +1,5 @@
-import { createBook } from './seed.js?v=0.3.0';
-import { validateEntry, balance, minor, setEntryDeleted } from './domain.js?v=0.3.0';
+import { createBook } from './seed.js';
+import { validateEntry, balance, minor, setEntryDeleted } from './domain.js';
 export const DB_NAME = 'fine-ledger-p0-review-v1';
 export const DB_VERSION = 2;
 let handle;

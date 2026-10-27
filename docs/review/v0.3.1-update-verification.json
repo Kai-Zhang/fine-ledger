@@ -1,0 +1,104 @@
+{
+  "verifiedAt": "2026-10-27T15:35:22.342Z",
+  "url": "https://zhangkaidemac-mini.local:8445/",
+  "ipUrl": "https://192.168.0.241:8445/",
+  "release": "0.3.1-5951f4e01f4350f8",
+  "entryHasQuery": false,
+  "portUnchanged": true,
+  "certificateValidated": true,
+  "assets": [
+    {
+      "path": "/",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "3bcba5a094ed1c4ed0881944a96e69ba9825b1b5c54c190c98dfe747c110255e"
+    },
+    {
+      "path": "/sw.js",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "44877afffe67d9e5ecb7d5ae1f634044a8cefcd2a610f80c2c21e2b61f4a88e1"
+    },
+    {
+      "path": "/release.json",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "53982f14762f5b0687e79658d5de0344278c36bce52ac8614639ee7445ba910f"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/index.html",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "3bcba5a094ed1c4ed0881944a96e69ba9825b1b5c54c190c98dfe747c110255e"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/app.js",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "ab94aeee6c55d14a3fddbd141ba1bf2110acb8838149f37e6c30e4c76544eb25"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/domain.js",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "f3a35364cdd8dc4807c11fd20865464aa756c4a3ef74cdac464e6864d44e42bb"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/storage.js",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "d38acf8dcd65a1016b00296e7e6868a19e70b57ad0bbc140b92200ed0afa9e1f"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/seed.js",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "1ec2ebcb104d74c15c54fdbc92e63ab67a6264e32e1d7297273c831a8eaebab3"
+    },
+    {
+      "path": "/assets/0.3.1-5951f4e01f4350f8/style.css",
+      "status": 200,
+      "cacheControl": "public, max-age=31536000, immutable",
+      "sha256": "5978d4aa9e4f235b17f929e9c0830ef21479e66b74025005497a95ecab2280ea"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "87ffababcb569249610e91e68ab29cfacc3a9430becebe98d913f5566b6fe137"
+    },
+    {
+      "path": "/icon.svg",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "f00f24b5f354da861ee0667751fba14afb09d91891ddc71431bab5785436e0f9"
+    },
+    {
+      "path": "/icon-192.png",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "fc86f63018761984fba2a6a2b976ee34d89f873aaf3f436eff7ae3704815dd29"
+    },
+    {
+      "path": "/icon-512.png",
+      "status": 200,
+      "cacheControl": "no-store",
+      "sha256": "601eed68e457ac3931615f1a74fb58a74a81782f4a9465e83b9bc6a58e12fac6"
+    }
+  ],
+  "automatedTests": 21,
+  "browserRegression": {
+    "legacyCacheFirstPageMigratedAtSameURL": true,
+    "testTransactionAndDraftPreserved": true,
+    "currentAppEntry": "http://localhost:4180/",
+    "before": "0.3.1-a989a59701b68184",
+    "after": "0.3.1-5951f4e01f4350f8",
+    "editingDeferredReload": true,
+    "amount": "12.34",
+    "description": "更新保护草稿",
+    "draftRestoredAfterClosing": true,
+    "serverStoppedOfflineRootReload": true,
+    "offlineRelease": "0.3.1-5951f4e01f4350f8"
+  },
+  "limits": "Real desktop browser lifecycle regression and HTTPS resource verification. The target iPhone has not been remotely inspected."
+}

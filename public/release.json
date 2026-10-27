@@ -1,0 +1,15 @@
+{
+  "release": "0.3.1-5951f4e01f4350f8",
+  "assets": [
+    "/assets/0.3.1-5951f4e01f4350f8/index.html",
+    "/assets/0.3.1-5951f4e01f4350f8/app.js",
+    "/assets/0.3.1-5951f4e01f4350f8/domain.js",
+    "/assets/0.3.1-5951f4e01f4350f8/storage.js",
+    "/assets/0.3.1-5951f4e01f4350f8/seed.js",
+    "/assets/0.3.1-5951f4e01f4350f8/style.css",
+    "/manifest.webmanifest",
+    "/icon.svg",
+    "/icon-192.png",
+    "/icon-512.png"
+  ]
+}

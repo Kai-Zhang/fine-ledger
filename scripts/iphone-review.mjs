@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { serveStatic } from '../server.mjs';
+import { buildPreview } from './build-preview.mjs';
 
 const script = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(script), '..');
@@ -48,6 +49,7 @@ async function status(c) {
   console.log(JSON.stringify({ running: true, pid: state.pid, url: c.url, ipUrl: c.ipUrl, certificateValidated: true, validTo: c.validTo }, null, 2));
 }
 async function start(c) {
+  await buildPreview();
   try { const result = await request(c); assertResponse(c, result); await status(c); return; }
   catch (error) { if (!['ECONNREFUSED', 'EHOSTUNREACH'].includes(error.code)) throw error; }
   await mkdir(runtime, { recursive: true, mode: 0o700 });
