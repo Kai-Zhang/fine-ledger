@@ -1,12 +1,9 @@
 {
-  "release": "0.3.1-5951f4e01f4350f8",
+  "release": "0.4.0-9a9b13c673cfc791",
   "assets": [
-    "/assets/0.3.1-5951f4e01f4350f8/index.html",
-    "/assets/0.3.1-5951f4e01f4350f8/app.js",
-    "/assets/0.3.1-5951f4e01f4350f8/domain.js",
-    "/assets/0.3.1-5951f4e01f4350f8/storage.js",
-    "/assets/0.3.1-5951f4e01f4350f8/seed.js",
-    "/assets/0.3.1-5951f4e01f4350f8/style.css",
+    "/assets/0.4.0-9a9b13c673cfc791/index-43cEA4xA.js",
+    "/assets/0.4.0-9a9b13c673cfc791/index-CMRyarUb.css",
+    "/assets/0.4.0-9a9b13c673cfc791/index.html",
     "/manifest.webmanifest",
     "/icon.svg",
     "/icon-192.png",

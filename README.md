@@ -1,35 +1,56 @@
 # 厘序 · fine-ledger
 
-当前 [产品设计 0.8](docs/product-design.md) 与[交互线框 v2](docs/wireframe-review-v2.md) 的信息足够启动初版，实施准备度见[实施计划](docs/implementation-plan.md)。2026-10-29 已收集线框整体方向反馈：双层分类饼图、账户跟手拖动、新增与管理入口收敛直接记入实现要求，不再为此补线框。同源同步、主币锁定、转账区间折算、只计已入账、拆分类目和净值口径继续沿用。此次仅更新设计与计划，现有 PWA 和业务前端保持不变。
+当前版本 **0.4.0**。按[产品设计 0.8](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
 
-当前版本 0.3.1。启动时自动构建完整发布；运行中的服务更新源码后执行 `npm run build` 发布。以紧凑分组账户为起点，评审快速连续记账体验。仅使用合成数据，记录保存在当前浏览器；尚未接入 NAS 或真实账本。
+账户首页、记账、交易详情和报表已经连通本机数据。交付内容、截图和验证边界见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)。
+
+## 运行与 iPhone 访问
+
+需要 Node.js 24+。
 
 ```sh
+npm ci
 npm start
 ```
 
-需要 Node.js 24+，无需安装依赖。打开 [本地原型](http://127.0.0.1:4180/)。固定地址联网打开或刷新即获取最新入口；旧缓存自动接管，录入中的新版页面在退出表单后切换。无需增加参数、清除数据或重装。手机安装需要受信任 HTTPS，普通局域网 HTTP 无法验证完整 PWA。
+打开 [本地页面](http://127.0.0.1:4180/)。启动时自动构建；运行中的服务更新源码后，执行 `npm run build` 原位发布。
 
-已有 HTTPS 配置的 iPhone review：`npm run iphone:start`。复用 `.local/iphone/` 原证书，新入口为 [iPhone HTTPS 原型](https://zhangkaidemac-mini.local:8445/)，与旧 8443/8444 来源隔离。通过 `npm run iphone:status` 查看状态，`npm run iphone:stop` 仅停止新版。详见 [安装与真机 review](docs/p0-iphone-review.md)。
+```sh
+npm run iphone:start
+npm run iphone:status
+```
+
+沿用原证书及固定地址 **[iPhone HTTPS 入口](https://zhangkaidemac-mini.local:8445/)**。端口、路径、主屏幕图标的访问方式保持不变，不需要添加参数、清除数据或重新安装。`.local/iphone/` 的原证书和旧 8443/8444 服务保持原状；`iphone:stop` 只停止 8445。详见[安装说明](docs/p0-iphone-review.md)。
+
+页面在线检查更新，录入中的内容会保护到保存或退出表单后再切换。已完整缓存的版本可离线启动和本地记账。`npm run dev:vite` 提供独立热更新开发环境；该环境不注册离线应用壳。
+
+## 本版能力
+
+- 分组账户、总净值、新增账户与分组、跟手排序、移组和归档。
+- 收支、双金额跨币种转账、必填描述及类目、最近/包含匹配候选、多类目拆分、项目和备注。
+- 默认入账；点击列表图标切换未入账；交易编辑、退款、独立删除/恢复；账户菜单调整余额。
+- 净值曲线、两层分类环图、时间与账户/类目筛选、拆分金额下钻及返回状态保留、保存报表。
+- 主币规则、固定账本时区、类目图标与维护、深浅外观、本机完整备份导出。
+
+新用户从空账本创建；设置中的示例账本使用独立数据库。已有旧版浏览器记录会兼容升级并保留升级前原始副本。实际旧 MoneyWiz 全量迁移、银行正式入账成本分配、对账、云端同步与跨设备恢复仍按后续阶段验收。同步页面不会伪装成已经连接服务。
+
+## 工程与验证
 
 ```sh
 npm run check
 npm test
+npm run build
 ```
 
-先 review：[0.3 交互修订](docs/interaction-review-v0.3.md)；缓存更新修复见 [0.3.1 固定入口更新](docs/update-delivery-v0.3.1.md)。账户 → 交易记录 → 记一笔；点击描述候选自动带入类目，保存后可连续记账。退款从原支出详情发起；余额调整从具体账户右上角“更多”进入。旅游项目、备注默认折叠，开发者信息默认关闭。
+`src/` 为 React + TypeScript 源码，`domain/` 使用最小单位整数和精确比率，`storage/` 用 Dexie 在同一 IndexedDB 事务中保存账本与变更日志。Vite 生成带内容指纹的完整发布，`server.mjs` 提供静态资源；图标与字体不依赖外部网络。测试覆盖金额、拆分、入账、归档、退款、汇率区间、时间精度/时区、兼容升级、事务回滚及缓存更新。
 
-- [产品设计与交互流程](docs/product-design.md)
-- [MoneyWiz 3 iOS 实机竞品调研与借鉴建议](docs/research-moneywiz-ios-2026-10-29.md)
-- [2026-10-28 六项反馈、确认结论与数据核验](docs/product-feedback-2026-10-28.md)
-- [MoneyWiz 时间精度与退款关系聚合审计](docs/evidence/2026-10-28-moneywiz-audit/README.md)
-- [分期付款的后续产品提案](docs/installment-design.md)
+本机个人库保持 `fine-ledger-p0-review-v1`，独立示例库为 `fine-ledger-example-v1`；JSON 备份包含账本、变更日志及恢复修订。本版还未提供备份回导界面。原 `data/`、`.local/` 和运行证书不进入 Git。
+
+旧的 ES module 评审界面与其测试移至 [0.3 界面归档](archive/p0-review-2026-10-29/README.md)；更早的验证代码见[技术 demo 归档](archive/README.md)。
+
+- [产品设计](docs/product-design.md)
 - [首版需求](docs/requirements.md)
 - [技术设计](docs/technical-design.md)
-- [实施计划与当前阶段](docs/implementation-plan.md)
-- [P0 评审路线、设计依据与验证边界](docs/p0-review.md)
-- [旧技术 demo 归档](archive/README.md)
-
-`public/` 是全新的 ES module PWA 界面、领域计算和 IndexedDB 保存；`server.mjs` 仅提供静态资源；`test/` 验证金额、候选排序、类目与退款等规则。这是 P0 临时实现，正式 TypeScript / React 等工程化按技术设计在 P1 前落实。
-
-新原型默认端口 **4180**、本机库 **fine-ledger-p0-review-v1**，与旧 demo 的来源隔离。原 `data/`、`.local/` 原地保留且不进 Git。导出功能包含全部本机账目、操作意图与草稿；本版没有导入恢复入口。不要将它作为真实账本的唯一副本。
+- [实施计划](docs/implementation-plan.md)
+- [视觉与交互基线](design/frontend-direction.md)
+- [分期付款的后续提案](docs/installment-design.md)

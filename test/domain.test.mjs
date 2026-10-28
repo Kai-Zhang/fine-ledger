@@ -1,113 +1,314 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { minor, decimal, money, balance, delta, suggestions, refundable, validateEntry, localMinute, activeEntries, accountGroups, setEntryDeleted } from '../public/domain.js';
-import { createBook } from '../public/seed.js';
-const input = (overrides = {}) => ({ id: 'new', accountId: 'cmb', kind: 'expense', description: '测试消费', amountMinor: '100', categoryId: 'meal', occurredAt: '2026-10-27T10:20:00.000Z', project: '', note: '', ...overrides });
-
-test('decimal parsing and addition stay exact beyond floating-point precision', () => {
-  assert.equal((BigInt(minor('0.1')) + BigInt(minor('0.2'))).toString(), '30');
-  assert.equal(minor('999999999999.99'), '99999999999999');
-  assert.equal(decimal('-102'), '-1.02');
-  assert.equal(money('123456789'), '¥1,234,567.89');
-  assert.equal(minor('-0.01', 'CNY', true), '-1');
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  blankBook,
+  balance,
+  upsertEntry,
+  changePosted,
+  remainingRefund,
+  removeEntry,
+  restoreEntry,
+  descriptions,
+  rateFor,
+  netWorth,
+  categoryStats,
+} from "../src/domain/ledger.ts";
+import { minor, money, roundedRatio } from "../src/domain/money.ts";
+import { dateToISO, localInput, sortEntries } from "../src/domain/dates.ts";
+const time = (n) => `2026-01-${String(n).padStart(2, "0")}T12:00:00.000Z`;
+function fixture() {
+  const b = blankBook();
+  b.createdAt = time(1);
+  b.accounts = ["cny", "jpy", "usd"].map((id, i) => ({
+    id,
+    name: id,
+    groupId: "daily",
+    type: "bank",
+    currency: ["CNY", "JPY", "USD"][i],
+    openingMinor: i ? "0" : "100000",
+    openingAt: time(1),
+    icon: "Wallet",
+    order: i,
+    archived: false,
+    netWorth: true,
+  }));
+  return b;
+}
+function entry(id, overrides = {}) {
+  return {
+    id,
+    kind: "expense",
+    accountId: "cny",
+    amountMinor: "100",
+    description: "午餐",
+    occurredAt: time(2),
+    createdAt: time(2),
+    updatedAt: time(2),
+    posted: true,
+    splits: [{ id: id + "-s", categoryId: "food-0", amountMinor: "100" }],
+    revision: 0,
+    ...overrides,
+  };
+}
+function transfer(id, day, cny, jpy) {
+  return entry(id, {
+    kind: "transfer",
+    occurredAt: time(day),
+    amountMinor: cny,
+    toAccountId: "jpy",
+    receivedMinor: jpy,
+    splits: [],
+  });
+}
+test("money uses exact integers beyond Number safe range and respects currency decimals", () => {
+  assert.equal(minor("90071992547409.93", "CNY"), "9007199254740993");
+  assert.equal(money("9007199254740993", "CNY"), "90,071,992,547,409.93");
+  assert.throws(() => minor("1.2", "JPY"));
+  assert.equal(roundedRatio(-101n, 1n, 2n), -51n);
 });
-test('amount precision and invalid input are rejected rather than rounded', () => {
-  for (const bad of ['', '1e3', '1.001', '-1', 'Infinity', '1,000', '1000000000000']) assert.throws(() => minor(bad));
-  assert.equal(minor('123', 'JPY'), '123'); assert.throws(() => minor('1.1', 'JPY'));
+test("required descriptions and categories, exact split sums and positive split values", () => {
+  const b = fixture();
+  assert.throws(() => upsertEntry(b, entry("x", { description: "" })), /描述/);
+  assert.throws(() => upsertEntry(b, entry("x", { splits: [] })), /类目/);
+  assert.throws(
+    () =>
+      upsertEntry(
+        b,
+        entry("x", {
+          splits: [{ id: "1", categoryId: "food-0", amountMinor: "99" }],
+        }),
+      ),
+    /合计/,
+  );
+  const e = entry("x", {
+    splits: [
+      { id: "1", categoryId: "food-0", amountMinor: "60" },
+      { id: "2", categoryId: "food-1", amountMinor: "40" },
+    ],
+  });
+  upsertEntry(b, e);
+  assert.equal(balance(b, "cny"), 99900n);
 });
-test('empty descriptions show eight recent distinct descriptions', () => {
-  const book = createBook(); const result = suggestions(book.entries);
-  assert.equal(result.length, 8); assert.equal(new Set(result.map(t => t.description)).size, 8);
-  assert.equal(result[0].description, 'Manner 咖啡');
+test("posting transfers changes both balances together, pending excluded", () => {
+  const b = fixture();
+  upsertEntry(b, transfer("fx", 2, "10000", "2000"));
+  assert.equal(balance(b, "cny"), 90000n);
+  assert.equal(balance(b, "jpy"), 2000n);
+  changePosted(b, "fx");
+  assert.equal(balance(b, "cny"), 100000n);
+  assert.equal(balance(b, "jpy"), 0n);
+  assert.equal(rateFor(b, "jpy", time(2)), null);
 });
-test('substring matching ranks prefixes first without losing recency within rank', () => {
-  const entries = ['街角咖啡', '咖啡工坊', '咖啡馆', '一杯咖啡'].map((description, i) => input({ id: String(i), description, occurredAt: `2026-10-${27 - i}T10:00:00.000Z` }));
-  assert.deepEqual(suggestions(entries, '咖啡').map(t => t.description), ['咖啡工坊', '咖啡馆', '街角咖啡', '一杯咖啡']);
+test("interval exchange rates use next transfer, first before first, and provisional latest tail", () => {
+  const b = fixture();
+  upsertEntry(b, transfer("A", 5, "10000", "2000"));
+  upsertEntry(b, transfer("B", 15, "20000", "5000"));
+  assert.equal(netWorth(b, time(4), ["jpy"]).total, 0n);
+  assert.deepEqual(rateFor(b, "jpy", time(4)), {
+    n: 10000n,
+    d: 2000n,
+    provisional: false,
+  });
+  assert.equal(netWorth(b, time(10), ["jpy"]).total, 8000n);
+  assert.equal(netWorth(b, time(15), ["jpy"]).total, 28000n);
+  assert.equal(netWorth(b, time(20), ["jpy"]).provisional, true);
+  upsertEntry(b, transfer("C", 25, "9000", "3000"));
+  assert.equal(netWorth(b, time(20), ["jpy"]).total, 21000n);
+  assert.equal(netWorth(b, time(20), ["jpy"]).provisional, false);
+  removeEntry(b, "C");
+  assert.equal(netWorth(b, time(20), ["jpy"]).total, 28000n);
 });
-test('same description inherits the latest category, case and width insensitive', () => {
-  const entries = [input({ description: 'ＭＡＮＮＥＲ', categoryId: 'meal', occurredAt: '2026-10-25T10:00:00.000Z' }), input({ description: 'Manner', categoryId: 'coffee', occurredAt: '2026-10-26T10:00:00.000Z' })];
-  assert.equal(suggestions(entries, 'mAnNeR').length, 1); assert.equal(suggestions(entries)[0].categoryId, 'coffee');
+test("missing rate preserves native balances and identifies incomplete total", () => {
+  const b = fixture();
+  b.accounts[2].openingMinor = "1000";
+  const n = netWorth(b, time(2));
+  assert.equal(n.total, 100000n);
+  assert.equal(n.missing.length, 1);
+  assert.equal(n.missing[0].amount, 1000n);
 });
-test('income suggestions and categories stay separate from expense', () => {
-  const book = createBook(); assert.equal(suggestions(book.entries, '', 'income')[0].description, '工资');
-  assert.throws(() => validateEntry(book, input({ kind: 'income', categoryId: 'meal' })), /二级类目/);
+test("archived accounts cannot receive new records but old records remain editable", () => {
+  const b = fixture();
+  upsertEntry(b, entry("old"));
+  b.accounts[0].archived = true;
+  assert.throws(() => upsertEntry(b, entry("new")), /归档/);
+  const old = { ...b.entries[0], description: "午餐修正" };
+  upsertEntry(b, old);
+  assert.equal(b.entries[0].description, "午餐修正");
+  assert.throws(() => upsertEntry(b, old), /其他页面/);
+  assert.equal(netWorth(b, time(3)).total, 99900n);
 });
-test('linked partial refunds cannot exceed remaining amount or alter category/project', () => {
-  const book = createBook(); const original = book.entries[0];
-  const refund = input({ kind: 'refund', amountMinor: '1000', originalId: original.id, categoryId: original.categoryId });
-  validateEntry(book, refund); book.entries.push(refund);
-  assert.equal(refundable(book, original.id), '800');
-  assert.throws(() => validateEntry(book, { ...refund, amountMinor: '801' }), /超过/);
-  assert.throws(() => validateEntry(book, { ...refund, amountMinor: '1', categoryId: 'meal' }), /沿用/);
-  assert.throws(() => validateEntry(book, { ...refund, amountMinor: '1', accountId: 'usd' }), /原账户/);
+test("refund caps, independent original deletion/restoration and historical links", () => {
+  const b = fixture();
+  upsertEntry(b, entry("purchase"));
+  upsertEntry(
+    b,
+    entry("refund", {
+      kind: "refund",
+      originalId: "purchase",
+      amountMinor: "40",
+      splits: [{ id: "r", categoryId: "food-0", amountMinor: "40" }],
+    }),
+  );
+  assert.equal(remainingRefund(b, "purchase"), 60n);
+  assert.throws(
+    () =>
+      upsertEntry(
+        b,
+        entry("too-much", {
+          kind: "refund",
+          originalId: "purchase",
+          amountMinor: "70",
+          splits: [{ id: "r", categoryId: "food-0", amountMinor: "70" }],
+        }),
+      ),
+    /可退金额/,
+  );
+  removeEntry(b, "purchase");
+  assert.equal(balance(b, "cny"), 100040n);
+  assert.equal(b.entries[1].originalId, "purchase");
+  restoreEntry(b, "purchase");
+  assert.equal(balance(b, "cny"), 99940n);
 });
-test('transfers conserve same-currency account totals and reject unsupported FX', () => {
-  const book = createBook(); const t = input({ kind: 'transfer', toAccountId: 'alipay', categoryId: '' });
-  validateEntry(book, t); assert.equal(delta(t, 'cmb') + delta(t, 'alipay'), 0n);
-  assert.throws(() => validateEntry(book, { ...t, toAccountId: 'usd' }), /同币种/);
-  assert.throws(() => validateEntry(book, { ...t, toAccountId: 'cmb' }), /另一个/);
+test("category aggregation counts only selected split amounts, pending excluded, refunds net negative", () => {
+  const b = fixture();
+  upsertEntry(
+    b,
+    entry("split", {
+      amountMinor: "200",
+      splits: [
+        { id: "1", categoryId: "food-0", amountMinor: "150" },
+        { id: "2", categoryId: "shopping-0", amountMinor: "50" },
+      ],
+    }),
+  );
+  upsertEntry(b, entry("pending", { posted: false }));
+  upsertEntry(
+    b,
+    entry("refund", {
+      kind: "refund",
+      amountMinor: "200",
+      splits: [{ id: "r", categoryId: "food-0", amountMinor: "200" }],
+    }),
+  );
+  const stats = categoryStats(b, time(1), time(3), ["cny"], ["food"]);
+  assert.equal(stats.expense, 150n);
+  assert.equal(stats.refund, 200n);
+  assert.equal(stats.net, -50n);
+  assert.equal(stats.rows.length, 2);
+  assert.equal(stats.values.get("food-0"), -50n);
 });
-test('balance reflects expense, refund, income and adjustment without mixing currencies', () => {
-  const book = createBook(); const before = BigInt(balance(book, 'cmb')); const usd = balance(book, 'usd');
-  book.entries.push(input(), input({ kind: 'refund', amountMinor: '30' }), input({ kind: 'income', amountMinor: '200', categoryId: 'salary' }), input({ kind: 'adjustment', amountMinor: '-10' }));
-  assert.equal(BigInt(balance(book, 'cmb')), before + 120n); assert.equal(balance(book, 'usd'), usd);
+test("description substring results rank prefix first and preserve recent unique descriptions", () => {
+  const b = fixture();
+  b.entries = [
+    entry("a", { description: "星巴克咖啡", updatedAt: time(3) }),
+    entry("b", { description: "咖啡豆", updatedAt: time(2) }),
+    entry("c", { description: "咖啡豆", updatedAt: time(1) }),
+  ];
+  assert.deepEqual(
+    descriptions(b, "expense", "咖啡").map((e) => e.description),
+    ["咖啡豆", "星巴克咖啡"],
+  );
 });
-test('stored occurrence times require ISO seconds, zero amounts and missing descriptions fail', () => {
-  const book = createBook(); validateEntry(book, input());
-  for (const overrides of [{ occurredAt: '2026-10-27T10:20' }, { amountMinor: '0' }, { description: '  ' }, { kind: 'unknown' }, { accountId: 'missing' }]) assert.throws(() => validateEntry(book, input(overrides)));
-  assert.match(localMinute(new Date('2026-10-27T10:20:30Z')), /^2026-10-27T\d{2}:20$/);
+test("editing unrelated fields preserves imported fractional seconds, full timestamp ordering stable", () => {
+  const original = "2026-01-02T12:34:23.456789Z";
+  assert.equal(dateToISO(localInput(original), original), original);
+  assert.equal(
+    sortEntries([
+      { id: "a", occurredAt: time(2) },
+      { id: "b", occurredAt: time(2) },
+    ])[0].id,
+    "b",
+  );
 });
-
-test('account groups include every account once and keep totals in each original currency', () => {
-  const book = createBook(), groups = accountGroups(book);
-  assert.equal(new Set(groups.flatMap(g => g.accounts.map(a => a.id))).size, book.accounts.length);
-  const credit = groups.find(g => g.id === 'credit');
-  assert.deepEqual(credit.totals, { CNY: balance(book, 'credit'), USD: balance(book, 'usd') });
-  for (const group of groups) for (const [currency, total] of Object.entries(group.totals)) assert.equal(total, group.accounts.filter(a => a.currency === currency).reduce((sum, a) => sum + BigInt(balance(book, a.id)), 0n).toString());
+test("full fractional timestamps determine balances and ordering even with different precision or time zones", () => {
+  const b = fixture();
+  const first = entry("first", { occurredAt: "2026-01-02T12:00:00.456Z" }),
+    second = entry("second", {
+      occurredAt: "2026-01-02T20:00:00.456789+08:00",
+    });
+  upsertEntry(b, first);
+  upsertEntry(b, second);
+  assert.equal(balance(b, "cny", "2026-01-02T12:00:00.456500Z"), 99900n);
+  assert.deepEqual(
+    sortEntries(b.entries).map((e) => e.id),
+    ["second", "first"],
+  );
 });
-test('deleting and restoring every transaction type reverses exactly its account postings', () => {
-  for (const kind of ['expense', 'income', 'transfer', 'adjustment']) {
-    const original = createBook(); original.entries.push(input({ id: 'delete-me', kind, amountMinor: kind === 'adjustment' ? '-150' : '150', categoryId: kind === 'income' ? 'salary' : 'meal', toAccountId: kind === 'transfer' ? 'alipay' : undefined }));
-    const before = new Map(original.accounts.map(a => [a.id, BigInt(balance(original, a.id))]));
-    const result = setEntryDeleted(original, 'delete-me', true);
-    for (const a of original.accounts) assert.equal(BigInt(balance(result.book, a.id)), before.get(a.id) - delta(original.entries.at(-1), a.id));
-    const restored = setEntryDeleted(result.book, 'delete-me', false);
-    for (const a of original.accounts) assert.equal(BigInt(balance(restored.book, a.id)), before.get(a.id));
-    assert.equal(original.entries.at(-1).deletedAt, undefined);
-    assert.equal(result.entry.revision, 2); assert.equal(restored.entry.revision, 3);
-  }
+test("transfers through a same-currency foreign account carry the base-cost source and cycles remain unknown", () => {
+  const b = fixture();
+  b.accounts.push({ ...b.accounts[1], id: "jpy-card", openingMinor: "-1000" });
+  upsertEntry(b, transfer("source", 2, "10000", "2000"));
+  upsertEntry(
+    b,
+    entry("repay", {
+      kind: "transfer",
+      accountId: "jpy",
+      toAccountId: "jpy-card",
+      amountMinor: "1000",
+      receivedMinor: "1000",
+      splits: [],
+    }),
+  );
+  assert.equal(netWorth(b, time(3), ["jpy-card"]).total, 0n);
+  assert.notEqual(rateFor(b, "jpy-card", time(3)), null);
+  removeEntry(b, "source");
+  assert.equal(rateFor(b, "jpy-card", time(3)), null);
 });
-test('deleting a refund releases its remaining allowance and never orphans an active refund', () => {
-  const book = createBook(), expense = book.entries[0];
-  const refund = input({ id: 'refund', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '800' });
-  book.entries.push(refund);
-  assert.throws(() => setEntryDeleted(book, expense.id, true), /先删除退款/);
-  const removedRefund = setEntryDeleted(book, refund.id, true).book;
-  assert.equal(refundable(removedRefund, expense.id), expense.amountMinor);
-  const removedExpense = setEntryDeleted(removedRefund, expense.id, true).book;
-  assert.throws(() => setEntryDeleted(removedExpense, refund.id, false), /有效消费/);
-  const restoredExpense = setEntryDeleted(removedExpense, expense.id, false).book;
-  assert.equal(refundable(setEntryDeleted(restoredExpense, refund.id, false).book, expense.id), '1000');
+test("book timezone determines business dates and DST report boundaries, while source instant stays unchanged", async () => {
+  const { localDate, endOfDay, startOfDay } =
+    await import("../src/domain/dates.ts");
+  assert.equal(
+    localDate("2026-01-01T18:00:00Z", "Asia/Shanghai"),
+    "2026-01-02",
+  );
+  assert.equal(
+    localDate("2026-01-01T18:00:00Z", "America/Los_Angeles"),
+    "2026-01-01",
+  );
+  assert.equal(
+    dateToISO("2026-01-02T02:00:27", undefined, "Asia/Shanghai"),
+    "2026-01-01T18:00:27.000Z",
+  );
+  assert.equal(
+    startOfDay("2026-03-08", "America/New_York"),
+    "2026-03-08T05:00:00Z",
+  );
+  assert.equal(
+    endOfDay("2026-03-08", "America/New_York"),
+    "2026-03-09T03:59:59.999999999Z",
+  );
+  assert.throws(
+    () => dateToISO("2026-03-08T02:30:00", undefined, "America/New_York"),
+    /夏令时/,
+  );
 });
-test('refund restore checks the latest allowance after a replacement refund', () => {
-  const book = createBook(), expense = book.entries[0];
-  book.entries.push(input({ id: 'refund-old', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '1000' }));
-  const removed = setEntryDeleted(book, 'refund-old', true).book;
-  removed.entries.push(input({ id: 'refund-new', kind: 'refund', categoryId: expense.categoryId, originalId: expense.id, amountMinor: '1200' }));
-  assert.throws(() => setEntryDeleted(removed, 'refund-old', false), /超过/);
-  assert(removed.entries.find(e => e.id === 'refund-old').deletedAt);
-});
-test('deleted transactions leave lists and description suggestions and stay in exportable history', () => {
-  const book = createBook(); const id = book.entries[0].id;
-  const deleted = setEntryDeleted(book, id, true).book;
-  assert.equal(deleted.entries.length, book.entries.length);
-  assert.equal(activeEntries(deleted).length, book.entries.length - 1);
-  assert.equal(suggestions(deleted.entries, 'Manner').length, 0);
-  assert.equal(suggestions(setEntryDeleted(deleted, id, false).book.entries, 'Manner').length, 1);
-});
-test('repeated deletion is idempotent and a missing ID fails without a new revision', () => {
-  const book = createBook(); const first = setEntryDeleted(book, book.entries[0].id, true);
-  const again = setEntryDeleted(first.book, first.entry.id, true);
-  assert.equal(again.changed, false); assert.equal(again.entry.revision, 2);
-  assert.throws(() => setEntryDeleted(book, 'missing-id', true), /找不到/);
+test("archived categories and projects preserve old edits and linked refund attribution but reject fresh use", () => {
+  const b = fixture();
+  b.projects = [{ id: "trip", name: "旅行", archived: false }];
+  const purchase = entry("purchase", {
+    splits: [
+      { id: "s", categoryId: "food-0", projectId: "trip", amountMinor: "100" },
+    ],
+  });
+  upsertEntry(b, purchase);
+  b.categories.find((c) => c.id === "food-0").archived = true;
+  b.projects[0].archived = true;
+  assert.throws(() => upsertEntry(b, entry("new")), /类目已归档/);
+  upsertEntry(b, { ...b.entries[0], description: "旧消费修正" });
+  upsertEntry(
+    b,
+    entry("refund", {
+      kind: "refund",
+      originalId: "purchase",
+      splits: [
+        {
+          id: "r",
+          categoryId: "food-0",
+          projectId: "trip",
+          amountMinor: "100",
+        },
+      ],
+    }),
+  );
+  assert.equal(balance(b, "cny"), 100000n);
 });

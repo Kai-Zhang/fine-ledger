@@ -17,7 +17,7 @@ export async function serveStatic(req, res) {
       'Cache-Control': pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-store',
       ...(pathname === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {}),
       'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     }).end(req.method === 'HEAD' ? undefined : body);
   } catch { res.writeHead(404).end('Not found'); }
 }
@@ -25,6 +25,6 @@ export async function serveStatic(req, res) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await buildPreview();
   http.createServer(serveStatic).listen(Number(process.env.PORT || 4180), process.env.HOST || '127.0.0.1', () => {
-    console.log(`厘序 P0 · http://${process.env.HOST || '127.0.0.1'}:${process.env.PORT || 4180}`);
+    console.log(`厘序 · http://${process.env.HOST || '127.0.0.1'}:${process.env.PORT || 4180}`);
   });
 }

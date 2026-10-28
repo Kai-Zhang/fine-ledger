@@ -1,0 +1,34 @@
+import { Component, type ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App.tsx";
+import "./style.css";
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error(error);
+  }
+  render() {
+    return this.state.failed ? (
+      <main className="boot-error">
+        <h1>页面暂时无法显示</h1>
+        <p>账本仍保存在本机。重新打开后可继续。</p>
+        <button className="button primary" onClick={() => location.reload()}>
+          重新打开
+        </button>
+      </main>
+    ) : (
+      this.props.children
+    );
+  }
+}
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);

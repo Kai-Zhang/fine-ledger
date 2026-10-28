@@ -1,4 +1,4 @@
-const CONFIG = {"release":"0.3.1-5951f4e01f4350f8","root":"/","shell":"/assets/0.3.1-5951f4e01f4350f8/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.3.1-5951f4e01f4350f8/index.html","/assets/0.3.1-5951f4e01f4350f8/app.js","/assets/0.3.1-5951f4e01f4350f8/domain.js","/assets/0.3.1-5951f4e01f4350f8/storage.js","/assets/0.3.1-5951f4e01f4350f8/seed.js","/assets/0.3.1-5951f4e01f4350f8/style.css","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
+const CONFIG = {"release":"0.4.0-9a9b13c673cfc791","root":"/","shell":"/assets/0.4.0-9a9b13c673cfc791/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.4.0-9a9b13c673cfc791/index-43cEA4xA.js","/assets/0.4.0-9a9b13c673cfc791/index-CMRyarUb.css","/assets/0.4.0-9a9b13c673cfc791/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
 const CACHE = CONFIG.cachePrefix + CONFIG.release;
 const appURL = new URL(CONFIG.root, self.location.origin).href;
 function isAppPage(url) {
