@@ -20,6 +20,7 @@ npm test
 先 review：[0.3 交互修订](docs/interaction-review-v0.3.md)；缓存更新修复见 [0.3.1 固定入口更新](docs/update-delivery-v0.3.1.md)。账户 → 交易记录 → 记一笔；点击描述候选自动带入类目，保存后可连续记账。退款从原支出详情发起；余额调整从具体账户右上角“更多”进入。旅游项目、备注默认折叠，开发者信息默认关闭。
 
 - [产品设计与交互流程](docs/product-design.md)
+- [MoneyWiz 3 iOS 实机竞品调研与借鉴建议](docs/research-moneywiz-ios-2026-10-29.md)
 - [2026-10-28 六项反馈、确认结论与数据核验](docs/product-feedback-2026-10-28.md)
 - [MoneyWiz 时间精度与退款关系聚合审计](docs/evidence/2026-10-28-moneywiz-audit/README.md)
 - [分期付款的后续产品提案](docs/installment-design.md)
