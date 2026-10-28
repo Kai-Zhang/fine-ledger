@@ -1,4 +1,4 @@
-const CONFIG = {"release":"0.4.0-9a9b13c673cfc791","root":"/","shell":"/assets/0.4.0-9a9b13c673cfc791/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.4.0-9a9b13c673cfc791/index-43cEA4xA.js","/assets/0.4.0-9a9b13c673cfc791/index-CMRyarUb.css","/assets/0.4.0-9a9b13c673cfc791/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
+const CONFIG = {"release":"0.4.1-2e52407f751639f8","root":"/","shell":"/assets/0.4.1-2e52407f751639f8/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.4.1-2e52407f751639f8/index-BmGwAa_t.css","/assets/0.4.1-2e52407f751639f8/index-D7sV4CtR.js","/assets/0.4.1-2e52407f751639f8/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
 const CACHE = CONFIG.cachePrefix + CONFIG.release;
 const appURL = new URL(CONFIG.root, self.location.origin).href;
 function isAppPage(url) {

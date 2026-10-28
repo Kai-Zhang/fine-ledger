@@ -1,4 +1,5 @@
 import {
+  Hotel,
   Landmark,
   Wallet,
   CreditCard,
@@ -67,6 +68,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 export const icons: Record<string, LucideIcon> = {
+  Hotel,
   Landmark,
   Wallet,
   CreditCard,

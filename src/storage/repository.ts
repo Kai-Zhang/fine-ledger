@@ -1,3 +1,7 @@
+import {
+  compatibleCategoryIcon,
+  repairLegacyCategoryIcons,
+} from "../domain/category-icons.ts";
 import { deviceTimeZone } from "../domain/dates.ts";
 import Dexie, { type Table } from "dexie";
 import { blankBook, defaultCategories } from "../domain/ledger.ts";
@@ -49,7 +53,7 @@ export function migrate(old: any): Book {
       id: c.id,
       name: c.name,
       kind: c.kind || "expense",
-      icon: c.icon || defaultCategories()[i]?.icon || "Tag",
+      icon: compatibleCategoryIcon(c),
       color: c.color || defaultCategories()[i]?.color || "#608D9D",
       order: i,
       archived: false,
@@ -59,7 +63,7 @@ export function migrate(old: any): Book {
       name: s.name,
       parentId: c.id,
       kind: c.kind || "expense",
-      icon: s.icon || "Tag",
+      icon: compatibleCategoryIcon(s, c.id),
       color: c.color || "#608D9D",
       order: j,
       archived: false,
@@ -127,14 +131,38 @@ export async function readBook(mode: Mode): Promise<Book | undefined> {
 }
 export async function initialize(mode: Mode, book?: Book) {
   const db = databases[mode];
-  return db.transaction("rw", db.state, async () => {
+  return db.transaction("rw", db.state, db.outbox, async () => {
     const old = await db.state.get("book");
     if (old) {
       const value = old as Book;
+      let changed = false;
       if (!value.timeZone) {
         value.timeZone = deviceTimeZone();
-        await db.state.put(value, "book");
+        changed = true;
       }
+      if (!(await db.state.get("category-icons-repaired-v1"))) {
+        const legacy = (await db.state.get("legacy-book-v2")) as
+          Parameters<typeof repairLegacyCategoryIcons>[1] | undefined;
+        if (legacy) {
+          const operations = await db.outbox.toArray();
+          const edited = new Set(
+            operations.flatMap((op) =>
+              Array.isArray(op.changes)
+                ? op.changes
+                    .filter((change) => change.collection === "categories")
+                    .map((change) => change.id)
+                : [],
+            ),
+          );
+          const previous = structuredClone(value);
+          if (repairLegacyCategoryIcons(value, legacy, edited)) {
+            await db.state.put(previous, "before-category-icon-repair");
+            changed = true;
+          }
+          await db.state.put(true, "category-icons-repaired-v1");
+        }
+      }
+      if (changed) await db.state.put(value, "book");
       return value;
     }
     const b = book || (mode === "example" ? exampleBook() : undefined);

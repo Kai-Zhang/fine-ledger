@@ -47,9 +47,7 @@ export function Settings() {
           <span className="brand-mark">厘</span>
           <div>
             <strong>{book.name}</strong>
-            <small>
-              {app.mode === "example" ? "独立示例账本" : "本机账本"}
-            </small>
+            <small>本机账本</small>
           </div>
           <IconButton
             name="Pencil"
@@ -70,14 +68,6 @@ export function Settings() {
             }
           />
         </section>
-        {app.mode === "example" && (
-          <div className="example-notice">
-            <span>正在浏览示例，修改不会影响个人账本。</span>
-            <Button variant="soft" onClick={() => app.switchMode("personal")}>
-              返回个人账本
-            </Button>
-          </div>
-        )}
         <div className="settings-section">
           <h2>账本</h2>
           <div className="settings-surface">
@@ -200,13 +190,6 @@ export function Settings() {
               label="添加到主屏幕"
               onClick={() => setInfo(true)}
             />
-            {app.mode === "personal" && (
-              <SettingRow
-                icon="BookOpen"
-                label="浏览示例账本"
-                onClick={() => app.switchMode("example")}
-              />
-            )}
           </div>
         </div>
         {book.settings.savedReports.length > 0 && (

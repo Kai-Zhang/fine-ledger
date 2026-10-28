@@ -115,24 +115,28 @@ export function Transactions({
               >
                 <div className="transaction-copy">
                   <strong>{e.description}</strong>
-                  <small>
-                    {e.kind === "transfer"
-                      ? `${account?.name} → ${to?.name}`
-                      : category || kindLabel[e.kind]}
-                    {!scope && e.kind !== "transfer" && <> · {account?.name}</>}
-                  </small>
-                  <span className="transaction-meta">
-                    {new Date(e.occurredAt).toLocaleTimeString("zh-CN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                      timeZone: book.timeZone,
-                    })}
-                    {!e.posted && <em>未入账</em>}
-                    {e.splits.length > 1 && (
-                      <span>{e.splits.length} 个类目</span>
-                    )}
-                  </span>
+                  <div className="transaction-secondary">
+                    <small>
+                      {e.kind === "transfer"
+                        ? `${account?.name} → ${to?.name}`
+                        : category || kindLabel[e.kind]}
+                      {!scope && e.kind !== "transfer" && (
+                        <> · {account?.name}</>
+                      )}
+                    </small>
+                    <span className="transaction-meta">
+                      {new Date(e.occurredAt).toLocaleTimeString("zh-CN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                        timeZone: book.timeZone,
+                      })}
+                      {!e.posted && <em>未入账</em>}
+                      {e.splits.length > 1 && (
+                        <span>{e.splits.length} 个类目</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <div
                   className={`transaction-amount ${e.kind === "income" || e.kind === "refund" || incoming ? "positive" : ""}`}

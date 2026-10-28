@@ -28,7 +28,7 @@ import {
 } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { AccountEditor, GroupEditor } from "../components/AccountEditor.tsx";
-import { balance, netWorth } from "../domain/ledger.ts";
+import { balance, netWorth, removeEmptyGroup } from "../domain/ledger.ts";
 import type { Account, Group } from "../domain/types.ts";
 function AccountRow({
   account,
@@ -326,6 +326,33 @@ export function Accounts() {
             <Icon name="Plus" />
             在此分组新增账户
           </button>
+          <button
+            className="danger-text"
+            disabled={book.accounts.some((a) => a.groupId === g.id)}
+            title={
+              book.accounts.some((a) => a.groupId === g.id)
+                ? "请先移出所有账户，包含已归档账户"
+                : undefined
+            }
+            onClick={async () => {
+              app.close();
+              if (
+                await app.confirm({
+                  title: "删除空分组？",
+                  message: `将删除“${g.name}”。账户和交易不会被删除。`,
+                  label: "删除分组",
+                  danger: true,
+                })
+              )
+                await app.save("删除空分组", (b) => removeEmptyGroup(b, g.id));
+            }}
+          >
+            <Icon name="Trash2" />
+            删除分组
+          </button>
+          {book.accounts.some((a) => a.groupId === g.id) && (
+            <p className="menu-hint">移出所有账户后可删除，包含已归档账户。</p>
+          )}
         </div>
       </Dialog>,
     );
@@ -362,10 +389,7 @@ export function Accounts() {
   }
   return (
     <>
-      <Header
-        title="账户"
-        kicker={app.mode === "example" ? "示例账本" : undefined}
-      >
+      <Header title="账户">
         {manage ? (
           <Button variant="plain" onClick={() => setManage(false)}>
             完成

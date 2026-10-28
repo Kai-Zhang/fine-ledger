@@ -9,12 +9,7 @@ import { TransactionsPage, Detail, Trash } from "./pages/TransactionsPage.tsx";
 import { EntryForm } from "./pages/EntryForm.tsx";
 import { Reports } from "./pages/Reports.tsx";
 import { Settings, Categories, Projects, Sync } from "./pages/Settings.tsx";
-import {
-  initialize,
-  readBook,
-  mutate,
-  type Mode,
-} from "./storage/repository.ts";
+import { initialize, readBook, mutate } from "./storage/repository.ts";
 import { blankBook } from "./domain/ledger.ts";
 import { uid, type Book } from "./domain/types.ts";
 import { currencies, minor } from "./domain/money.ts";
@@ -27,16 +22,8 @@ const roots = ["accounts", "transactions", "reports", "settings"] as const,
     ["settings", "Settings", "设置"],
   ] as const;
 export function App() {
-  const [mode, setMode] = useState<Mode>(() => {
-      try {
-        return localStorage.getItem("fine-ledger-mode") === "example"
-          ? "example"
-          : "personal";
-      } catch {
-        return "personal";
-      }
-    }),
-    [ready, setReady] = useState(false),
+  const mode = "personal" as const;
+  const [ready, setReady] = useState(false),
     [failure, setFailure] = useState(""),
     [route, setRoute] = useState<Route>({ page: "accounts" }),
     [modal, setModal] = useState<ReactNode>(null),
@@ -220,20 +207,6 @@ export function App() {
       return false;
     }
   }
-  function switchMode(next: Mode) {
-    if (dirtyRef.current) return;
-    setMode(next);
-    try {
-      localStorage.setItem("fine-ledger-mode", next);
-    } catch {}
-    setModal(null);
-    setRoute({ page: "accounts" });
-    historyDepth.current = 0;
-    history.replaceState(
-      { ledger: true, depth: 0, route: { page: "accounts" } },
-      "",
-    );
-  }
   const startTouch = useRef<{ x: number; y: number } | null>(null);
   const isRoot =
     roots.includes(route.page as (typeof roots)[number]) &&
@@ -273,7 +246,6 @@ export function App() {
             return false;
           }
         }}
-        onExample={() => switchMode("example")}
       />
     );
   const pages: Record<Route["page"], ReactNode> = {
@@ -302,7 +274,6 @@ export function App() {
         save,
         toast,
         setDirty,
-        switchMode,
         confirm,
         open: setModal,
         close: () => setModal(null),
@@ -341,12 +312,12 @@ export function App() {
             <Icon name="BookOpen" />
             <span>
               {book.name}
-              <small>{mode === "example" ? "示例账本" : book.currency}</small>
+              <small>{book.currency}</small>
             </span>
           </div>
         </aside>
         <section
-          className="workspace"
+          className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
           onTouchStart={(e) => {
             const t = e.touches[0];
             if (
@@ -435,13 +406,7 @@ export function App() {
     </AppContext.Provider>
   );
 }
-function Welcome({
-  onCreate,
-  onExample,
-}: {
-  onCreate: (book: Book) => Promise<boolean>;
-  onExample: () => void;
-}) {
+function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
   const [currency, setCurrency] = useState("CNY"),
     [timeZone, setTimeZone] = useState(deviceTimeZone()),
     [name, setName] = useState("我的账本"),
@@ -537,10 +502,6 @@ function Welcome({
             <Icon name="ArrowRight" size={18} />
           </Button>
         </form>
-        <button className="welcome-demo" onClick={onExample}>
-          先浏览示例账本
-          <Icon name="ArrowUpRight" size={17} />
-        </button>
       </div>
       <p className="welcome-foot">数据保存在本机，离线也能记。</p>
     </main>

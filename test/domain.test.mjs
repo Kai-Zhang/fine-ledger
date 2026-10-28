@@ -312,3 +312,80 @@ test("archived categories and projects preserve old edits and linked refund attr
   );
   assert.equal(balance(b, "cny"), 100000n);
 });
+
+test("empty group deletion preserves accounts and entries and rejects groups containing archived accounts", async () => {
+  const { removeEmptyGroup } = await import("../src/domain/ledger.ts");
+  const b = fixture(),
+    accounts = structuredClone(b.accounts),
+    entries = structuredClone(b.entries);
+  removeEmptyGroup(b, "investment");
+  assert(!b.groups.some((g) => g.id === "investment"));
+  assert.deepEqual(b.accounts, accounts);
+  assert.deepEqual(b.entries, entries);
+  b.accounts[0].archived = true;
+  assert.throws(() => removeEmptyGroup(b, "daily"), /已归档/);
+  assert(b.groups.some((g) => g.id === "daily"));
+});
+
+test("legacy category icons have meaningful mappings and preserve explicitly edited icons", async () => {
+  const { compatibleCategoryIcon, repairLegacyCategoryIcons } =
+    await import("../src/domain/category-icons.ts");
+  assert.equal(compatibleCategoryIcon({ id: "food", icon: "cup" }), "Utensils");
+  assert.equal(
+    compatibleCategoryIcon({ id: "coffee", icon: "Tag" }, "food"),
+    "Coffee",
+  );
+  assert.equal(
+    compatibleCategoryIcon({ id: "metro" }, "transport"),
+    "TrainFront",
+  );
+  const b = blankBook();
+  b.categories = [
+    {
+      id: "food",
+      name: "餐饮",
+      icon: "cup",
+      color: "#123",
+      kind: "expense",
+      order: 0,
+      archived: false,
+    },
+    {
+      id: "coffee",
+      name: "咖啡",
+      parentId: "food",
+      icon: "Tag",
+      color: "#123",
+      kind: "expense",
+      order: 0,
+      archived: false,
+    },
+    {
+      id: "meal",
+      name: "三餐",
+      parentId: "food",
+      icon: "Tag",
+      color: "#123",
+      kind: "expense",
+      order: 1,
+      archived: false,
+    },
+  ];
+  const legacy = {
+    categories: [
+      {
+        id: "food",
+        name: "餐饮",
+        icon: "cup",
+        children: [
+          { id: "coffee", name: "咖啡" },
+          { id: "meal", name: "三餐" },
+        ],
+      },
+    ],
+  };
+  assert.equal(repairLegacyCategoryIcons(b, legacy, new Set(["meal"])), 2);
+  assert.equal(b.categories[0].icon, "Utensils");
+  assert.equal(b.categories[1].icon, "Coffee");
+  assert.equal(b.categories[2].icon, "Tag");
+});

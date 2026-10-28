@@ -374,3 +374,13 @@ export function categoryStats(
   }
   return { values, rows, expense, refund, net: expense - refund, missingCount };
 }
+
+export function removeEmptyGroup(book: Book, id: string) {
+  if (!book.groups.some((group) => group.id === id)) throw Error("分组不存在");
+  if (book.accounts.some((account) => account.groupId === id))
+    throw Error("请先移出该分组内的账户（包括已归档账户）");
+  book.groups = book.groups
+    .filter((group) => group.id !== id)
+    .sort((a, b) => a.order - b.order)
+    .map((group, order) => ({ ...group, order }));
+}

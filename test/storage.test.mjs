@@ -122,3 +122,95 @@ test("local mutation, operation log and recovery revision commit atomically, err
   await db.delete();
   await databases.example.delete();
 });
+
+test("existing v3 legacy icons repair once without modifying money, source backup, or user category edits", async () => {
+  const db = databases.personal;
+  await db.delete();
+  await db.open();
+  const b = blankBook();
+  b.id = "icon-upgrade-test";
+  b.categories = [
+    {
+      id: "food",
+      name: "餐饮",
+      icon: "cup",
+      color: "#123",
+      kind: "expense",
+      order: 0,
+      archived: false,
+    },
+    {
+      id: "coffee",
+      name: "咖啡",
+      parentId: "food",
+      icon: "Tag",
+      color: "#123",
+      kind: "expense",
+      order: 0,
+      archived: false,
+    },
+    {
+      id: "meal",
+      name: "三餐",
+      parentId: "food",
+      icon: "Tag",
+      color: "#123",
+      kind: "expense",
+      order: 1,
+      archived: false,
+    },
+  ];
+  b.accounts = [
+    {
+      id: "bank",
+      name: "测试账户",
+      currency: "CNY",
+      type: "bank",
+      groupId: "daily",
+      openingMinor: "100000",
+      openingAt: b.createdAt,
+      icon: "Wallet",
+      order: 0,
+      archived: false,
+      netWorth: true,
+    },
+  ];
+  const legacy = {
+    categories: [
+      {
+        id: "food",
+        name: "餐饮",
+        icon: "cup",
+        children: [
+          { id: "coffee", name: "咖啡" },
+          { id: "meal", name: "三餐" },
+        ],
+      },
+    ],
+  };
+  await db.state.put(b, "book");
+  await db.state.put(legacy, "legacy-book-v2");
+  await db.outbox.put({
+    id: "manual-category-edit",
+    changes: [{ collection: "categories", id: "meal" }],
+  });
+  await initialize("personal");
+  const repaired = await readBook("personal");
+  assert.equal(
+    repaired.categories.find((c) => c.id === "coffee").icon,
+    "Coffee",
+  );
+  assert.equal(repaired.categories.find((c) => c.id === "meal").icon, "Tag");
+  assert.deepEqual(repaired.accounts, b.accounts);
+  assert.deepEqual(repaired.entries, b.entries);
+  assert.deepEqual(await db.state.get("legacy-book-v2"), legacy);
+  assert.deepEqual(await db.state.get("before-category-icon-repair"), b);
+  repaired.categories.find((c) => c.id === "coffee").icon = "Tag";
+  await db.state.put(repaired, "book");
+  await initialize("personal");
+  assert.equal(
+    (await readBook("personal")).categories.find((c) => c.id === "coffee").icon,
+    "Tag",
+  );
+  await db.delete();
+});

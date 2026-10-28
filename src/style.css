@@ -3224,3 +3224,117 @@ body:has(.app-shell) {
   font-size: 12px;
   margin: 15px 0;
 }
+/* Ledger rows keep the description and secondary metadata on two lines. */
+.transaction-secondary {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.transaction-secondary > small {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.transaction-secondary .transaction-meta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.menu-hint {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 15px 10px;
+  line-height: 1.6;
+}
+@media (max-width: 760px) {
+  .ledger-list-workspace .page-header {
+    min-height: 60px;
+    padding-top: 10px;
+    padding-bottom: 8px;
+  }
+  .ledger-list-workspace .page-content {
+    padding-bottom: 76px;
+  }
+  .transactions-page .account-balance {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px 10px;
+    padding: 0 0 11px;
+    min-height: 39px;
+  }
+  .transactions-page .account-balance > .amount {
+    font-size: 23px;
+    margin-left: auto;
+    line-height: 1.35;
+  }
+  .transactions-page .account-balance > .status-badge {
+    align-self: center;
+  }
+  .transactions-page .search-bar {
+    margin-bottom: 8px;
+  }
+  .transactions-page .search-bar input {
+    min-height: 38px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .transactions-page .filter-bar {
+    padding-bottom: 7px;
+  }
+  .transaction-row {
+    padding: 0;
+    gap: 7px;
+  }
+  .transaction-main {
+    min-height: 48px;
+    padding: 4px 0;
+  }
+  .posting-button {
+    min-width: 36px;
+    min-height: 48px;
+  }
+  .transaction-symbol {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .transaction-symbol svg {
+    width: 17px;
+    height: 17px;
+  }
+  .transaction-copy {
+    gap: 1px;
+  }
+  .transaction-secondary {
+    gap: 6px;
+  }
+  .transaction-secondary > small {
+    font-size: 10px;
+    max-width: 190px;
+  }
+  .transaction-secondary .transaction-meta {
+    font-size: 9px;
+    gap: 4px;
+  }
+  .transaction-secondary .transaction-meta em {
+    font-size: 9px;
+  }
+  .date-divider {
+    padding: 4px 0 2px;
+    line-height: 12px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 350px) {
+  .transaction-secondary > small {
+    max-width: 120px;
+  }
+  .transaction-secondary {
+    gap: 4px;
+  }
+}

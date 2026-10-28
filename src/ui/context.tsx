@@ -38,7 +38,6 @@ export interface AppContextValue {
   save: (action: string, fn: (book: Book) => void) => Promise<boolean>;
   toast: (message: string) => void;
   setDirty: (v: boolean) => void;
-  switchMode: (mode: Mode) => void;
   confirm: (options: {
     title: string;
     message: string;

@@ -1,8 +1,8 @@
 # 厘序 · fine-ledger
 
-当前版本 **0.4.0**。按[产品设计 0.8](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
+当前版本 **0.4.1**。按[产品设计 0.8](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
 
-账户首页、记账、交易详情和报表已经连通本机数据。交付内容、截图和验证边界见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)。
+账户首页、记账、交易详情和报表已经连通本机数据。初版交付见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)；0.4.1 修复旧类目图标、压紧交易列表、增加空分组删除、移除示例入口。本轮反馈与待讨论的导航/筛选/报表方案见 [0.4.1 反馈处理](docs/frontend-feedback-v0.4.1.md)。导航重构尚未交付。
 
 ## 运行与 iPhone 访问
 
@@ -32,7 +32,7 @@ npm run iphone:status
 - 净值曲线、两层分类环图、时间与账户/类目筛选、拆分金额下钻及返回状态保留、保存报表。
 - 主币规则、固定账本时区、类目图标与维护、深浅外观、本机完整备份导出。
 
-新用户从空账本创建；设置中的示例账本使用独立数据库。已有旧版浏览器记录会兼容升级并保留升级前原始副本。实际旧 MoneyWiz 全量迁移、银行正式入账成本分配、对账、云端同步与跨设备恢复仍按后续阶段验收。同步页面不会伪装成已经连接服务。
+新用户从空账本创建，正式页面不提供示例账本切换。合成夹具仅用于隔离开发测试。已有旧版浏览器记录会兼容升级并保留升级前原始副本。实际旧 MoneyWiz 全量迁移、银行正式入账成本分配、对账、云端同步与跨设备恢复仍按后续阶段验收。同步页面不会伪装成已经连接服务。
 
 ## 工程与验证
 
@@ -44,7 +44,7 @@ npm run build
 
 `src/` 为 React + TypeScript 源码，`domain/` 使用最小单位整数和精确比率，`storage/` 用 Dexie 在同一 IndexedDB 事务中保存账本与变更日志。Vite 生成带内容指纹的完整发布，`server.mjs` 提供静态资源；图标与字体不依赖外部网络。测试覆盖金额、拆分、入账、归档、退款、汇率区间、时间精度/时区、兼容升级、事务回滚及缓存更新。
 
-本机个人库保持 `fine-ledger-p0-review-v1`，独立示例库为 `fine-ledger-example-v1`；JSON 备份包含账本、变更日志及恢复修订。本版还未提供备份回导界面。原 `data/`、`.local/` 和运行证书不进入 Git。
+本机个人库保持 `fine-ledger-p0-review-v1`，开发测试夹具隔离使用 `fine-ledger-example-v1`；JSON 备份包含账本、变更日志及恢复修订。本版还未提供备份回导界面。原 `data/`、`.local/` 和运行证书不进入 Git。
 
 旧的 ES module 评审界面与其测试移至 [0.3 界面归档](archive/p0-review-2026-10-29/README.md)；更早的验证代码见[技术 demo 归档](archive/README.md)。
 
