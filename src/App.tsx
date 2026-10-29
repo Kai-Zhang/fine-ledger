@@ -7,8 +7,12 @@ import {
   navigate,
   type NavigationAction,
 } from "./navigation/stack.ts";
-import { deviceTimeZone, timeZones } from "./domain/dates.ts";
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import {
+  deviceTimeZone,
+  timeZones,
+  effectiveTimeZone,
+} from "./domain/dates.ts";
+import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AppContext, type Route } from "./ui/context.tsx";
 import { Icon } from "./ui/icons.tsx";
@@ -57,7 +61,28 @@ export function App() {
   modalOpen.current = !!modal || !!confirmState;
 
   const views = useRef(new Map<string, unknown>()).current;
-  const book = useLiveQuery(() => readBook(mode), [mode]);
+  const storedBook = useLiveQuery(() => readBook(mode), [mode]);
+  const [systemZone, setSystemZone] = useState(deviceTimeZone);
+  const book = useMemo(
+    () =>
+      storedBook
+        ? { ...storedBook, timeZone: effectiveTimeZone(storedBook, systemZone) }
+        : storedBook,
+    [storedBook, systemZone],
+  );
+  useEffect(() => {
+    const update = () => setSystemZone(deviceTimeZone());
+    const timer = window.setInterval(update, 60000);
+    window.addEventListener("focus", update);
+    window.addEventListener("pageshow", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      window.removeEventListener("pageshow", update);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
   const toast = (text: string) => {
     setMessage(text);
     clearTimeout(toastTimer.current);
@@ -247,6 +272,21 @@ export function App() {
     () => pendingLeave.current || !!confirmState,
     () => !!layers.current.length,
     (d) => requestRef.current(d),
+    () => dirtyRef.current,
+    async () => {
+      if (pendingLeave.current) return false;
+      pendingLeave.current = true;
+      const yes = await confirm({
+        title: "放弃未保存的修改？",
+        message: "修改尚未保存。",
+        label: "放弃修改",
+        cancelLabel: "继续填写",
+        danger: true,
+      });
+      pendingLeave.current = false;
+      if (yes) setDirty(false);
+      return yes;
+    },
   );
   if (failure)
     return (
@@ -420,12 +460,14 @@ export function App() {
         )}
         <section
           data-active="true"
-          className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
+          className={`workspace ${motion.boundary ? "boundary-motion" : ""} ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
           style={{
             transform: motion.offset
               ? `translateX(${motion.offset}px)`
               : undefined,
-            transition: motion.offset ? "none" : "transform 160ms ease-out",
+            transition: motion.duration
+              ? `transform ${motion.duration}ms cubic-bezier(.2,.7,.2,1)`
+              : "none",
           }}
           key={frame.key}
         >
@@ -494,7 +536,7 @@ export function App() {
 }
 function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
   const [currency, setCurrency] = useState("CNY"),
-    [timeZone, setTimeZone] = useState(deviceTimeZone()),
+    [timeZone, setTimeZone] = useState("system"),
     [name, setName] = useState("我的账本"),
     [account, setAccount] = useState(""),
     [opening, setOpening] = useState("0"),
@@ -522,7 +564,9 @@ function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
               if (!account.trim()) throw Error("请填写第一个账户的名称");
               const b = blankBook(currency, name.trim() || "我的账本");
               b.groups = [];
-              b.timeZone = timeZone;
+              b.timeZone = timeZone === "system" ? deviceTimeZone() : timeZone;
+              b.settings.timeZoneMode =
+                timeZone === "system" ? "system" : "fixed";
               b.accounts.push({
                 id: uid(),
                 name: account.trim(),
@@ -567,6 +611,17 @@ function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
               </select>
             </Field>
           </div>
+          <Field label="时区">
+            <select
+              value={timeZone}
+              onChange={(e) => setTimeZone(e.target.value)}
+            >
+              <option value="system">跟随系统 · {deviceTimeZone()}</option>
+              {timeZones().map((zone) => (
+                <option key={zone}>{zone}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="第一个账户">
             <input
               value={account}

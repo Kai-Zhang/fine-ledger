@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   DndContext,
   useDroppable,
@@ -242,9 +242,49 @@ export function Accounts() {
   const app = useApp(),
     { book, commit } = useOrganization(),
     [manage, setManage] = useState(false),
+    [addMenu, setAddMenu] = useState(false),
     [drag, setDrag] = useState<{ type: string; id: string } | null>(null),
     [drop, setDrop] = useState<string | null>(null),
     [after, setAfter] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!addMenu || app.preview) return;
+    const menu = menuRef.current;
+    const trigger = menu?.querySelector<HTMLButtonElement>(".entry-action");
+    const items = () => [
+      ...(menu?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') || []),
+    ];
+    const focusTimer = requestAnimationFrame(() => items()[0]?.focus());
+    const unregister = app.registerLayer(() => {
+      setAddMenu(false);
+      trigger?.focus();
+    });
+    const outside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setAddMenu(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setAddMenu(false);
+        trigger?.focus();
+      }
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const list = items(),
+          index = list.indexOf(document.activeElement as HTMLButtonElement),
+          step = event.key === "ArrowDown" ? 1 : -1;
+        list[(index + step + list.length) % list.length]?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      cancelAnimationFrame(focusTimer);
+      unregister();
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [addMenu, app.preview]);
   const sensors = useDragSensors();
   useDragSelection(!!drag);
   const groups = book.groups.slice().sort((a, b) => a.order - b.order),
@@ -329,26 +369,15 @@ export function Accounts() {
     <>
       <Header title="账户">
         <IconButton
-          name={manage ? "Check" : "ListFilter"}
+          name={manage ? "Check" : "ListOrdered"}
           label={manage ? "完成账户管理" : "管理账户"}
-          onClick={() => setManage(!manage)}
+          onClick={() => {
+            setAddMenu(false);
+            setManage(!manage);
+          }}
         />
       </Header>
       <main className="page-content accounts-page">
-        {manage && (
-          <div className="management-toolbar">
-            <Button variant="soft" icon="Wallet" onClick={() => editAccount()}>
-              新增账户
-            </Button>
-            <Button
-              variant="plain"
-              icon="FolderPlus"
-              onClick={() => editGroup()}
-            >
-              新增分组
-            </Button>
-          </div>
-        )}
         {!book.accounts.length && (
           <Empty
             title="还没有账户"
@@ -488,17 +517,45 @@ export function Accounts() {
             )}
           </DragOverlay>
         </DndContext>
-        {book.accounts.some((a) => a.archived) && (
-          <button
-            className="quiet-link"
-            onClick={() => app.go({ page: "archive" })}
-          >
-            <Icon name="Archive" size={17} />
-            已归档账户
-            <Icon name="ChevronRight" size={15} />
-          </button>
-        )}
       </main>
+      {manage && (
+        <div className="floating-entry account-add" ref={menuRef} data-no-back>
+          {addMenu && (
+            <div className="add-menu" role="menu" aria-label="新增类型">
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setAddMenu(false);
+                  editAccount();
+                }}
+              >
+                <Icon name="Wallet" />
+                新增账户
+              </button>
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setAddMenu(false);
+                  editGroup();
+                }}
+              >
+                <Icon name="FolderPlus" />
+                新增分组
+              </button>
+            </div>
+          )}
+          <IconButton
+            className="entry-action"
+            name={addMenu ? "X" : "Plus"}
+            label={addMenu ? "关闭新增菜单" : "新增账户或分组"}
+            aria-haspopup="menu"
+            aria-expanded={addMenu}
+            onClick={() => setAddMenu(!addMenu)}
+          />
+        </div>
+      )}
       {!manage && book.accounts.some((a) => !a.archived) && (
         <div className="floating-entry">
           <IconButton

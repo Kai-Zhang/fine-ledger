@@ -1,4 +1,4 @@
-import { timeZones } from "../domain/dates.ts";
+import { timeZones, deviceTimeZone } from "../domain/dates.ts";
 import { useState, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
@@ -121,8 +121,12 @@ export function Settings() {
             />
             <SettingRow
               icon="Clock3"
-              label="账本时区"
-              value={book.timeZone}
+              label="时区"
+              value={
+                book.settings.timeZoneMode === "fixed"
+                  ? book.timeZone
+                  : `跟随系统 · ${book.timeZone}`
+              }
               onClick={() => app.open(<TimeZoneEditor onClose={app.close} />)}
             />
             <SettingRow
@@ -579,18 +583,21 @@ export function Sync() {
 
 function TimeZoneEditor({ onClose }: { onClose: () => void }) {
   const app = useApp(),
-    [value, setValue] = useState(app.book.timeZone);
+    [value, setValue] = useState(
+      app.book.settings.timeZoneMode === "fixed" ? app.book.timeZone : "system",
+    );
+  const initialValue = useRef(value);
   return (
-    <Dialog title="账本时区" onClose={onClose}>
+    <Dialog title="时区" onClose={onClose}>
       <form
         className="dialog-body"
         onSubmit={async (e) => {
           e.preventDefault();
           if (
-            value !== app.book.timeZone &&
+            value !== initialValue.current &&
             app.book.entries.length &&
             !(await app.confirm({
-              title: "更改账本时区？",
+              title: "更改时区？",
               message:
                 "交易的实际发生时间保留。列表日期和报表的每日边界会按新时区重新显示。",
               label: "更改时区",
@@ -599,20 +606,24 @@ function TimeZoneEditor({ onClose }: { onClose: () => void }) {
             return;
           if (
             await app.save("设置账本时区", (b) => {
-              b.timeZone = value;
+              b.settings.timeZoneMode = value === "system" ? "system" : "fixed";
+              if (value !== "system") b.timeZone = value;
             })
           )
             onClose();
         }}
       >
-        <Field label="业务时区">
+        <Field label="录入、显示与报表时区">
           <select value={value} onChange={(e) => setValue(e.target.value)}>
+            <option value="system">跟随系统 · {deviceTimeZone()}</option>
             {timeZones().map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>
         </Field>
-        <p className="compact-note muted">旅行或更换设备不会自动修改此设置。</p>
+        <p className="compact-note muted">
+          跟随系统时，旅行会改变日期显示及报表归属，交易的实际时刻保持不变。
+        </p>
         <div className="dialog-footer">
           <Button type="submit">保存</Button>
         </div>

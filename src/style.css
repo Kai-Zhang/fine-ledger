@@ -2735,10 +2735,6 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 11px;
     min-height: 31px;
   }
-  .keyboard-open .suggestions-inline {
-    visibility: hidden;
-    pointer-events: none;
-  }
   .keyboard-open .keyboard-suggestions {
     display: flex;
     position: fixed;
@@ -3751,4 +3747,158 @@ body {
 }
 .picker-child-list button > span {
   flex: 1;
+}
+
+/* Keyboard candidates live outside the transformed logical-page container. */
+.description-accessory {
+  position: fixed;
+  z-index: 45;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -3px 12px #00000008;
+  padding: 3px 9px;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+.description-accessory button {
+  flex-shrink: 0;
+  min-width: 60px;
+  max-width: 180px;
+  min-height: 40px;
+  padding: 7px 14px;
+  font-size: 14px;
+  color: var(--accent);
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.description-accessory button:last-child {
+  border-right: 0;
+}
+.workspace.boundary-motion {
+  box-shadow:
+    -8px 0 18px #152b2420,
+    8px 0 18px #152b2412;
+}
+.app-shell {
+  background: var(--bg);
+}
+.add-menu {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  min-width: 192px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  box-shadow: 0 8px 35px #0002;
+  z-index: 5;
+}
+.add-menu button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+.add-menu button:hover {
+  background: var(--accent-soft);
+}
+.datetime-pair {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.datetime-pair > input[type="date"] {
+  min-width: 0;
+  flex: 1;
+  width: 0;
+  min-height: 44px;
+}
+.clock-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 7px;
+  padding: 0 5px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.clock-control > span {
+  display: flex;
+  align-items: center;
+}
+.clock-control b {
+  font-weight: 500;
+  color: var(--muted);
+}
+.entry-form .clock-control input,
+.clock-control input {
+  width: 33px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 2px;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+}
+.entry-form .form-surface > .datetime-field {
+  display: block;
+}
+.split-row .split-lock {
+  width: 32px;
+  min-width: 32px;
+  color: var(--muted);
+}
+.split-row .split-lock[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.split-row > input:disabled {
+  opacity: 1;
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+}
+@media (max-width: 760px) {
+  .split-row {
+    column-gap: 3px;
+  }
+  .split-row > .category-choice {
+    min-width: 85px;
+  }
+  .split-row > input {
+    width: 82px;
+  }
+  .split-row .icon-button {
+    width: 30px;
+    min-width: 30px;
+  }
+  .datetime-pair {
+    gap: 8px;
+  }
+  .datetime-pair > input[type="date"] {
+    font-size: 16px;
+    padding-left: 8px;
+    padding-right: 5px;
+  }
+}
+
+.datetime-field {
+  display: block;
 }

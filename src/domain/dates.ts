@@ -1,3 +1,4 @@
+import type { Book } from "./types.ts";
 import { Temporal } from "@js-temporal/polyfill";
 export const deviceTimeZone = () =>
   Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -97,4 +98,12 @@ export function startOfDay(day: string, timeZone = deviceTimeZone()) {
     .toZonedDateTime(timeZone)
     .toInstant()
     .toString();
+}
+
+// Effective preference only: stored UTC instants are never rewritten.
+export function effectiveTimeZone(
+  book: Pick<Book, "timeZone" | "settings">,
+  system = deviceTimeZone(),
+) {
+  return book.settings.timeZoneMode === "fixed" ? book.timeZone : system;
 }

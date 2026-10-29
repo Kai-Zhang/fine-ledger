@@ -72,7 +72,11 @@ export interface Book {
   categories: Category[];
   projects: Project[];
   entries: Entry[];
-  settings: { theme: "system" | "light" | "dark"; savedReports: SavedReport[] };
+  settings: {
+    timeZoneMode?: "system" | "fixed";
+    theme: "system" | "light" | "dark";
+    savedReports: SavedReport[];
+  };
 }
 export interface SavedReport {
   id: string;

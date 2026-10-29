@@ -1,4 +1,4 @@
-const CONFIG = {"release":"0.6.0-6d9cc2094cbbaa8f","root":"/","shell":"/assets/0.6.0-6d9cc2094cbbaa8f/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.6.0-6d9cc2094cbbaa8f/bootstrap.js","/assets/0.6.0-6d9cc2094cbbaa8f/index-Bc4TyPin.js","/assets/0.6.0-6d9cc2094cbbaa8f/index-CAT6cMq4.css","/assets/0.6.0-6d9cc2094cbbaa8f/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
+const CONFIG = {"release":"0.7.0-9974bcb36822a7c7","root":"/","shell":"/assets/0.7.0-9974bcb36822a7c7/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.7.0-9974bcb36822a7c7/bootstrap.js","/assets/0.7.0-9974bcb36822a7c7/index-BgUMos4t.js","/assets/0.7.0-9974bcb36822a7c7/index-CCXoscpk.css","/assets/0.7.0-9974bcb36822a7c7/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png"]};
 const CACHE = CONFIG.cachePrefix + CONFIG.release;
 const appURL = new URL(CONFIG.root, self.location.origin).href;
 const shellURL = new URL(CONFIG.shell, self.location.origin).href;

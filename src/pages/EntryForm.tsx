@@ -1,3 +1,5 @@
+import { allocateSplits } from "../domain/split-allocation.ts";
+import { DescriptionSuggestions } from "../components/DescriptionSuggestions.tsx";
 import { DateTimeField } from "../components/DateTimeField.tsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../ui/context.tsx";
@@ -28,10 +30,12 @@ type FormSplit = {
   amount: string;
   projectId?: string;
   note?: string;
+  locked?: boolean;
 };
 export function EntryForm() {
   const app = useApp(),
     { book, route } = app;
+  const editorZone = useRef(book.timeZone).current;
   const original = book.entries.find((e) => e.id === route.originalId),
     existing = book.entries.find((e) => e.id === route.id);
   const initial = useRef<Entry>(
@@ -74,17 +78,21 @@ export function EntryForm() {
     [description, setDescription] = useState(
       initial.description || (original ? `${original.description}退款` : ""),
     ),
-    [when, setWhen] = useState(localInput(initial.occurredAt, book.timeZone)),
+    [when, setWhen] = useState(localInput(initial.occurredAt, editorZone)),
     [receivedAt, setReceivedAt] = useState(
-      localInput(initial.receivedAt || initial.occurredAt, book.timeZone),
+      localInput(initial.receivedAt || initial.occurredAt, editorZone),
     ),
     [separateDate, setSeparateDate] = useState(
       !!initial.receivedAt && initial.receivedAt !== initial.occurredAt,
     ),
     [note, setNote] = useState(initial.note || ""),
-    [extras, setExtras] = useState(!!initial.note),
-    [focused, setFocused] = useState(false),
-    [showSuggestions, setShowSuggestions] = useState(false),
+    [extras, setExtras] = useState(
+      !!initial.note ||
+        initial.splits.some((s) => !!s.projectId) ||
+        !!original?.splits.some((s) => !!s.projectId),
+    ),
+    [focused, setFocused] = useState(!existing),
+    [showSuggestions, setShowSuggestions] = useState(!existing),
     [picker, setPicker] = useState<number | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -113,6 +121,44 @@ export function EntryForm() {
           }))
         : [{ id: uid(), categoryId: "", amount: "" }],
   );
+  const initialProjects = [
+    ...new Set(initial.splits.map((s) => s.projectId || "")),
+  ];
+  const [project, setProject] = useState(
+    original
+      ? [...new Set(original.splits.map((s) => s.projectId || ""))].length > 1
+        ? "__legacy_mixed__"
+        : original.splits[0]?.projectId || ""
+      : initialProjects.length > 1
+        ? "__legacy_mixed__"
+        : initial.splits[0]?.projectId || "",
+  );
+  const [allocationError, setAllocationError] = useState("");
+  function distribute(rows: FormSplit[], rawTotal = amount, editedId?: string) {
+    try {
+      const values = allocateSplits(
+        BigInt(minor(rawTotal || "0", currency)),
+        rows.map((s) => ({
+          id: s.id,
+          locked: s.locked,
+          amountMinor: minor(s.amount || "0", currency),
+        })),
+        editedId,
+      );
+      setAllocationError("");
+      return rows.map((s, i) => ({
+        ...s,
+        amount: s.id === editedId ? s.amount : decimal(values[i], currency),
+      }));
+    } catch (e) {
+      setAllocationError((e as Error).message);
+      return rows;
+    }
+  }
+  function updateTotal(raw: string) {
+    setAmount(raw);
+    if (splitMode) setSplits(distribute(splits, raw));
+  }
   const initialJSON = useRef<string | undefined>(undefined),
     formJSON = JSON.stringify({
       kind,
@@ -127,6 +173,7 @@ export function EntryForm() {
       note,
       splits,
       splitMode,
+      project,
     });
   if (initialJSON.current === undefined) initialJSON.current = formJSON;
   useEffect(() => {
@@ -192,7 +239,7 @@ export function EntryForm() {
       const at = dateToISO(
         when,
         secondsEdited.current ? undefined : initial.occurredAt,
-        book.timeZone,
+        editorZone,
       );
       let amountMinor = minor(amount, currency);
       if (kind === "adjustment")
@@ -204,7 +251,10 @@ export function EntryForm() {
             id: s.id,
             categoryId: s.categoryId,
             amountMinor: splitMode ? minor(s.amount, currency) : amountMinor,
-            projectId: s.projectId,
+            projectId:
+              project === "__legacy_mixed__"
+                ? s.projectId
+                : project || undefined,
             note: s.note,
           }))
         : [];
@@ -231,7 +281,7 @@ export function EntryForm() {
             ? dateToISO(
                 receivedAt,
                 receivedSecondsEdited.current ? undefined : initial.receivedAt,
-                book.timeZone,
+                editorZone,
               )
             : undefined,
         note: note.trim(),
@@ -309,10 +359,15 @@ export function EntryForm() {
             ref={amountRef}
             inputMode={kind === "adjustment" ? "text" : "decimal"}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => updateTotal(e.target.value)}
             placeholder="0.00"
             autoComplete="off"
             aria-label="金额"
+            onFocus={() => {
+              setFocused(true);
+              setShowSuggestions(true);
+            }}
+            onBlur={() => setFocused(false)}
           />
         </div>
         {original && (
@@ -344,7 +399,9 @@ export function EntryForm() {
                 )!;
                 if (next.currency !== currency) {
                   setAmount("");
-                  setSplits(splits.map((s) => ({ ...s, amount: "" })));
+                  setSplits(
+                    splits.map((s) => ({ ...s, amount: "", locked: false })),
+                  );
                 }
                 setAccount(next.id);
               }}
@@ -440,19 +497,13 @@ export function EntryForm() {
               maxLength={120}
             />
           </Field>
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="suggestions-inline">
-              {suggestions.map((e) => (
-                <button
-                  type="button"
-                  key={e.id}
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => pickDescription(e)}
-                >
-                  {e.description}
-                </button>
-              ))}
-            </div>
+          {showSuggestions && (
+            <DescriptionSuggestions
+              items={suggestions}
+              active={focused}
+              onPick={pickDescription}
+              preview={app.preview}
+            />
           )}
           {["expense", "income", "refund"].includes(kind) && (
             <div className="category-field">
@@ -461,21 +512,37 @@ export function EntryForm() {
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => {
+                  onClick={async () => {
                     catManual.current = true;
                     if (splitMode) {
                       if (
                         splits.length > 1 &&
-                        !window.confirm("合并为一个类目？拆分金额将移除。")
+                        !(await app.confirm({
+                          title: "合并为单类目？",
+                          message:
+                            project === "__legacy_mixed__"
+                              ? "拆分金额将合并到第一个类目，并使用该项的项目。"
+                              : "拆分金额将合并到第一个类目。",
+                          label: "合并",
+                        }))
                       )
                         return;
+                      if (project === "__legacy_mixed__")
+                        setProject(splits[0]?.projectId || "");
                       setSplits([{ ...splits[0], amount: "" }]);
                       setSplitMode(false);
                     } else {
-                      setSplits([
-                        { ...splits[0], amount: amount || "" },
-                        { id: uid(), categoryId: "", amount: "" },
-                      ]);
+                      setSplits(
+                        distribute([
+                          { ...splits[0], amount: amount || "", locked: false },
+                          {
+                            id: uid(),
+                            categoryId: "",
+                            amount: "",
+                            locked: false,
+                          },
+                        ]),
+                      );
                       setSplitMode(true);
                     }
                   }}
@@ -505,11 +572,37 @@ export function EntryForm() {
                           inputMode="decimal"
                           placeholder="金额"
                           value={s.amount}
+                          disabled={!!s.locked}
                           onChange={(e) =>
                             setSplits(
-                              splits.map((x, j) =>
-                                j === i ? { ...x, amount: e.target.value } : x,
+                              distribute(
+                                splits.map((x, j) =>
+                                  j === i
+                                    ? { ...x, amount: e.target.value }
+                                    : x,
+                                ),
+                                amount,
+                                s.id,
                               ),
+                            )
+                          }
+                        />
+                        <IconButton
+                          className="split-lock"
+                          name={s.locked ? "LockKeyhole" : "LockKeyholeOpen"}
+                          label={`${s.locked ? "解锁" : "锁定"}第 ${i + 1} 个类目金额`}
+                          aria-pressed={!!s.locked}
+                          onClick={() =>
+                            setSplits(
+                              s.locked
+                                ? distribute(
+                                    splits.map((x, j) =>
+                                      j === i ? { ...x, locked: false } : x,
+                                    ),
+                                  )
+                                : splits.map((x, j) =>
+                                    j === i ? { ...x, locked: true } : x,
+                                  ),
                             )
                           }
                         />
@@ -518,35 +611,11 @@ export function EntryForm() {
                           label={`移除第 ${i + 1} 个类目`}
                           disabled={splits.length <= 2}
                           onClick={() =>
-                            setSplits(splits.filter((_, j) => j !== i))
-                          }
-                        />
-                        <select
-                          className="split-project"
-                          aria-label={`第 ${i + 1} 个类目项目`}
-                          value={s.projectId || ""}
-                          onChange={(e) =>
                             setSplits(
-                              splits.map((x, j) =>
-                                j === i
-                                  ? {
-                                      ...x,
-                                      projectId: e.target.value || undefined,
-                                    }
-                                  : x,
-                              ),
+                              distribute(splits.filter((_, j) => j !== i)),
                             )
                           }
-                        >
-                          <option value="">无项目</option>
-                          {book.projects
-                            .filter((p) => !p.archived || p.id === s.projectId)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                        </select>
+                        />
                       </>
                     )}
                   </div>
@@ -558,15 +627,23 @@ export function EntryForm() {
                     type="button"
                     className="text-button add-split"
                     onClick={() =>
-                      setSplits([
-                        ...splits,
-                        { id: uid(), categoryId: "", amount: "" },
-                      ])
+                      setSplits(
+                        distribute([
+                          ...splits,
+                          {
+                            id: uid(),
+                            categoryId: "",
+                            amount: "",
+                            locked: false,
+                          },
+                        ]),
+                      )
                     }
                   >
                     <Icon name="Plus" size={16} />
                     添加类目
                   </button>
+                  <ErrorMessage message={allocationError} />
                   <div
                     className={`split-summary ${total !== allocated ? "warning" : ""}`}
                   >
@@ -622,23 +699,20 @@ export function EntryForm() {
           </button>
           {extras && (
             <div className="optional-fields">
-              {!splitMode && ["expense", "income", "refund"].includes(kind) && (
+              {["expense", "income", "refund"].includes(kind) && (
                 <Field label="项目" optional>
                   <select
-                    value={splits[0]?.projectId || ""}
-                    onChange={(e) =>
-                      setSplits(
-                        splits.map((s, i) =>
-                          i === 0
-                            ? { ...s, projectId: e.target.value || undefined }
-                            : s,
-                        ),
-                      )
-                    }
+                    value={project}
+                    onChange={(e) => setProject(e.target.value)}
                   >
                     <option value="">无项目</option>
+                    {project === "__legacy_mixed__" && (
+                      <option value="__legacy_mixed__">
+                        保留历史多项目分配
+                      </option>
+                    )}
                     {book.projects
-                      .filter((p) => !p.archived)
+                      .filter((p) => !p.archived || p.id === project)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -679,20 +753,6 @@ export function EntryForm() {
           }}
           onClose={() => setPicker(null)}
         />
-      )}
-      {focused && suggestions.length > 0 && (
-        <div className="keyboard-suggestions" aria-label="描述候选">
-          {suggestions.map((e) => (
-            <button
-              type="button"
-              key={e.id}
-              onPointerDown={(event) => event.preventDefault()}
-              onClick={() => pickDescription(e)}
-            >
-              {e.description}
-            </button>
-          ))}
-        </div>
       )}
     </>
   );

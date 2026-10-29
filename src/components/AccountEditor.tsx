@@ -28,6 +28,7 @@ export function AccountEditor({
   onClose: () => void;
 }) {
   const app = useApp();
+  const editorZone = useRef(app.book.timeZone).current;
   const { book, save } = app,
     [name, setName] = useState(account?.name || ""),
     [type, setType] = useState(account?.type || "bank"),
@@ -36,7 +37,7 @@ export function AccountEditor({
     [opening, setOpening] = useState(
       account ? decimal(account.openingMinor, account.currency) : "0",
     ),
-    [at, setAt] = useState(localInput(account?.openingAt, book.timeZone)),
+    [at, setAt] = useState(localInput(account?.openingAt, editorZone)),
     [net, setNet] = useState(account?.netWorth !== false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -73,7 +74,7 @@ export function AccountEditor({
           currency,
           groupId: group,
           openingMinor: amount,
-          openingAt: dateToISO(at, account?.openingAt, book.timeZone),
+          openingAt: dateToISO(at, account?.openingAt, editorZone),
           icon: types.find((t) => t[0] === type)![2],
           order:
             account && account.groupId === group

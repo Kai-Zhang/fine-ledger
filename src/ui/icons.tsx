@@ -1,4 +1,7 @@
 import {
+  LockKeyhole,
+  LockKeyholeOpen,
+  ListOrdered,
   Hotel,
   SquarePen,
   ListFilter,
@@ -72,6 +75,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 export const icons: Record<string, LucideIcon> = {
+  LockKeyhole,
+  LockKeyholeOpen,
+  ListOrdered,
   Hotel,
   SquarePen,
   ListFilter,

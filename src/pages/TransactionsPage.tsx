@@ -213,7 +213,7 @@ export function TransactionsPage() {
                 });
               }}
             >
-              <Icon name="SlidersHorizontal" />
+              <Icon name="ListFilter" />
               调整余额
             </button>
           )}
@@ -254,7 +254,7 @@ export function TransactionsPage() {
           <IconButton name="MoreHorizontal" label="账户菜单" onClick={menu} />
         )}
         <IconButton
-          name="SlidersHorizontal"
+          name="ListFilter"
           label="筛选交易"
           onClick={() => setShowFilters(!showFilters)}
         />

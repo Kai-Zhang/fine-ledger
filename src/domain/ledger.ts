@@ -25,7 +25,7 @@ export function blankBook(currency = "CNY", name = "我的账本"): Book {
     categories: defaultCategories(),
     projects: [],
     entries: [],
-    settings: { theme: "system", savedReports: [] },
+    settings: { timeZoneMode: "system", theme: "system", savedReports: [] },
   };
 }
 export function defaultCategories(): Book["categories"] {

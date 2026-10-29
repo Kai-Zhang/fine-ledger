@@ -116,6 +116,13 @@ export function Reports() {
       point,
     });
   }, [viewKey, type, days, from, to, ids, categoryIds, interval, point]);
+  useEffect(() => {
+    if (days !== "custom") {
+      setFrom(startFor(days, book.timeZone));
+      setTo(localDate(new Date(), book.timeZone));
+    }
+    setPoint(null);
+  }, [book.timeZone]);
   const rangeDays = Math.ceil(
     (new Date(to + "T12:00:00").getTime() -
       new Date(from + "T12:00:00").getTime()) /
@@ -212,7 +219,7 @@ export function Reports() {
         back
       >
         <IconButton
-          name="SlidersHorizontal"
+          name="ListFilter"
           label="筛选报表"
           onClick={() => setFilter(true)}
         />
