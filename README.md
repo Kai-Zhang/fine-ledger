@@ -1,10 +1,12 @@
 # 厘序 · fine-ledger
 
-当前版本 **0.7.1**。按[产品设计 0.12](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
+当前版本 **0.7.2**。按[产品设计 0.12](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
 
 账户首页、记账、交易详情和报表已经连通本机数据。初版交付见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)；0.4.1 修复旧类目图标、压紧交易列表、增加空分组删除、移除示例入口。0.5.0 按随后确认的方案重构独立页面栈、边缘返回/前进与一次未保存确认，补齐跨分组拖拽、类目拖拽、组合筛选和报表目录。见 [0.5.0 交付与验证](docs/frontend-review-v0.5.0.md)；0.6.0 按真机反馈修复下层页面预览、根页手势、信用卡 ID 碰撞与落下位置，并统一管理操作，支持不分组账户及独立类目，见 [0.6.0 反馈修复](docs/frontend-review-v0.6.0.md)；0.7.0 改进滑动完成动画、阻尼反馈、键盘联想条、时间控件、锁定拆分及跟随系统时区，见 [0.7.0 交付记录](docs/frontend-review-v0.7.0.md)；[0.4.1 反馈处理](docs/frontend-feedback-v0.4.1.md) 保留当时的讨论记录。
 
 0.7.1 修正描述候选对全部拆分类目的继承，当前金额自动均分；账户首页管理改为铅笔图标。P1 主要功能开发完成，用户反馈已计入实机 review，具体验收收尾见[实施计划](docs/implementation-plan.md)与 [0.7.1 验证记录](docs/frontend-review-v0.7.1.md)。
+
+0.7.2 将品牌图标改为“账簿＋硬币”：无文字、深松绿底、纸白账页及暖金硬币，统一网页、iPhone 安装图标与应用内标识，见[图标说明](docs/icon-review-v0.7.2.md)。
 
 ## 运行与 iPhone 访问
 

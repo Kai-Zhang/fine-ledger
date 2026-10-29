@@ -16,7 +16,13 @@ import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AppContext, type Route } from "./ui/context.tsx";
 import { Icon } from "./ui/icons.tsx";
-import { Button, Dialog, Field, ErrorMessage } from "./ui/components.tsx";
+import {
+  Button,
+  Dialog,
+  Field,
+  ErrorMessage,
+  BrandMark,
+} from "./ui/components.tsx";
 import { Accounts, ArchiveAccounts } from "./pages/Accounts.tsx";
 import { TransactionsPage, Detail, Trash } from "./pages/TransactionsPage.tsx";
 import { EntryForm } from "./pages/EntryForm.tsx";
@@ -304,7 +310,7 @@ export function App() {
   if (!ready)
     return (
       <div className="boot-loading" data-startup-shell>
-        <span className="brand-mark">厘</span>
+        <BrandMark />
         <h1 data-startup-heading>正在打开账本</h1>
         <p data-startup-message>离线也能使用已保存的账本。</p>
         <a href="/">重新打开</a>
@@ -379,7 +385,7 @@ export function App() {
         }
         <aside className="sidebar">
           <button className="brand" onClick={() => go({ page: "accounts" })}>
-            <span className="brand-mark">厘</span>
+            <BrandMark />
             <span>
               厘序<small>让每一笔，有迹可循</small>
             </span>
@@ -545,7 +551,7 @@ function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
   return (
     <main className="welcome">
       <div className="welcome-brand">
-        <span className="brand-mark">厘</span>
+        <BrandMark />
         <span>厘序</span>
       </div>
       <div className="welcome-content">

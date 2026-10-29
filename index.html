@@ -13,13 +13,19 @@
     <meta name="build" content="__BUILD_ID__" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/apple-touch-icon-ledger-v1.png"
+    />
     <title>厘序</title>
   </head>
   <body>
     <div id="root">
       <main class="boot-loading" data-startup-shell>
-        <span class="brand-mark">厘</span>
+        <span class="brand-mark" aria-hidden="true"
+          ><img src="/icon.svg" width="36" height="36" alt=""
+        /></span>
         <h1 data-startup-heading>正在打开账本</h1>
         <p data-startup-message>离线也能使用已保存的账本。</p>
         <a href="/">重新打开</a>

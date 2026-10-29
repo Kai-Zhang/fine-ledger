@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="116" fill="#263f35"/><g fill="none" stroke="#e3e6c8" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"><path d="M151 160h210M151 256h210M151 352h210M195 160v192"/><path d="m282 213 44 43-44 43"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>厘序：账簿与硬币</title>
+  <rect width="512" height="512" fill="#205B4D"/>
+  <rect x="132" y="114" width="230" height="286" rx="27" fill="#113F35" opacity=".28"/>
+  <rect x="128" y="104" width="230" height="290" rx="27" fill="#BCD3C5"/>
+  <path d="M168 104h163a27 27 0 0 1 27 27v230H168a19 19 0 0 0 0 38h-13a27 27 0 0 1-27-27V131a27 27 0 0 1 27-27Z" fill="#F4F3E7"/>
+  <path d="M168 104v257" fill="none" stroke="#D9E4D9" stroke-width="8"/>
+  <path d="M174 379h166" fill="none" stroke="#F4F3E7" stroke-width="9" stroke-linecap="round"/>
+  <g fill="none" stroke="#427566" stroke-width="14" stroke-linecap="round">
+    <path d="M204 172h50m34 0h26M204 220h50m34 0h26M204 268h50m34 0h26"/>
+  </g>
+  <circle cx="346" cy="346" r="75" fill="#205B4D"/>
+  <circle cx="346" cy="346" r="64" fill="#DBB871"/>
+  <circle cx="346" cy="346" r="46" fill="none" stroke="#F7E5B5" stroke-width="7"/>
+  <path d="M311 323a42 42 0 0 1 37-19" fill="none" stroke="#FFF2CF" stroke-width="6" stroke-linecap="round" opacity=".65"/>
+</svg>

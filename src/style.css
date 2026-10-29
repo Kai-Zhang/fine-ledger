@@ -336,18 +336,18 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .brand-mark {
   width: 36px;
-  height: 39px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--surface);
-  border-radius: 10px 10px 10px 3px;
-  font-size: 21px;
-  font-weight: 500;
-  letter-spacing: -1px;
+  height: 36px;
+  display: block;
+  overflow: hidden;
+  border-radius: 9px;
   flex-shrink: 0;
 }
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .brand small {
   display: block;
   font-size: 10px;
@@ -2205,8 +2205,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .welcome .brand-mark {
   width: 32px;
-  height: 35px;
-  font-size: 19px;
+  height: 32px;
 }
 .welcome input,
 .welcome select {
@@ -2919,7 +2918,7 @@ input[type="search"]::-webkit-search-cancel-button {
   }
   .settings-book .brand-mark {
     width: 35px;
-    height: 38px;
+    height: 35px;
   }
   .settings-book strong {
     font-size: 14px;

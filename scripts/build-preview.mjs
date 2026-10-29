@@ -62,6 +62,7 @@ async function compile() {
     "public/icon.svg",
     "public/icon-192.png",
     "public/icon-512.png",
+    "public/apple-touch-icon-ledger-v1.png",
   ];
   const hash = createHash("sha256");
   for (const input of inputs) {
@@ -113,6 +114,7 @@ async function compile() {
       "/icon.svg",
       "/icon-192.png",
       "/icon-512.png",
+      "/apple-touch-icon-ledger-v1.png",
     ];
     await atomicWrite(
       path.join(directory, "build.json"),

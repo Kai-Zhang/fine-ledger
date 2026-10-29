@@ -2,6 +2,13 @@ import { useEffect, useRef, useId, useState, type ReactNode } from "react";
 import { Icon } from "./icons.tsx";
 import { useApp } from "./context.tsx";
 import { money } from "../domain/money.ts";
+export function BrandMark() {
+  return (
+    <span className="brand-mark" aria-hidden="true">
+      <img src="/icon.svg" width="36" height="36" alt="" draggable={false} />
+    </span>
+  );
+}
 export function Button({
   children,
   icon,

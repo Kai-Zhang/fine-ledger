@@ -1,0 +1,27 @@
+{
+  "metadata": [
+    {
+      "path": "public/icon-192.png",
+      "width": 192,
+      "height": 192,
+      "hasAlpha": false
+    },
+    {
+      "path": "public/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "hasAlpha": false
+    },
+    {
+      "path": "public/apple-touch-icon-ledger-v1.png",
+      "width": 180,
+      "height": 180,
+      "hasAlpha": false
+    }
+  ],
+  "visibleMarkMaxRadius": 202.44,
+  "maskableSafeRadius": 204.8,
+  "withinMaskableSafeZone": true,
+  "source": "public/icon.svg",
+  "renderer": "sharp 0.35.5"
+}

@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
   Header,
+  BrandMark,
   Button,
   IconButton,
   Field,
@@ -44,7 +45,7 @@ export function Settings() {
       <Header title="设置" />
       <main className="page-content settings-page">
         <section className="settings-book">
-          <span className="brand-mark">厘</span>
+          <BrandMark />
           <div>
             <strong>{book.name}</strong>
             <small>本机账本</small>

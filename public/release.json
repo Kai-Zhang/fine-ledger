@@ -1,13 +1,14 @@
 {
-  "release": "0.7.1-c174fa5429e3aaa8",
+  "release": "0.7.2-9cf0441e6a565f60",
   "assets": [
-    "/assets/0.7.1-c174fa5429e3aaa8/bootstrap.js",
-    "/assets/0.7.1-c174fa5429e3aaa8/index-0ZZseJ6x.js",
-    "/assets/0.7.1-c174fa5429e3aaa8/index-CCXoscpk.css",
-    "/assets/0.7.1-c174fa5429e3aaa8/index.html",
+    "/assets/0.7.2-9cf0441e6a565f60/bootstrap.js",
+    "/assets/0.7.2-9cf0441e6a565f60/index-BLmiPyGH.js",
+    "/assets/0.7.2-9cf0441e6a565f60/index-DCgnodXo.css",
+    "/assets/0.7.2-9cf0441e6a565f60/index.html",
     "/manifest.webmanifest",
     "/icon.svg",
     "/icon-192.png",
-    "/icon-512.png"
+    "/icon-512.png",
+    "/apple-touch-icon-ledger-v1.png"
   ]
 }
