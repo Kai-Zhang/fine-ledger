@@ -2,6 +2,7 @@ import { Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import "./style.css";
+window.__ledgerStartup?.mark("main-script");
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { failed: boolean }
@@ -11,6 +12,7 @@ class ErrorBoundary extends Component<
     return { failed: true };
   }
   componentDidCatch(error: Error) {
+    window.__ledgerStartup?.fail(error.name);
     console.error(error);
   }
   render() {

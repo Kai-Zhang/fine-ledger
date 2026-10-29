@@ -10,7 +10,9 @@ export async function registerPWA() {
     const controller = navigator.serviceWorker.controller;
     if (!controller) return;
     const channel = new MessageChannel();
+    const timer = setTimeout(() => channel.port1.close(), 3000);
     channel.port1.onmessage = async (event) => {
+      clearTimeout(timer);
       channel.port1.close();
       if (
         !event.data?.release ||
@@ -21,7 +23,17 @@ export async function registerPWA() {
         return;
       // A newly loaded shell can briefly have the previous controller. Never reload into a loop.
       try {
-        const response = await fetch("/release.json", { cache: "no-store" });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        let response;
+        try {
+          response = await fetch("/release.json", {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
         const latest = await response.json();
         if (
           latest.release === event.data.release &&

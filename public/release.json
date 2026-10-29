@@ -1,9 +1,10 @@
 {
-  "release": "0.5.0-7036d679aa46657b",
+  "release": "0.5.1-23749b0177a13144",
   "assets": [
-    "/assets/0.5.0-7036d679aa46657b/index-Cq1owwaP.js",
-    "/assets/0.5.0-7036d679aa46657b/index-D8zQOjsz.css",
-    "/assets/0.5.0-7036d679aa46657b/index.html",
+    "/assets/0.5.1-23749b0177a13144/bootstrap.js",
+    "/assets/0.5.1-23749b0177a13144/index-CPMQ7WD_.js",
+    "/assets/0.5.1-23749b0177a13144/index-Ctq2aAp1.css",
+    "/assets/0.5.1-23749b0177a13144/index.html",
     "/manifest.webmanifest",
     "/icon.svg",
     "/icon-192.png",

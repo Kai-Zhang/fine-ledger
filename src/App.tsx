@@ -70,10 +70,20 @@ export function App() {
   useEffect(() => {
     setReady(false);
     setFailure("");
+    window.__ledgerStartup?.mark("database-start");
     initialize(mode)
-      .then(() => setReady(true))
-      .catch((e) => setFailure(e.message));
+      .then(() => {
+        window.__ledgerStartup?.mark("database-ready");
+        setReady(true);
+      })
+      .catch((e) => {
+        window.__ledgerStartup?.fail(e.name);
+        setFailure(e.message);
+      });
   }, [mode]);
+  useEffect(() => {
+    if (ready && !failure) window.__ledgerStartup?.ready();
+  }, [ready, failure]);
   useEffect(() => {
     protectUpdates(
       () => dirtyRef.current || modalOpen.current || layers.current.length > 0,
@@ -332,9 +342,11 @@ export function App() {
     );
   if (!ready)
     return (
-      <div className="boot-loading">
+      <div className="boot-loading" data-startup-shell>
         <span className="brand-mark">厘</span>
-        <p>正在打开账本</p>
+        <h1 data-startup-heading>正在打开账本</h1>
+        <p data-startup-message>离线也能使用已保存的账本。</p>
+        <a href="/">重新打开</a>
       </div>
     );
   if (!book)

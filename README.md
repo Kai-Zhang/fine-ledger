@@ -1,6 +1,6 @@
 # 厘序 · fine-ledger
 
-当前版本 **0.5.0**。按[产品设计 0.9](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
+当前版本 **0.5.1**。按[产品设计 0.9](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
 
 账户首页、记账、交易详情和报表已经连通本机数据。初版交付见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)；0.4.1 修复旧类目图标、压紧交易列表、增加空分组删除、移除示例入口。0.5.0 按随后确认的方案重构独立页面栈、边缘返回/前进与一次未保存确认，补齐跨分组拖拽、类目拖拽、组合筛选和报表目录。见 [0.5.0 交付与验证](docs/frontend-review-v0.5.0.md)；[0.4.1 反馈处理](docs/frontend-feedback-v0.4.1.md) 保留当时的讨论记录。
 
@@ -22,7 +22,7 @@ npm run iphone:status
 
 沿用原证书及固定地址 **[iPhone HTTPS 入口](https://zhangkaidemac-mini.local:8445/)**。端口、路径、主屏幕图标的访问方式保持不变，不需要添加参数、清除数据或重新安装。`.local/iphone/` 的原证书和旧 8443/8444 服务保持原状；`iphone:stop` 只停止 8445。详见[安装说明](docs/p0-iphone-review.md)。
 
-页面在线检查更新，录入中的内容会保护到保存或退出表单后再切换。已完整缓存的版本可离线启动和本地记账。`npm run dev:vite` 提供独立热更新开发环境；该环境不注册离线应用壳。
+首页优先从固定发布缓存启动，不等待服务器；页面打开后再在线检查更新，录入中的内容会保护到保存或退出表单后再切换。0.5.1 的外出白屏追查、缓存校验及断开 USB 的离线冷启动验证见 [事件记录](docs/iphone-offline-incident-2026-10-29.md)。已完整缓存的版本可离线启动和本地记账。`npm run dev:vite` 提供独立热更新开发环境；该环境不注册离线应用壳。
 
 ## 本版能力
 

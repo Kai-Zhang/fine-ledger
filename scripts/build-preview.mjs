@@ -57,6 +57,7 @@ async function compile() {
     "package.json",
     "package-lock.json",
     "scripts/templates/service-worker.js",
+    "scripts/templates/bootstrap.js",
     "public/manifest.webmanifest",
     "public/icon.svg",
     "public/icon-192.png",
@@ -96,6 +97,14 @@ async function compile() {
     html = (
       await readFile(path.join(directory, "index.html"), "utf8")
     ).replaceAll("__BUILD_ID__", release);
+    html = html.replace(
+      '<script type="module"',
+      `<script src="${assetRoot}bootstrap.js"></script>\n    <script type="module"`,
+    );
+    await atomicWrite(
+      path.join(directory, "bootstrap.js"),
+      await readFile(path.join(root, "scripts/templates/bootstrap.js"), "utf8"),
+    );
     await atomicWrite(path.join(directory, "index.html"), html);
     const files = await readdir(directory);
     assets = [
