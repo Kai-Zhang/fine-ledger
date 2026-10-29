@@ -50,6 +50,8 @@ npm run build
 
 `src/` 为 React + TypeScript 源码，`domain/` 使用最小单位整数和精确比率，`storage/` 用 Dexie 在同一 IndexedDB 事务中保存账本与变更日志。Vite 生成带内容指纹的完整发布，`server.mjs` 提供静态资源；图标与字体不依赖外部网络。测试覆盖金额、拆分、入账、归档、退款、汇率区间、时间精度/时区、兼容升级、事务回滚及缓存更新。
 
+iPhone 的 Safari 与主屏幕 Web App 使用隔离的本地存储；同一地址不意味着共享账本，重新添加主屏幕图标也不会复制 Safari 的 IndexedDB。当前应先导出完整备份保全仍可见的数据；回导与跨入口同步尚未交付。相关图标重装反馈和已核对边界见[记录](docs/icon-review-v0.7.2.md)。
+
 本机个人库保持 `fine-ledger-p0-review-v1`，开发测试夹具隔离使用 `fine-ledger-example-v1`；JSON 备份包含账本、变更日志及恢复修订。本版还未提供备份回导界面。原 `data/`、`.local/` 和运行证书不进入 Git。
 
 旧的 ES module 评审界面与其测试移至 [0.3 界面归档](archive/p0-review-2026-10-29/README.md)；更早的验证代码见[技术 demo 归档](archive/README.md)。
