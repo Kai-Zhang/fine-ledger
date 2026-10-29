@@ -434,13 +434,13 @@ export function CategoryEditor({
             onChange={(e) => setName(e.target.value)}
           />
         </Field>
-        <Field label="所属大类">
+        <Field label="上级类目">
           <select
             value={parent}
             disabled={hasChildren}
             onChange={(e) => setParent(e.target.value)}
           >
-            <option value="">作为大类</option>
+            <option value="">无（独立类目）</option>
             {app.book.categories
               .filter(
                 (c) =>

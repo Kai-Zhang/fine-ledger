@@ -196,3 +196,18 @@ test("time ranges use book timezone and incoming transfer date; native-currency 
   assert.equal(dates.from, "2026-08-31T16:00:00Z");
   assert.equal(dates.to, "2026-09-30T15:59:59.999999999Z");
 });
+
+test("legacy credit account never collides with the credit group in drag identifiers, and ungrouped accounts remain valid", async () => {
+  const { dragId } = await import("../src/domain/organization.ts");
+  assert.notEqual(dragId("account", "credit"), dragId("group", "credit"));
+  const b = fixture(),
+    amount = balance(b, "one");
+  moveAccount(b, "one", "");
+  assert.equal(b.accounts.find((a) => a.id === "one").groupId, "");
+  assert.equal(balance(b, "one"), amount);
+  moveAccount(b, "one", "b");
+  assert.equal(b.accounts.find((a) => a.id === "one").groupId, "b");
+  moveCategory(b, "c", undefined, "p");
+  assert.equal(b.categories.find((c) => c.id === "c").parentId, undefined);
+  assert.equal(b.entries[0].splits[0].categoryId, "c");
+});

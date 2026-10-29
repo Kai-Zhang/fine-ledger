@@ -6,7 +6,7 @@ export function moveAccount(
   beforeId?: string,
 ) {
   const item = book.accounts.find((a) => a.id === id);
-  if (!item || !book.groups.some((g) => g.id === groupId))
+  if (!item || (groupId !== "" && !book.groups.some((g) => g.id === groupId)))
     throw Error("账户或目标分组不存在");
   const old = item.groupId;
   const target = book.accounts
@@ -64,3 +64,6 @@ export function moveCategory(
       .sort((a, b) => a.order - b.order)
       .forEach((c, i) => (c.order = i));
 }
+
+export const dragId = (type: "account" | "group" | "category", id: string) =>
+  `${type}:${id}`;

@@ -1,8 +1,8 @@
 # 厘序 · fine-ledger
 
-当前版本 **0.5.1**。按[产品设计 0.9](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
+当前版本 **0.6.0**。按[产品设计 0.10](docs/product-design.md)、[交互线框 v2](docs/wireframe-review-v2.md) 和 [MoneyWiz iOS 实机调研](docs/research-moneywiz-ios-2026-10-29.md) 重写的首版产品前端，采用纸白、松绿和本地线性图标，支持浅色与深色外观。
 
-账户首页、记账、交易详情和报表已经连通本机数据。初版交付见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)；0.4.1 修复旧类目图标、压紧交易列表、增加空分组删除、移除示例入口。0.5.0 按随后确认的方案重构独立页面栈、边缘返回/前进与一次未保存确认，补齐跨分组拖拽、类目拖拽、组合筛选和报表目录。见 [0.5.0 交付与验证](docs/frontend-review-v0.5.0.md)；[0.4.1 反馈处理](docs/frontend-feedback-v0.4.1.md) 保留当时的讨论记录。
+账户首页、记账、交易详情和报表已经连通本机数据。初版交付见 [0.4.0 评审说明](docs/frontend-review-v0.4.0.md)；0.4.1 修复旧类目图标、压紧交易列表、增加空分组删除、移除示例入口。0.5.0 按随后确认的方案重构独立页面栈、边缘返回/前进与一次未保存确认，补齐跨分组拖拽、类目拖拽、组合筛选和报表目录。见 [0.5.0 交付与验证](docs/frontend-review-v0.5.0.md)；0.6.0 按真机反馈修复下层页面预览、根页手势、信用卡 ID 碰撞与落下位置，并统一管理操作，支持不分组账户及独立类目，见 [0.6.0 反馈修复](docs/frontend-review-v0.6.0.md)；[0.4.1 反馈处理](docs/frontend-feedback-v0.4.1.md) 保留当时的讨论记录。
 
 ## 运行与 iPhone 访问
 

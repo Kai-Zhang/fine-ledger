@@ -31,6 +31,7 @@ export type Route = {
   report?: "net" | "expense";
 };
 export interface AppContextValue {
+  preview?: boolean;
   views: Map<string, unknown>;
   book: Book;
   mode: Mode;

@@ -1,3 +1,4 @@
+import { useSwipe } from "./navigation/useSwipe.ts";
 import { flushSync } from "react-dom";
 import { Categories } from "./pages/Categories.tsx";
 import {
@@ -51,7 +52,6 @@ export function App() {
     toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     layers = useRef<{ close: () => void; dirty: () => boolean }[]>([]),
     pendingLeave = useRef(false),
-    gestureNavigationAt = useRef(0),
     scrolls = useRef(new Map<string, number>());
   const modalOpen = useRef(false);
   modalOpen.current = !!modal || !!confirmState;
@@ -89,36 +89,8 @@ export function App() {
       () => dirtyRef.current || modalOpen.current || layers.current.length > 0,
     );
     void registerPWA();
-    // Three same-URL slots catch browser traversal; app routes never enter browser history.
-    let restoring = false,
-      booting = true;
-    const marker = "fine-ledger-navigation-v2";
-    const pop = () => {
-      const slot = history.state?.[marker];
-      if (slot === 0) {
-        restoring = false;
-        booting = false;
-        return;
-      }
-      if (slot !== -1 && slot !== 1) return;
-      if (restoring) return;
-      restoring = true;
-      history.go(-slot);
-      if (!booting && Date.now() - gestureNavigationAt.current > 450) {
-        startTouch.current = null;
-        setSwipe(0);
-        requestRef.current(slot === -1 ? "back" : "forward");
-      }
-    };
-    window.addEventListener("popstate", pop);
-    const slot = history.state?.[marker];
-    if (slot === undefined) {
-      history.replaceState({ [marker]: -1 }, "");
-      history.pushState({ [marker]: 0 }, "");
-      history.pushState({ [marker]: 1 }, "");
-      history.back();
-    } else if (slot !== 0) history.go(-slot);
-    else booting = false;
+    // Internal pages are not browser history entries. Old sentinels are no longer created.
+    history.replaceState({ ledger: true, version: 3 }, "");
     const unload = (e: BeforeUnloadEvent) => {
       if (dirtyRef.current || layers.current.some((layer) => layer.dirty())) {
         e.preventDefault();
@@ -127,7 +99,6 @@ export function App() {
     };
     window.addEventListener("beforeunload", unload);
     return () => {
-      window.removeEventListener("popstate", pop);
       window.removeEventListener("beforeunload", unload);
     };
   }, []);
@@ -164,7 +135,9 @@ export function App() {
   }, [book?.settings.theme]);
   useEffect(() => {
     requestAnimationFrame(() => {
-      const el = document.querySelector(".page-content");
+      const el = document.querySelector(
+        ".workspace[data-active] .page-content",
+      );
       if (el) el.scrollTop = scrolls.current.get(String(frame.key)) || 0;
     });
   }, [frame.key]);
@@ -200,7 +173,9 @@ export function App() {
   function commit(action: NavigationAction) {
     const next = navigate(navigationRef.current, action);
     if (next === navigationRef.current) return;
-    const scroll = document.querySelector(".page-content");
+    const scroll = document.querySelector(
+      ".workspace[data-active] .page-content",
+    );
     if (scroll)
       scrolls.current.set(
         String(currentFrame(navigationRef.current).key),
@@ -232,7 +207,6 @@ export function App() {
   const back = () => request("back");
   const forward = () => request("forward");
   function swipeNavigate(direction: "back" | "forward") {
-    gestureNavigationAt.current = Date.now();
     const key = currentFrame(navigationRef.current).key,
       top = layers.current.at(-1);
     setTimeout(() => {
@@ -266,67 +240,14 @@ export function App() {
       return false;
     }
   }
-  const startTouch = useRef<{
-    x: number;
-    y: number;
-    direction: "back" | "forward";
-    moved: number;
-    rejected?: boolean;
-  } | null>(null);
-  const [swipe, setSwipe] = useState(0);
   const branch = navigation.stacks[navigation.tab];
   const isRoot = branch.past.length === 1;
-  function touchStart(e: React.PointerEvent) {
-    if (pendingLeave.current || confirmState) return;
-    const t = e,
-      target = e.target as HTMLElement;
-    if (target.closest("[data-no-back], .drag-handle")) return;
-    const direction =
-      t.clientX <= 24
-        ? "back"
-        : t.clientX >= innerWidth - 24
-          ? "forward"
-          : null;
-    if (
-      !direction ||
-      (direction === "back"
-        ? !(branch.past.length > 1 || layers.current.length)
-        : !(branch.future.length && !layers.current.length))
-    )
-      return;
-    startTouch.current = { x: t.clientX, y: t.clientY, direction, moved: 0 };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-  function touchMove(e: React.PointerEvent) {
-    const start = startTouch.current;
-    if (!start || start.rejected) return;
-    const t = e,
-      dx = t.clientX - start.x,
-      dy = t.clientY - start.y;
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
-      start.rejected = true;
-      setSwipe(0);
-      return;
-    }
-    if (Math.abs(dx) > 8 && e.cancelable) e.preventDefault();
-    start.moved =
-      start.direction === "back" ? Math.max(0, dx) : Math.min(0, dx);
-    if (Math.abs(start.moved) > 8 && !layers.current.length)
-      setSwipe(start.moved);
-  }
-  function touchEnd() {
-    const start = startTouch.current;
-    startTouch.current = null;
-    setSwipe(0);
-    if (
-      start &&
-      !start.rejected &&
-      Math.abs(start.moved) > Math.min(110, innerWidth * 0.26)
-    ) {
-      // Return the page to its resting position before showing an unsaved prompt.
-      swipeNavigate(start.direction);
-    }
-  }
+  const { motion, pointer } = useSwipe(
+    navigation,
+    () => pendingLeave.current || !!confirmState,
+    () => !!layers.current.length,
+    (d) => requestRef.current(d),
+  );
   if (failure)
     return (
       <div className="boot-error">
@@ -402,32 +323,20 @@ export function App() {
       <div
         className={`app-shell ${isRoot ? "root-page" : "sub-page"} ${route.page === "entry" ? "editing-page" : ""}`}
       >
-        {branch.past.length > 1 && (
+        {
           <div
             className="edge-swipe-zone back-edge"
             aria-hidden="true"
-            onPointerDown={touchStart}
-            onPointerMove={touchMove}
-            onPointerUp={touchEnd}
-            onPointerCancel={() => {
-              startTouch.current = null;
-              setSwipe(0);
-            }}
+            {...pointer}
           />
-        )}
-        {!!branch.future.length && (
+        }
+        {
           <div
             className="edge-swipe-zone forward-edge"
             aria-hidden="true"
-            onPointerDown={touchStart}
-            onPointerMove={touchMove}
-            onPointerUp={touchEnd}
-            onPointerCancel={() => {
-              startTouch.current = null;
-              setSwipe(0);
-            }}
+            {...pointer}
           />
-        )}
+        }
         <aside className="sidebar">
           <button className="brand" onClick={() => go({ page: "accounts" })}>
             <span className="brand-mark">厘</span>
@@ -457,11 +366,66 @@ export function App() {
             </span>
           </div>
         </aside>
+        {motion.target && (
+          <AppContext.Provider
+            value={{
+              preview: true,
+              views,
+              book,
+              mode,
+              route: motion.target.route,
+              go: () => {},
+              back: () => {},
+              forward: () => {},
+              swipe: () => {},
+              registerLayer: () => () => {},
+              leave: () => {},
+              save: async () => false,
+              toast: () => {},
+              setDirty: () => {},
+              confirm: async () => false,
+              open: () => {},
+              close: () => {},
+            }}
+          >
+            <section
+              className={`workspace navigation-underlay ${motion.target.key === branch.past[0].key ? "preview-root" : ""}`}
+              inert
+              aria-hidden="true"
+              ref={(el) => {
+                if (el) {
+                  const scroll = el.querySelector(".page-content");
+                  if (scroll)
+                    scroll.scrollTop =
+                      scrolls.current.get(String(motion.target!.key)) || 0;
+                }
+              }}
+            >
+              {pages[motion.target.route.page]}
+              {motion.target.key === branch.past[0].key && (
+                <nav className="preview-bottom-nav">
+                  {navItems.map(([p, icon, label]) => (
+                    <span
+                      className={p === navigation.tab ? "selected" : ""}
+                      key={p}
+                    >
+                      <Icon name={icon} />
+                      {label}
+                    </span>
+                  ))}
+                </nav>
+              )}
+            </section>
+          </AppContext.Provider>
+        )}
         <section
+          data-active="true"
           className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
           style={{
-            transform: swipe ? `translateX(${swipe}px)` : undefined,
-            transition: swipe ? "none" : "transform 160ms ease-out",
+            transform: motion.offset
+              ? `translateX(${motion.offset}px)`
+              : undefined,
+            transition: motion.offset ? "none" : "transform 160ms ease-out",
           }}
           key={frame.key}
         >
@@ -557,12 +521,13 @@ function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
             try {
               if (!account.trim()) throw Error("请填写第一个账户的名称");
               const b = blankBook(currency, name.trim() || "我的账本");
+              b.groups = [];
               b.timeZone = timeZone;
               b.accounts.push({
                 id: uid(),
                 name: account.trim(),
                 type: "bank",
-                groupId: "daily",
+                groupId: "",
                 currency,
                 openingMinor: minor(opening, currency),
                 openingAt: new Date().toISOString(),

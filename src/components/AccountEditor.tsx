@@ -32,9 +32,7 @@ export function AccountEditor({
     [name, setName] = useState(account?.name || ""),
     [type, setType] = useState(account?.type || "bank"),
     [currency, setCurrency] = useState(account?.currency || book.currency),
-    [group, setGroup] = useState(
-      account?.groupId || groupId || book.groups[0]?.id || "",
-    ),
+    [group, setGroup] = useState(account?.groupId ?? groupId ?? ""),
     [opening, setOpening] = useState(
       account ? decimal(account.openingMinor, account.currency) : "0",
     ),
@@ -63,11 +61,10 @@ export function AccountEditor({
     setError("");
     try {
       if (!name.trim()) throw Error("请填写账户名称");
-      if (!group) throw Error("请先新增分组");
       const amount = minor(opening, currency);
       setBusy(true);
       const ok = await save(account ? "编辑账户" : "新增账户", (b) => {
-        if (!b.groups.some((g) => g.id === group))
+        if (group && !b.groups.some((g) => g.id === group))
           throw Error("所选分组不存在");
         const value: Account = {
           id: account?.id || uid(),
@@ -79,8 +76,11 @@ export function AccountEditor({
           openingAt: dateToISO(at, account?.openingAt, book.timeZone),
           icon: types.find((t) => t[0] === type)![2],
           order:
-            account?.order ??
-            b.accounts.filter((a) => a.groupId === group).length,
+            account && account.groupId === group
+              ? account.order
+              : b.accounts.filter(
+                  (a) => a.id !== account?.id && a.groupId === group,
+                ).length,
           archived: account?.archived || false,
           netWorth: net,
         };
@@ -138,6 +138,7 @@ export function AccountEditor({
         <div className="form-grid">
           <Field label="分组">
             <select value={group} onChange={(e) => setGroup(e.target.value)}>
+              <option value="">不分组</option>
               {book.groups.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}

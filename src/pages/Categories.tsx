@@ -1,10 +1,12 @@
+import {
+  useOrganization,
+  dragId,
+  useDragSensors,
+  useDragSelection,
+} from "../ui/organization.ts";
 import { useState, type ReactNode } from "react";
 import {
   DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
   DragOverlay,
   closestCenter,
   pointerWithin,
@@ -14,11 +16,10 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "../ui/context.tsx";
-import { Header, IconButton, Button } from "../ui/components.tsx";
+import { Header, IconButton } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { CategoryEditor } from "./Settings.tsx";
 import type { Category } from "../domain/types.ts";
@@ -43,8 +44,8 @@ function CategoryRow({
   after?: boolean;
 }) {
   const sort = useSortable({
-    id: c.id,
-    data: { parentId: c.parentId },
+    id: dragId("category", c.id),
+    data: { id: c.id, parentId: c.parentId },
     disabled: c.archived,
   });
   return (
@@ -64,6 +65,7 @@ function CategoryRow({
           disabled={c.archived}
           {...sort.attributes}
           {...sort.listeners}
+          onContextMenu={(e) => e.preventDefault()}
         >
           <Icon name="GripVertical" size={18} />
         </button>
@@ -76,16 +78,22 @@ function CategoryRow({
             <Icon name="ChevronRight" size={16} />
           </button>
         )}
-        <button className="category-edit" onClick={edit}>
+        <button
+          className="category-edit"
+          onClick={() => {
+            if (!window.getSelection()?.toString()) edit();
+          }}
+        >
           <span className="category-symbol" style={{ color: c.color }}>
             <Icon name={c.icon} />
           </span>
-          <span>
+          <span className="copyable-name">
             {c.name}
             {c.archived && <small>已归档</small>}
           </span>
         </button>
         <IconButton
+          className="subtle-action"
           name={c.archived ? "ArchiveRestore" : "Archive"}
           label={`${c.archived ? "恢复" : "归档"}类目 ${c.name}`}
           onClick={archive}
@@ -97,7 +105,7 @@ function CategoryRow({
 }
 export function Categories() {
   const app = useApp(),
-    { book } = app;
+    { book, commit } = useOrganization();
   const cached = app.views.get("categories") as
     { kind: "expense" | "income"; closed: string[] } | undefined;
   const [kind, setKind] = useState<"expense" | "income">(
@@ -108,12 +116,8 @@ export function Categories() {
     [drag, setDrag] = useState<string | null>(null),
     [over, setOver] = useState<string | null>(null),
     [dropAfter, setDropAfter] = useState(false);
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  const sensors = useDragSensors();
+  useDragSelection(!!drag);
   app.views.set("categories", { kind, closed });
   const parents = book.categories
     .filter((c) => c.kind === kind && !c.parentId && (archived || !c.archived))
@@ -152,11 +156,15 @@ export function Categories() {
     });
   }
   async function end(e: DragEndEvent) {
-    setDrag(null);
-    setOver(null);
-    if (!e.over || e.over.id === e.active.id) return;
-    const item = book.categories.find((c) => c.id === e.active.id)!,
-      target = book.categories.find((c) => c.id === e.over!.id)!;
+    if (!e.over || e.over.id === e.active.id) {
+      setDrag(null);
+      setOver(null);
+      return;
+    }
+    const item = book.categories.find(
+        (c) => c.id === e.active.data.current?.id,
+      )!,
+      target = book.categories.find((c) => c.id === e.over!.data.current?.id)!;
     const parentId = item.parentId ? target.parentId || target.id : undefined;
     const siblings = book.categories
       .filter(
@@ -164,19 +172,21 @@ export function Categories() {
       )
       .sort((a, b) => a.order - b.order);
     const after =
-      e.active.rect.current.translated &&
-      e.active.rect.current.translated.top +
-        e.active.rect.current.translated.height / 2 >
-        e.over.rect.top + e.over.rect.height / 2;
+      e.activatorEvent.type === "keydown"
+        ? item.parentId === target.parentId && item.order < target.order
+        : e.active.rect.current.translated &&
+          e.active.rect.current.translated.top +
+            e.active.rect.current.translated.height / 2 >
+            e.over.rect.top + e.over.rect.height / 2;
     const before =
       target.id === parentId
         ? undefined
         : after
           ? siblings[siblings.findIndex((c) => c.id === target.id) + 1]?.id
           : target.id;
-    await app.save("移动类目", (b) =>
-      moveCategory(b, item.id, parentId, before),
-    );
+    void commit("移动类目", (b) => moveCategory(b, item.id, parentId, before));
+    setDrag(null);
+    setOver(null);
   }
   return (
     <>
@@ -226,7 +236,7 @@ export function Categories() {
                 ? hits
                 : closestCenter({ ...args, droppableContainers: containers });
           }}
-          onDragStart={(e) => setDrag(String(e.active.id))}
+          onDragStart={(e) => setDrag(String(e.active.data.current?.id))}
           onDragMove={(e) => {
             const r = e.active.rect.current.translated;
             setDropAfter(
@@ -240,7 +250,9 @@ export function Categories() {
           onDragOver={(e) => {
             setOver(e.over ? String(e.over.id) : null);
             if (active?.parentId && e.over) {
-              const t = book.categories.find((c) => c.id === e.over!.id);
+              const t = book.categories.find(
+                (c) => c.id === e.over!.data.current?.id,
+              );
               setClosed((ids) =>
                 ids.filter((id) => id !== (t?.parentId || t?.id)),
               );
@@ -253,7 +265,7 @@ export function Categories() {
           onDragEnd={end}
         >
           <SortableContext
-            items={parents.map((p) => p.id)}
+            items={parents.map((p) => dragId("category", p.id))}
             strategy={verticalListSortingStrategy}
           >
             <div className="manage-categories">
@@ -268,20 +280,23 @@ export function Categories() {
                     key={p.id}
                     c={p}
                     collapsed={closed.includes(p.id)}
-                    toggle={() =>
-                      setClosed(
-                        closed.includes(p.id)
-                          ? closed.filter((id) => id !== p.id)
-                          : [...closed, p.id],
-                      )
+                    toggle={
+                      children.length
+                        ? () =>
+                            setClosed(
+                              closed.includes(p.id)
+                                ? closed.filter((id) => id !== p.id)
+                                : [...closed, p.id],
+                            )
+                        : undefined
                     }
                     edit={() => edit(p)}
                     archive={() => void archive(p)}
                     after={dropAfter}
-                    over={over === p.id && drag !== p.id}
+                    over={over === dragId("category", p.id) && drag !== p.id}
                   >
                     <SortableContext
-                      items={children.map((c) => c.id)}
+                      items={children.map((c) => dragId("category", c.id))}
                       strategy={verticalListSortingStrategy}
                     >
                       {children.map((c) => (
@@ -291,20 +306,12 @@ export function Categories() {
                           edit={() => edit(c)}
                           archive={() => void archive(c)}
                           after={dropAfter}
-                          over={over === c.id && drag !== c.id}
+                          over={
+                            over === dragId("category", c.id) && drag !== c.id
+                          }
                         />
                       ))}
                     </SortableContext>
-                    {!p.archived && (
-                      <Button
-                        className="add-child-category"
-                        variant="plain"
-                        icon="Plus"
-                        onClick={() => edit(undefined, p.id)}
-                      >
-                        新增子类目
-                      </Button>
-                    )}
                   </CategoryRow>
                 );
               })}

@@ -1,6 +1,7 @@
 import {
   Hotel,
   SquarePen,
+  ListFilter,
   ChartPie,
   FolderPlus,
   Landmark,
@@ -73,6 +74,7 @@ import {
 export const icons: Record<string, LucideIcon> = {
   Hotel,
   SquarePen,
+  ListFilter,
   ChartPie,
   FolderPlus,
   Landmark,

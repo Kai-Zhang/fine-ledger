@@ -164,7 +164,6 @@ export function Dialog({
       ),
     [app.registerLayer],
   );
-  const dialogTouch = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     const d = ref.current!;
     d.showModal();
@@ -177,21 +176,6 @@ export function Dialog({
       aria-labelledby={id}
       onChangeCapture={(e) => {
         if ((e.target as HTMLElement).closest("form")) setChanged(true);
-      }}
-      onTouchStart={(e) => {
-        const t = e.touches[0];
-        if (t.clientX < 24)
-          dialogTouch.current = { x: t.clientX, y: t.clientY };
-      }}
-      onTouchEnd={(e) => {
-        const start = dialogTouch.current;
-        dialogTouch.current = null;
-        if (
-          start &&
-          e.changedTouches[0].clientX - start.x > 85 &&
-          Math.abs(e.changedTouches[0].clientY - start.y) < 60
-        )
-          app.swipe("back");
       }}
       onCancel={(e) => {
         e.preventDefault();

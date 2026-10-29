@@ -119,7 +119,7 @@ export function TransactionFilters({
               {account?.name} · {account?.currency}
             </p>
           ) : (
-            book.groups
+            [{ id: "", name: "未分组", order: -1 }, ...book.groups]
               .slice()
               .sort((a, b) => a.order - b.order)
               .map((g) => (

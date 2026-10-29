@@ -130,11 +130,12 @@ export function EntryForm() {
     });
   if (initialJSON.current === undefined) initialJSON.current = formJSON;
   useEffect(() => {
+    if (app.preview) return;
     app.setDirty(formJSON !== initialJSON.current);
     return () => app.setDirty(false);
   }, [formJSON]);
   useEffect(() => {
-    if (!existing && !original) amountRef.current?.focus();
+    if (!app.preview && !existing && !original) amountRef.current?.focus();
   }, []);
   const suggestions = useMemo(
     () => descriptions(book, kind, description),

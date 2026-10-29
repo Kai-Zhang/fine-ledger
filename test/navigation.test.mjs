@@ -59,3 +59,38 @@ test("account shortcut report and nested drilldown return to their actual source
   }
   assert.equal(back(n), n);
 });
+
+test("edge capture cancels native history previews on roots too, while allowing text selection in the page", async () => {
+  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+  const doc = new EventTarget();
+  let started = 0,
+    moved = 0,
+    ended = 0;
+  const cleanup = captureEdges(doc, () => 390, {
+    start: () => started++,
+    move: () => moved++,
+    end: () => ended++,
+  });
+  const fire = (type, x, touches = 1) => {
+    const event = new Event(type, { cancelable: true });
+    Object.defineProperty(event, "touches", {
+      value: Array.from({ length: touches }, () => ({
+        clientX: x,
+        clientY: 150,
+      })),
+    });
+    doc.dispatchEvent(event);
+    return event;
+  };
+  assert.equal(fire("touchstart", 5).defaultPrevented, true);
+  assert.equal(started, 1);
+  assert.equal(fire("touchmove", 160).defaultPrevented, true);
+  fire("touchend", 160);
+  assert.equal(moved, 1);
+  assert.equal(ended, 1);
+  assert.equal(fire("touchstart", 200).defaultPrevented, false);
+  assert.equal(fire("touchstart", 3, 2).defaultPrevented, false);
+  assert.equal(fire("touchstart", 385).defaultPrevented, true);
+  cleanup();
+  assert.equal(fire("touchstart", 3).defaultPrevented, false);
+});

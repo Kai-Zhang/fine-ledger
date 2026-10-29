@@ -328,8 +328,10 @@ export function TransactionsPage() {
       )}
       {!account?.archived && book.accounts.some((a) => !a.archived) && (
         <div className="floating-entry">
-          <Button
-            icon="SquarePen"
+          <IconButton
+            className="entry-action"
+            name="SquarePen"
+            label="记一笔"
             onClick={() =>
               app.go({
                 page: "entry",
@@ -341,9 +343,7 @@ export function TransactionsPage() {
                   book.accounts.find((a) => !a.archived)?.id,
               })
             }
-          >
-            记一笔
-          </Button>
+          />
         </div>
       )}
     </>

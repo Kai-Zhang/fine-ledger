@@ -1,11 +1,7 @@
-import { moveAccount } from "../domain/organization.ts";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
+  useDroppable,
   DragOverlay,
   closestCenter,
   pointerWithin,
@@ -15,54 +11,61 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "../ui/context.tsx";
 import {
+  useOrganization,
+  dragId,
+  useDragSensors,
+  useDragSelection,
+} from "../ui/organization.ts";
+import {
   Header,
   Button,
   IconButton,
   Amount,
-  Dialog,
   Empty,
 } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { AccountEditor, GroupEditor } from "../components/AccountEditor.tsx";
 import { balance, netWorth, removeEmptyGroup } from "../domain/ledger.ts";
-import type { Account, Group } from "../domain/types.ts";
+import { moveAccount } from "../domain/organization.ts";
+import type { Account, Group, Book } from "../domain/types.ts";
 function AccountRow({
   account,
   manage,
-  onMenu,
-  overlay = false,
-  drop = false,
-  dropAfter = false,
+  edit,
+  archive,
+  drop,
+  after,
+  book,
 }: {
   account: Account;
   manage: boolean;
-  onMenu: () => void;
-  overlay?: boolean;
-  drop?: boolean;
-  dropAfter?: boolean;
+  edit: () => void;
+  archive: () => void;
+  drop: boolean;
+  after: boolean;
+  book: Book;
 }) {
   const app = useApp(),
     sort = useSortable({
-      id: account.id,
-      data: { type: "account", groupId: account.groupId },
-      disabled: !manage || overlay,
-    }),
-    amount = balance(app.book, account.id);
+      id: dragId("account", account.id),
+      data: { type: "account", id: account.id, groupId: account.groupId },
+      disabled: !manage,
+    });
+  const value = balance(book, account.id);
   return (
     <div
       ref={sort.setNodeRef}
       style={{
         transform: CSS.Transform.toString(sort.transform),
         transition: sort.transition,
-        opacity: sort.isDragging ? 0.2 : 1,
+        opacity: sort.isDragging ? 0.18 : 1,
       }}
-      className={`account-row ${overlay ? "drag-overlay" : ""} ${drop ? (dropAfter ? "drop-account-after" : "drop-account") : ""}`}
+      className={`account-row ${drop ? (after ? "drop-account-after" : "drop-account") : ""}`}
     >
       {manage && (
         <button
@@ -71,40 +74,42 @@ function AccountRow({
           aria-label={`拖动排序 ${account.name}`}
           {...sort.attributes}
           {...sort.listeners}
+          onContextMenu={(e) => e.preventDefault()}
         >
-          <Icon name="GripVertical" size={18} />
+          <Icon name="GripVertical" size={17} />
         </button>
       )}
       <button
         type="button"
         className="account-main"
-        onClick={() =>
-          manage ? onMenu() : app.go({ page: "account", id: account.id })
-        }
+        onClick={() => {
+          if (window.getSelection()?.toString()) return;
+          manage ? edit() : app.go({ page: "account", id: account.id });
+        }}
       >
         <span className={`account-symbol ${account.type}`}>
           <Icon name={account.icon} size={20} />
         </span>
         <span className="account-name">
-          <strong>{account.name}</strong>
+          <strong className="copyable-name">{account.name}</strong>
           <small>
             {account.currency}
-            {account.archived ? " · 已归档" : ""}
             {!account.netWorth ? " · 不纳入净值" : ""}
           </small>
         </span>
         <Amount
-          value={amount}
+          value={value}
           currency={account.currency}
-          className={amount < 0n ? "negative" : ""}
+          className={value < 0n ? "negative" : ""}
         />
         {!manage && <Icon name="ChevronRight" size={15} />}
       </button>
       {manage && (
         <IconButton
-          name="MoreHorizontal"
-          label={`管理 ${account.name}`}
-          onClick={onMenu}
+          className="subtle-action"
+          name="Archive"
+          label={`归档账户 ${account.name}`}
+          onClick={archive}
         />
       )}
     </div>
@@ -113,25 +118,42 @@ function AccountRow({
 function GroupSection({
   group,
   manage,
-  onAccount,
-  onGroup,
+  book,
+  edit,
+  archive,
+  editGroup,
+  deleteGroup,
   drop,
-  dropAfter,
+  after,
 }: {
   group: Group;
   manage: boolean;
-  onAccount: (a: Account) => void;
-  onGroup: () => void;
-  drop?: string | null;
-  dropAfter?: boolean;
+  book: Book;
+  edit: (a: Account) => void;
+  archive: (a: Account) => void;
+  editGroup: () => void;
+  deleteGroup: () => void;
+  drop: string | null;
+  after: boolean;
 }) {
-  const { book } = useApp(),
-    sort = useSortable({
-      id: group.id,
-      data: { type: "group" },
-      disabled: !manage,
-    }),
-    accounts = book.accounts
+  const sort = useSortable({
+    id: dragId("group", group.id),
+    data: { type: "group", id: group.id },
+    disabled: !manage || !group.id,
+  });
+  const bucket = useDroppable({
+    id: `bucket:${group.id}`,
+    data: { type: "bucket", groupId: group.id },
+    disabled: !manage,
+  });
+  const ref = useCallback(
+    (node: HTMLElement | null) => {
+      sort.setNodeRef(node);
+      bucket.setNodeRef(node);
+    },
+    [sort.setNodeRef, bucket.setNodeRef],
+  );
+  const accounts = book.accounts
       .filter((a) => a.groupId === group.id && !a.archived)
       .sort((a, b) => a.order - b.order),
     totals = new Map<string, bigint>();
@@ -143,45 +165,57 @@ function GroupSection({
   );
   return (
     <section
-      className={`account-group ${drop === group.id || accounts.some((a) => a.id === drop) ? "drop-group" : ""}`}
-      ref={sort.setNodeRef}
+      ref={ref}
+      className={`account-group ${drop === `bucket:${group.id}` ? "drop-bucket" : ""}`}
       style={{
         transform: CSS.Transform.toString(sort.transform),
         transition: sort.transition,
-        opacity: sort.isDragging ? 0.3 : 1,
+        opacity: sort.isDragging ? 0.25 : 1,
       }}
     >
-      <div className="group-heading">
-        {manage && (
-          <button
-            className="drag-handle"
-            aria-label={`拖动分组 ${group.name}`}
-            {...sort.attributes}
-            {...sort.listeners}
-          >
-            <Icon name="GripVertical" size={17} />
-          </button>
-        )}
-        <h2>{group.name}</h2>
-        <div className="group-totals">
-          {[...totals].map(([c, n]) => (
-            <span key={c}>
-              <Amount value={n} currency={c} />
-              <small>{c}</small>
-            </span>
-          ))}
+      {(!!group.id || manage) && (
+        <div className="group-heading">
+          {manage && !!group.id && (
+            <button
+              className="drag-handle"
+              aria-label={`拖动分组 ${group.name}`}
+              {...sort.attributes}
+              {...sort.listeners}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <Icon name="GripVertical" size={17} />
+            </button>
+          )}
+          {manage && !!group.id ? (
+            <button className="group-edit" onClick={editGroup}>
+              {group.name}
+            </button>
+          ) : (
+            <h2>{group.name}</h2>
+          )}
+          <div className="group-totals">
+            {[...totals].map(([currency, n]) => (
+              <span key={currency}>
+                <Amount value={n} currency={currency} />
+                <small>{currency}</small>
+              </span>
+            ))}
+          </div>
+          {manage &&
+            !!group.id &&
+            !book.accounts.some((a) => a.groupId === group.id) && (
+              <IconButton
+                className="subtle-action"
+                name="Trash2"
+                label={`删除空分组 ${group.name}`}
+                onClick={deleteGroup}
+              />
+            )}
         </div>
-        {manage && (
-          <IconButton
-            name="MoreHorizontal"
-            label={`管理分组 ${group.name}`}
-            onClick={onGroup}
-          />
-        )}
-      </div>
+      )}
       <div className="account-surface">
         <SortableContext
-          items={accounts.map((a) => a.id)}
+          items={accounts.map((a) => dragId("account", a.id))}
           strategy={verticalListSortingStrategy}
         >
           {accounts.map((a) => (
@@ -189,235 +223,116 @@ function GroupSection({
               key={a.id}
               account={a}
               manage={manage}
-              drop={drop === a.id}
-              dropAfter={dropAfter}
-              onMenu={() => onAccount(a)}
+              edit={() => edit(a)}
+              archive={() => archive(a)}
+              drop={drop === dragId("account", a.id)}
+              after={after}
+              book={book}
             />
           ))}
         </SortableContext>
-        {!accounts.length && <div className="empty-group">暂无账户</div>}
+        {!accounts.length && (
+          <div className="empty-group">{manage ? "拖到这里" : "暂无账户"}</div>
+        )}
       </div>
     </section>
   );
 }
 export function Accounts() {
   const app = useApp(),
-    { book } = app,
+    { book, commit } = useOrganization(),
     [manage, setManage] = useState(false),
-    [drag, setDrag] = useState<string | null>(null),
+    [drag, setDrag] = useState<{ type: string; id: string } | null>(null),
     [drop, setDrop] = useState<string | null>(null),
-    [dropAfter, setDropAfter] = useState(false);
-  const sensors = useSensors(
-      useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-      useSensor(KeyboardSensor, {
-        coordinateGetter: sortableKeyboardCoordinates,
-      }),
-    ),
+    [after, setAfter] = useState(false);
+  const sensors = useDragSensors();
+  useDragSelection(!!drag);
+  const groups = book.groups.slice().sort((a, b) => a.order - b.order),
     net = netWorth(book, new Date().toISOString()),
-    groups = [...book.groups].sort((a, b) => a.order - b.order),
-    dragAccount = book.accounts.find((a) => a.id === drag);
-  const editAccount = (a?: Account, groupId?: string) =>
-      app.open(
-        <AccountEditor account={a} groupId={groupId} onClose={app.close} />,
-      ),
-    editGroup = (id?: string) =>
-      app.open(<GroupEditor id={id} onClose={app.close} />);
-  function accountMenu(a: Account) {
-    const siblings = book.accounts
-      .filter((x) => x.groupId === a.groupId && !x.archived)
-      .sort((a, b) => a.order - b.order);
-    app.open(
-      <Dialog title={a.name} onClose={app.close}>
-        <div className="menu-list">
-          <button onClick={() => editAccount(a)}>
-            <Icon name="Pencil" />
-            编辑账户
-          </button>
-          <label className="menu-select">
-            <Icon name="Folder" />
-            移至分组
-            <select
-              value={a.groupId}
-              onChange={async (e) => {
-                const value = e.target.value;
-                if (
-                  await app.save("移动账户", (b) => {
-                    const target = b.accounts.find((x) => x.id === a.id)!;
-                    target.groupId = value;
-                    target.order = b.accounts.filter(
-                      (x) => x.groupId === value,
-                    ).length;
-                  })
-                )
-                  app.close();
-              }}
-            >
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {[-1, 1].map((offset) => (
-            <button
-              key={offset}
-              disabled={
-                !siblings[siblings.findIndex((x) => x.id === a.id) + offset]
-              }
-              onClick={async () => {
-                await app.save("排列账户", (b) => {
-                  const next = arrayMove(
-                    siblings,
-                    siblings.findIndex((x) => x.id === a.id),
-                    siblings.findIndex((x) => x.id === a.id) + offset,
-                  );
-                  next.forEach(
-                    (x, i) =>
-                      (b.accounts.find((t) => t.id === x.id)!.order = i),
-                  );
-                });
-                app.close();
-              }}
-            >
-              <Icon name={offset === -1 ? "ArrowUpRight" : "ArrowDownLeft"} />
-              {offset === -1 ? "上移" : "下移"}
-            </button>
-          ))}
-          <button
-            onClick={async () => {
-              app.close();
-              if (
-                await app.confirm({
-                  title: "归档账户？",
-                  message:
-                    "保留交易、余额与净值历史，账户将从首页隐藏。取消归档后可继续记账。",
-                  label: "归档",
-                })
-              )
-                await app.save("归档账户", (b) => {
-                  b.accounts.find((x) => x.id === a.id)!.archived = true;
-                });
-            }}
-          >
-            <Icon name="Archive" />
-            归档账户
-          </button>
-        </div>
-      </Dialog>,
-    );
+    activeAccount =
+      drag?.type === "account"
+        ? book.accounts.find((a) => a.id === drag.id)
+        : undefined;
+  const editAccount = (a?: Account) =>
+    app.open(<AccountEditor account={a} onClose={app.close} />);
+  const editGroup = (id?: string) =>
+    app.open(<GroupEditor id={id} onClose={app.close} />);
+  async function archive(a: Account) {
+    if (
+      await app.confirm({
+        title: "归档账户？",
+        message: `“${a.name}”将从首页隐藏，保留交易、余额和净值历史。`,
+        label: "归档",
+      })
+    )
+      await app.save("归档账户", (b) => {
+        b.accounts.find((x) => x.id === a.id)!.archived = true;
+      });
   }
-  function groupMenu(g: Group) {
-    app.open(
-      <Dialog title={g.name} onClose={app.close}>
-        <div className="menu-list">
-          <button onClick={() => editGroup(g.id)}>
-            <Icon name="Pencil" />
-            重命名
-          </button>
-          {[-1, 1].map((offset) => (
-            <button
-              key={offset}
-              disabled={!groups[groups.indexOf(g) + offset]}
-              onClick={async () => {
-                await app.save("排列分组", (b) =>
-                  arrayMove(
-                    groups,
-                    groups.indexOf(g),
-                    groups.indexOf(g) + offset,
-                  ).forEach(
-                    (x, i) => (b.groups.find((t) => t.id === x.id)!.order = i),
-                  ),
-                );
-                app.close();
-              }}
-            >
-              <Icon name={offset === -1 ? "ArrowUpRight" : "ArrowDownLeft"} />
-              {offset === -1 ? "上移" : "下移"}
-            </button>
-          ))}
-          <button onClick={() => editAccount(undefined, g.id)}>
-            <Icon name="Plus" />
-            在此分组新增账户
-          </button>
-          <button
-            className="danger-text"
-            disabled={book.accounts.some((a) => a.groupId === g.id)}
-            title={
-              book.accounts.some((a) => a.groupId === g.id)
-                ? "请先移出所有账户，包含已归档账户"
-                : undefined
-            }
-            onClick={async () => {
-              app.close();
-              if (
-                await app.confirm({
-                  title: "删除空分组？",
-                  message: `将删除“${g.name}”。账户和交易不会被删除。`,
-                  label: "删除分组",
-                  danger: true,
-                })
-              )
-                await app.save("删除空分组", (b) => removeEmptyGroup(b, g.id));
-            }}
-          >
-            <Icon name="Trash2" />
-            删除分组
-          </button>
-          {book.accounts.some((a) => a.groupId === g.id) && (
-            <p className="menu-hint">移出所有账户后可删除，包含已归档账户。</p>
-          )}
-        </div>
-      </Dialog>,
-    );
+  async function deleteGroup(g: Group) {
+    if (
+      await app.confirm({
+        title: "删除空分组？",
+        message: `将删除“${g.name}”，交易不会改变。`,
+        label: "删除",
+        danger: true,
+      })
+    )
+      await app.save("删除空分组", (b) => removeEmptyGroup(b, g.id));
   }
-  async function end(event: DragEndEvent) {
+  function end(e: DragEndEvent) {
+    const active = e.active.data.current,
+      target = e.over?.data.current;
+    if (active && target && e.over && e.over.id !== e.active.id) {
+      if (active.type === "group" && target.type === "group") {
+        void commit("排列分组", (b) => {
+          const rows = b.groups.slice().sort((a, b) => a.order - b.order);
+          arrayMove(
+            rows,
+            rows.findIndex((g) => g.id === active.id),
+            rows.findIndex((g) => g.id === target.id),
+          ).forEach((g, i) => (b.groups.find((x) => x.id === g.id)!.order = i));
+        });
+      } else if (
+        active.type === "account" &&
+        (target.type === "account" || target.type === "bucket")
+      ) {
+        const groupId = target.groupId as string;
+        const r = e.active.rect.current.translated,
+          below =
+            e.activatorEvent.type === "keydown"
+              ? target.type === "account" &&
+                book.accounts.find((a) => a.id === active.id)!.groupId ===
+                  target.groupId &&
+                book.accounts.find((a) => a.id === active.id)!.order <
+                  book.accounts.find((a) => a.id === target.id)!.order
+              : !!r &&
+                r.top + r.height / 2 > e.over.rect.top + e.over.rect.height / 2;
+        const siblings = book.accounts
+          .filter((a) => a.groupId === groupId && a.id !== active.id)
+          .sort((a, b) => a.order - b.order);
+        const before =
+          target.type === "bucket"
+            ? undefined
+            : below
+              ? siblings[siblings.findIndex((a) => a.id === target.id) + 1]?.id
+              : target.id;
+        void commit("移动账户", (b) =>
+          moveAccount(b, active.id, groupId, before),
+        );
+      }
+    }
     setDrag(null);
     setDrop(null);
-    const { active, over } = event;
-    if (!over || over.id === active.id) return;
-    if (active.data.current?.type === "group") {
-      if (over.data.current?.type !== "group") return;
-      await app.save("排列分组", (b) =>
-        arrayMove(
-          groups,
-          groups.findIndex((g) => g.id === active.id),
-          groups.findIndex((g) => g.id === over.id),
-        ).forEach((g, i) => (b.groups.find((x) => x.id === g.id)!.order = i)),
-      );
-    } else {
-      const targetAccount = book.accounts.find((a) => a.id === over.id);
-      const groupId = targetAccount?.groupId || String(over.id);
-      const after =
-        active.rect.current.translated &&
-        active.rect.current.translated.top +
-          active.rect.current.translated.height / 2 >
-          over.rect.top + over.rect.height / 2;
-      const siblings = book.accounts
-        .filter((a) => a.groupId === groupId && a.id !== active.id)
-        .sort((a, b) => a.order - b.order);
-      const next =
-        targetAccount && after
-          ? siblings[siblings.findIndex((a) => a.id === targetAccount.id) + 1]
-              ?.id
-          : targetAccount?.id;
-      await app.save("移动账户", (b) =>
-        moveAccount(b, String(active.id), groupId, next),
-      );
-    }
   }
   return (
     <>
       <Header title="账户">
-        {manage ? (
-          <Button variant="plain" onClick={() => setManage(false)}>
-            完成
-          </Button>
-        ) : (
-          <Button variant="plain" onClick={() => setManage(true)}>
-            管理
-          </Button>
-        )}
+        <IconButton
+          name={manage ? "Check" : "ListFilter"}
+          label={manage ? "完成账户管理" : "管理账户"}
+          onClick={() => setManage(!manage)}
+        />
       </Header>
       <main className="page-content accounts-page">
         {manage && (
@@ -450,7 +365,7 @@ export function Accounts() {
               <small>{book.currency}</small>
             </span>
             <Amount value={net.total} currency={book.currency} />
-            {net.missing.length > 0 && (
+            {!!net.missing.length && (
               <small className="warning">
                 另有 {net.missing.length} 个外币账户待折算
               </small>
@@ -463,35 +378,45 @@ export function Accounts() {
           accessibility={{
             screenReaderInstructions: {
               draggable:
-                "按空格开始排序，方向键移动，再按空格放下，Escape 取消。",
+                "长按手柄拖动，或按空格开始排序；方向键移动，空格放下，Escape取消。",
             },
             announcements: {
               onDragStart: () => "开始排序",
-              onDragOver: ({ over }) => (over ? "已移动到新位置" : "正在移动"),
+              onDragOver: () => "正在移动",
               onDragEnd: () => "排序完成",
               onDragCancel: () => "已取消排序",
             },
           }}
           collisionDetection={(args) => {
-            const containers = args.droppableContainers.filter((c) =>
+            const items = args.droppableContainers.filter((c) =>
               args.active.data.current?.type === "group"
                 ? c.data.current?.type === "group"
-                : true,
+                : c.data.current?.type === "account" ||
+                  c.data.current?.type === "bucket",
             );
-            const hits = pointerWithin({
-              ...args,
-              droppableContainers: containers,
-            });
-            const accountHits = hits.filter(
-              (h) =>
-                containers.find((c) => c.id === h.id)?.data.current?.type ===
-                "account",
-            );
-            return accountHits.length
-              ? accountHits
+            const hits = pointerWithin({ ...args, droppableContainers: items }),
+              rows = hits.filter(
+                (h) =>
+                  items.find((c) => c.id === h.id)?.data.current?.type ===
+                  "account",
+              );
+            return rows.length
+              ? rows
               : hits.length
                 ? hits
-                : closestCenter({ ...args, droppableContainers: containers });
+                : closestCenter({
+                    ...args,
+                    droppableContainers: items.filter(
+                      (c) => c.data.current?.type !== "bucket",
+                    ),
+                  });
+          }}
+          onDragStart={(e) => {
+            setDrag({
+              type: e.active.data.current!.type,
+              id: e.active.data.current!.id,
+            });
+            document.documentElement.classList.add("is-reordering");
           }}
           onDragOver={(e) =>
             setDrop(
@@ -500,7 +425,7 @@ export function Accounts() {
           }
           onDragMove={(e) => {
             const r = e.active.rect.current.translated;
-            setDropAfter(
+            setAfter(
               !!(
                 e.over &&
                 r &&
@@ -508,52 +433,57 @@ export function Accounts() {
               ),
             );
           }}
-          onDragStart={(e) => setDrag(String(e.active.id))}
+          onDragEnd={(e) => {
+            document.documentElement.classList.remove("is-reordering");
+            end(e);
+          }}
           onDragCancel={() => {
+            document.documentElement.classList.remove("is-reordering");
             setDrag(null);
             setDrop(null);
           }}
-          onDragEnd={end}
         >
           <SortableContext
-            items={groups.map((g) => g.id)}
+            items={groups.map((g) => dragId("group", g.id))}
             strategy={verticalListSortingStrategy}
           >
-            {groups
+            {[{ id: "", name: "未分组", order: -1 }, ...groups]
               .filter(
                 (g) =>
+                  g.id ||
                   manage ||
-                  book.accounts.some(
-                    (a) => a.groupId === g.id && !a.archived,
-                  ) ||
-                  !book.accounts.some((a) => a.groupId === g.id),
+                  book.accounts.some((a) => !a.groupId && !a.archived),
               )
               .map((g) => (
                 <GroupSection
                   key={g.id}
                   group={g}
                   manage={manage}
+                  book={book}
+                  edit={editAccount}
+                  archive={(a) => void archive(a)}
+                  editGroup={() => editGroup(g.id)}
+                  deleteGroup={() => void deleteGroup(g)}
                   drop={drop}
-                  dropAfter={dropAfter}
-                  onAccount={accountMenu}
-                  onGroup={() => groupMenu(g)}
+                  after={after}
                 />
               ))}
           </SortableContext>
           <DragOverlay>
-            {dragAccount && (
+            {drag && (
               <div className="overlay-card">
-                <Icon name={dragAccount.icon} />
-                <strong>{dragAccount.name}</strong>
-                <Amount
-                  value={balance(book, dragAccount.id)}
-                  currency={dragAccount.currency}
-                />
-              </div>
-            )}
-            {drag && !dragAccount && (
-              <div className="overlay-card">
-                {groups.find((g) => g.id === drag)?.name}
+                {activeAccount ? (
+                  <>
+                    <Icon name={activeAccount.icon} />
+                    <strong>{activeAccount.name}</strong>
+                    <Amount
+                      value={balance(book, activeAccount.id)}
+                      currency={activeAccount.currency}
+                    />
+                  </>
+                ) : (
+                  <strong>{groups.find((g) => g.id === drag.id)?.name}</strong>
+                )}
               </div>
             )}
           </DragOverlay>
@@ -571,17 +501,17 @@ export function Accounts() {
       </main>
       {!manage && book.accounts.some((a) => !a.archived) && (
         <div className="floating-entry">
-          <Button
-            icon="SquarePen"
+          <IconButton
+            className="entry-action"
+            name="SquarePen"
+            label="记一笔"
             onClick={() =>
               app.go({
                 page: "entry",
                 accountId: book.accounts.find((a) => !a.archived)?.id,
               })
             }
-          >
-            记一笔
-          </Button>
+          />
         </div>
       )}
     </>
