@@ -2,7 +2,7 @@
 
 版本：0.10
 日期：2026-10-30
-依据：[首版需求 0.13](requirements.md)、[产品设计 0.11](product-design.md)
+依据：[首版需求 0.14](requirements.md)、[产品设计 0.12](product-design.md)
 状态：正式架构待分阶段验收；P0 已开始独立产品原型，范围和验证记录见 [P0 评审说明](p0-review.md)。
 
 **2026-10-29 实现状态补充**：用户已授权并交付 [0.4.0 前端](frontend-review-v0.4.0.md)。React/TypeScript/Vite、Dexie、Lucide、dnd-kit 和 Temporal 兼容实现的确切版本见 `package-lock.json`。源码在 `src/`；当前本机 schema 3 保留旧个人库名，账本保存与实体前后差异、操作日志在同一事务提交；旧状态副本保留。原静态服务和内容指纹发布继续使用固定 8445，未用这次交付替代下文服务端模型、同步协议或迁移验收。

@@ -1,4 +1,7 @@
-import { allocateSplits } from "../domain/split-allocation.ts";
+import {
+  allocateSplits,
+  descriptionSplits,
+} from "../domain/split-allocation.ts";
 import { DescriptionSuggestions } from "../components/DescriptionSuggestions.tsx";
 import { DateTimeField } from "../components/DateTimeField.tsx";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -199,19 +202,18 @@ export function EntryForm() {
   } catch {}
   function pickDescription(e: Entry) {
     setDescription(e.description);
-    if (!catManual.current && !splitMode) {
-      setSplits([
-        {
-          id: splits[0]?.id || uid(),
-          categoryId: book.categories.some(
-            (c) => c.id === e.splits[0]?.categoryId && !c.archived,
-          )
-            ? e.splits[0].categoryId
-            : "",
-          amount: "",
-          projectId: splits[0]?.projectId,
-        },
-      ]);
+    if (!catManual.current) {
+      const template = descriptionSplits(book, e, total > 0n ? total : 0n);
+      setSplits(
+        template.map((row) => ({
+          ...row,
+          amount: decimal(row.amountMinor, currency),
+        })),
+      );
+      setSplitMode(template.length > 1);
+      setAllocationError("");
+      if (template.some((row) => !row.categoryId) && e.splits.length)
+        app.toast("部分历史类目已归档或不可用，请重新选择。");
     }
     setFocused(false);
     setShowSuggestions(false);

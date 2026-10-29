@@ -369,7 +369,7 @@ export function Accounts() {
     <>
       <Header title="账户">
         <IconButton
-          name={manage ? "Check" : "ListOrdered"}
+          name={manage ? "Check" : "Pencil"}
           label={manage ? "完成账户管理" : "管理账户"}
           onClick={() => {
             setAddMenu(false);

@@ -1,3 +1,4 @@
+import { uid, type Book, type Entry, type Split } from "./types.ts";
 export interface AllocationRow {
   id: string;
   amountMinor: string;
@@ -30,4 +31,28 @@ export function allocateSplits(
     if (remainder > 0n) remainder--;
     return amount.toString();
   });
+}
+
+// Reuse the category structure, never the historical amounts, projects, notes or IDs.
+export function descriptionSplits(
+  book: Pick<Book, "categories">,
+  entry: Pick<Entry, "splits" | "kind">,
+  total: bigint,
+): (Split & { locked: false })[] {
+  const source = entry.splits.length ? entry.splits : [{ categoryId: "" }];
+  const rows = source.map((split) => ({
+    id: uid(),
+    categoryId: book.categories.some(
+      (category) =>
+        category.id === split.categoryId &&
+        !category.archived &&
+        category.kind === (entry.kind === "income" ? "income" : "expense"),
+    )
+      ? split.categoryId
+      : "",
+    amountMinor: "0",
+    locked: false as const,
+  }));
+  const amounts = allocateSplits(total, rows);
+  return rows.map((row, i) => ({ ...row, amountMinor: amounts[i] }));
 }

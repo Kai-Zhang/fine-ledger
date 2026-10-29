@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allocateSplits } from "../src/domain/split-allocation.ts";
+import {
+  allocateSplits,
+  descriptionSplits,
+} from "../src/domain/split-allocation.ts";
 import { resistedOffset, completesSwipe } from "../src/navigation/motion.ts";
 import {
   effectiveTimeZone,
@@ -93,4 +96,61 @@ test("system time zone drives input, display and report dates without rewriting 
   assert.equal(effectiveTimeZone(b, "Asia/Tokyo"), "Asia/Shanghai");
   delete b.settings.timeZoneMode;
   assert.equal(effectiveTimeZone(b, "Asia/Tokyo"), "Asia/Tokyo");
+});
+
+test("description templates keep every category in order, evenly divide the current amount and isolate historical data", () => {
+  const book = blankBook();
+  const source = {
+    kind: "expense",
+    splits: [
+      {
+        id: "old-a",
+        categoryId: "food-0",
+        amountMinor: "1000",
+        projectId: "old-trip",
+        note: "historical note",
+      },
+      { id: "old-b", categoryId: "shopping-0", amountMinor: "9000" },
+    ],
+  };
+  const before = structuredClone(source);
+  const result = descriptionSplits(book, source, 10001n);
+  assert.deepEqual(
+    result.map((s) => s.categoryId),
+    ["food-0", "shopping-0"],
+  );
+  assert.deepEqual(
+    result.map((s) => s.amountMinor),
+    ["5001", "5000"],
+  );
+  assert.ok(
+    result.every(
+      (s) =>
+        !s.locked &&
+        !s.projectId &&
+        !s.note &&
+        !source.splits.some((old) => old.id === s.id),
+    ),
+  );
+  assert.equal(new Set(result.map((s) => s.id)).size, 2);
+  assert.deepEqual(source, before);
+  const empty = descriptionSplits(book, source, 0n);
+  assert.deepEqual(
+    empty.map((s) => s.amountMinor),
+    ["0", "0"],
+  );
+  assert.deepEqual(allocateSplits(12600n, empty), ["6300", "6300"]);
+  const single = descriptionSplits(
+    book,
+    { kind: "expense", splits: [source.splits[1]] },
+    100n,
+  );
+  assert.equal(single.length, 1);
+  assert.equal(single[0].categoryId, "shopping-0");
+  assert.equal(single[0].amountMinor, "100");
+  book.categories.find((c) => c.id === "food-0").archived = true;
+  assert.deepEqual(
+    descriptionSplits(book, source, 100n).map((s) => s.categoryId),
+    ["", "shopping-0"],
+  );
 });
