@@ -1,3 +1,4 @@
+export { ReportCatalog } from "./ReportCatalog.tsx";
 import { useMemo, useState, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
@@ -59,7 +60,20 @@ export function Reports() {
   const app = useApp(),
     { book } = app;
   const viewKey = `${app.mode}:reports:${JSON.stringify(app.route)}`;
-  const cached = app.views.get(viewKey) as ReportView | undefined;
+  const saved = book.settings.savedReports.find(
+    (r) => r.id === app.route.savedReportId,
+  );
+  const cached = (app.views.get(viewKey) ||
+    (saved
+      ? {
+          ...saved,
+          ids: saved.accountIds.filter((id) =>
+            book.accounts.some((a) => a.id === id),
+          ),
+          interval: "day",
+          point: null,
+        }
+      : undefined)) as ReportView | undefined;
   const [type, setType] = useState<"net" | "expense">(
       cached?.type || app.route.report || "net",
     ),
@@ -75,7 +89,10 @@ export function Reports() {
         : localDate(new Date(), book.timeZone),
     ),
     [ids, setIds] = useState(
-      cached?.ids || book.accounts.filter((a) => a.netWorth).map((a) => a.id),
+      cached?.ids ||
+        book.accounts
+          .filter((a) => app.route.report === "expense" || a.netWorth)
+          .map((a) => a.id),
     ),
     [categoryIds, setCategoryIds] = useState<string[]>(
       cached?.categoryIds || [],
@@ -184,41 +201,16 @@ export function Reports() {
       postedOnly: true,
       reportKind: "expense",
     });
-  function loadSaved(report: SavedReport) {
-    setType(report.type);
-    setDays(report.days);
-    setFrom(
-      report.days === "custom"
-        ? report.from
-        : startFor(report.days, book.timeZone),
-    );
-    setTo(
-      report.days === "custom"
-        ? report.to
-        : localDate(new Date(), book.timeZone),
-    );
-    setIds(
-      report.accountIds.filter((id) => book.accounts.some((a) => a.id === id)),
-    );
-    setCategoryIds(report.categoryIds);
-    setPoint(null);
-  }
   function saveDialog() {
     setSaveName("");
     setSaving(true);
   }
-  function selectType(value: "net" | "expense") {
-    setType(value);
-    setPoint(null);
-    setIds(
-      book.accounts
-        .filter((a) => value === "expense" || a.netWorth)
-        .map((a) => a.id),
-    );
-  }
   return (
     <>
-      <Header title="报表">
+      <Header
+        title={saved?.name || (type === "net" ? "净值走势" : "支出分类")}
+        back
+      >
         <IconButton
           name="SlidersHorizontal"
           label="筛选报表"
@@ -226,29 +218,6 @@ export function Reports() {
         />
       </Header>
       <main className="page-content reports-page">
-        <div className="segmented report-tabs">
-          <button
-            className={type === "net" ? "selected" : ""}
-            onClick={() => selectType("net")}
-          >
-            净值走势
-          </button>
-          <button
-            className={type === "expense" ? "selected" : ""}
-            onClick={() => selectType("expense")}
-          >
-            支出分类
-          </button>
-        </div>
-        {book.settings.savedReports.length > 0 && (
-          <div className="saved-reports">
-            {book.settings.savedReports.map((r) => (
-              <button key={r.id} onClick={() => loadSaved(r)}>
-                {r.name}
-              </button>
-            ))}
-          </div>
-        )}
         <div className="report-toolbar">
           <select
             aria-label="报表时间范围"
@@ -604,7 +573,7 @@ export function Reports() {
         )}
       </main>
       {filter && (
-        <Dialog title="报表筛选" onClose={() => setFilter(false)}>
+        <Dialog title="报表筛选" dirty={false} onClose={() => setFilter(false)}>
           <div className="dialog-body report-filters">
             <div className="section-title">
               <h3>账户</h3>

@@ -1,3 +1,11 @@
+import { flushSync } from "react-dom";
+import { Categories } from "./pages/Categories.tsx";
+import {
+  initialNavigation,
+  currentFrame,
+  navigate,
+  type NavigationAction,
+} from "./navigation/stack.ts";
 import { deviceTimeZone, timeZones } from "./domain/dates.ts";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -7,25 +15,24 @@ import { Button, Dialog, Field, ErrorMessage } from "./ui/components.tsx";
 import { Accounts, ArchiveAccounts } from "./pages/Accounts.tsx";
 import { TransactionsPage, Detail, Trash } from "./pages/TransactionsPage.tsx";
 import { EntryForm } from "./pages/EntryForm.tsx";
-import { Reports } from "./pages/Reports.tsx";
-import { Settings, Categories, Projects, Sync } from "./pages/Settings.tsx";
+import { Reports, ReportCatalog } from "./pages/Reports.tsx";
+import { Settings, Projects, Sync } from "./pages/Settings.tsx";
 import { initialize, readBook, mutate } from "./storage/repository.ts";
 import { blankBook } from "./domain/ledger.ts";
 import { uid, type Book } from "./domain/types.ts";
 import { currencies, minor } from "./domain/money.ts";
 import { protectUpdates, registerPWA, checkDeferredUpdate } from "./pwa.ts";
-const roots = ["accounts", "transactions", "reports", "settings"] as const,
-  navItems = [
-    ["accounts", "Wallet", "账户"],
-    ["transactions", "List", "交易"],
-    ["reports", "ChartNoAxesCombined", "报表"],
-    ["settings", "Settings", "设置"],
-  ] as const;
+const navItems = [
+  ["accounts", "Wallet", "账户"],
+  ["transactions", "List", "交易"],
+  ["reports", "ChartNoAxesCombined", "报表"],
+  ["settings", "Settings", "设置"],
+] as const;
 export function App() {
   const mode = "personal" as const;
   const [ready, setReady] = useState(false),
     [failure, setFailure] = useState(""),
-    [route, setRoute] = useState<Route>({ page: "accounts" }),
+    [navigation, setNavigation] = useState(initialNavigation),
     [modal, setModal] = useState<ReactNode>(null),
     [message, setMessage] = useState(""),
     [confirmState, setConfirm] = useState<{
@@ -33,16 +40,22 @@ export function App() {
       message: string;
       label?: string;
       danger?: boolean;
+      cancelLabel?: string;
       resolve: (value: boolean) => void;
     } | null>(null);
+  const frame = currentFrame(navigation),
+    route = frame.route;
+  const navigationRef = useRef(navigation);
+  navigationRef.current = navigation;
   const dirtyRef = useRef(false),
-    routeRef = useRef(route),
     toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
-    historyDepth = useRef(0),
+    layers = useRef<{ close: () => void; dirty: () => boolean }[]>([]),
+    pendingLeave = useRef(false),
+    gestureNavigationAt = useRef(0),
     scrolls = useRef(new Map<string, number>());
   const modalOpen = useRef(false);
   modalOpen.current = !!modal || !!confirmState;
-  routeRef.current = route;
+
   const views = useRef(new Map<string, unknown>()).current;
   const book = useLiveQuery(() => readBook(mode), [mode]);
   const toast = (text: string) => {
@@ -62,36 +75,42 @@ export function App() {
       .catch((e) => setFailure(e.message));
   }, [mode]);
   useEffect(() => {
-    protectUpdates(() => dirtyRef.current || modalOpen.current);
-    void registerPWA();
-    history.replaceState(
-      { ledger: true, depth: 0, route: { page: "accounts" } },
-      "",
+    protectUpdates(
+      () => dirtyRef.current || modalOpen.current || layers.current.length > 0,
     );
+    void registerPWA();
+    // Three same-URL slots catch browser traversal; app routes never enter browser history.
+    let restoring = false,
+      booting = true;
+    const marker = "fine-ledger-navigation-v2";
     const pop = () => {
-      const next = history.state?.route || { page: "accounts" };
-      if (
-        dirtyRef.current &&
-        !window.confirm("尚未保存的修改将丢失，确认返回？")
-      ) {
-        history.pushState(
-          {
-            ledger: true,
-            depth: historyDepth.current,
-            route: routeRef.current,
-          },
-          "",
-        );
+      const slot = history.state?.[marker];
+      if (slot === 0) {
+        restoring = false;
+        booting = false;
         return;
       }
-      setDirty(false);
-      setModal(null);
-      historyDepth.current = history.state?.depth || 0;
-      setRoute(next);
+      if (slot !== -1 && slot !== 1) return;
+      if (restoring) return;
+      restoring = true;
+      history.go(-slot);
+      if (!booting && Date.now() - gestureNavigationAt.current > 450) {
+        startTouch.current = null;
+        setSwipe(0);
+        requestRef.current(slot === -1 ? "back" : "forward");
+      }
     };
     window.addEventListener("popstate", pop);
+    const slot = history.state?.[marker];
+    if (slot === undefined) {
+      history.replaceState({ [marker]: -1 }, "");
+      history.pushState({ [marker]: 0 }, "");
+      history.pushState({ [marker]: 1 }, "");
+      history.back();
+    } else if (slot !== 0) history.go(-slot);
+    else booting = false;
     const unload = (e: BeforeUnloadEvent) => {
-      if (dirtyRef.current) {
+      if (dirtyRef.current || layers.current.some((layer) => layer.dirty())) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -136,64 +155,94 @@ export function App() {
   useEffect(() => {
     requestAnimationFrame(() => {
       const el = document.querySelector(".page-content");
-      if (el) el.scrollTop = scrolls.current.get(JSON.stringify(route)) || 0;
+      if (el) el.scrollTop = scrolls.current.get(String(frame.key)) || 0;
     });
-  }, [route]);
+  }, [frame.key]);
   async function confirm(options: {
     title: string;
     message: string;
     label?: string;
     danger?: boolean;
+    cancelLabel?: string;
   }) {
     return new Promise<boolean>((resolve) =>
       setConfirm({ ...options, resolve }),
     );
   }
-  function go(next: Route) {
-    if (dirtyRef.current) {
-      void confirm({
-        title: "放弃未保存的修改？",
-        message: "这笔交易尚未保存。",
-        label: "放弃修改",
-        danger: true,
-      }).then((yes) => {
-        if (yes) {
-          setDirty(false);
-          go(next);
-        }
-      });
+  function leave(action: () => void, dirty = dirtyRef.current) {
+    if (pendingLeave.current) return;
+    if (!dirty) {
+      action();
       return;
     }
+    pendingLeave.current = true;
+    void confirm({
+      title: "放弃未保存的修改？",
+      message: "修改尚未保存。",
+      label: "放弃修改",
+      cancelLabel: "继续填写",
+      danger: true,
+    }).then((yes) => {
+      pendingLeave.current = false;
+      if (yes) action();
+    });
+  }
+  function commit(action: NavigationAction) {
+    const next = navigate(navigationRef.current, action);
+    if (next === navigationRef.current) return;
     const scroll = document.querySelector(".page-content");
     if (scroll)
-      scrolls.current.set(JSON.stringify(routeRef.current), scroll.scrollTop);
-    historyDepth.current++;
-    history.pushState(
-      { ledger: true, depth: historyDepth.current, route: next },
-      "",
-    );
-    setRoute(next);
-    setModal(null);
+      scrolls.current.set(
+        String(currentFrame(navigationRef.current).key),
+        scroll.scrollTop,
+      );
+    setDirty(false);
+    navigationRef.current = next;
+    setNavigation(next);
   }
-  function back() {
-    if (dirtyRef.current) {
-      void confirm({
-        title: "放弃未保存的修改？",
-        message: "这笔交易尚未保存。",
-        label: "放弃修改",
-        danger: true,
-      }).then((yes) => {
-        if (yes) {
-          setDirty(false);
-          back();
-        }
-      });
+  function request(direction: "back" | "forward") {
+    if (pendingLeave.current || confirmState) return;
+    const top = layers.current.at(-1);
+    if (top) {
+      if (direction === "back") top.close();
       return;
     }
-    setModal(null);
-    if (historyDepth.current > 0) history.back();
-    else go({ page: "accounts" });
+    const state = navigationRef.current;
+    if (navigate(state, { type: direction }) === state) return;
+    leave(() => commit({ type: direction }));
   }
+  const requestRef = useRef(request);
+  requestRef.current = request;
+  function go(next: Route) {
+    leave(() => {
+      setModal(null);
+      commit({ type: "open", route: next });
+    });
+  }
+  const back = () => request("back");
+  const forward = () => request("forward");
+  function swipeNavigate(direction: "back" | "forward") {
+    gestureNavigationAt.current = Date.now();
+    const key = currentFrame(navigationRef.current).key,
+      top = layers.current.at(-1);
+    setTimeout(() => {
+      if (
+        key === currentFrame(navigationRef.current).key &&
+        top === layers.current.at(-1)
+      )
+        requestRef.current(direction);
+    }, 160);
+  }
+  const registerLayer = useRef(
+    (close: () => void, dirty: () => boolean = () => false) => {
+      const layer = { close, dirty };
+      layers.current.push(layer);
+      return () => {
+        layers.current = layers.current.filter((x) => x !== layer);
+        checkDeferredUpdate();
+      };
+    },
+  ).current;
   async function save(action: string, change: (book: Book) => void) {
     try {
       await mutate(mode, action, change);
@@ -207,13 +256,67 @@ export function App() {
       return false;
     }
   }
-  const startTouch = useRef<{ x: number; y: number } | null>(null);
-  const isRoot =
-    roots.includes(route.page as (typeof roots)[number]) &&
-    !(
-      route.page === "transactions" &&
-      (route.from || route.to || route.accountIds || route.reportKind)
-    );
+  const startTouch = useRef<{
+    x: number;
+    y: number;
+    direction: "back" | "forward";
+    moved: number;
+    rejected?: boolean;
+  } | null>(null);
+  const [swipe, setSwipe] = useState(0);
+  const branch = navigation.stacks[navigation.tab];
+  const isRoot = branch.past.length === 1;
+  function touchStart(e: React.PointerEvent) {
+    if (pendingLeave.current || confirmState) return;
+    const t = e,
+      target = e.target as HTMLElement;
+    if (target.closest("[data-no-back], .drag-handle")) return;
+    const direction =
+      t.clientX <= 24
+        ? "back"
+        : t.clientX >= innerWidth - 24
+          ? "forward"
+          : null;
+    if (
+      !direction ||
+      (direction === "back"
+        ? !(branch.past.length > 1 || layers.current.length)
+        : !(branch.future.length && !layers.current.length))
+    )
+      return;
+    startTouch.current = { x: t.clientX, y: t.clientY, direction, moved: 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function touchMove(e: React.PointerEvent) {
+    const start = startTouch.current;
+    if (!start || start.rejected) return;
+    const t = e,
+      dx = t.clientX - start.x,
+      dy = t.clientY - start.y;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+      start.rejected = true;
+      setSwipe(0);
+      return;
+    }
+    if (Math.abs(dx) > 8 && e.cancelable) e.preventDefault();
+    start.moved =
+      start.direction === "back" ? Math.max(0, dx) : Math.min(0, dx);
+    if (Math.abs(start.moved) > 8 && !layers.current.length)
+      setSwipe(start.moved);
+  }
+  function touchEnd() {
+    const start = startTouch.current;
+    startTouch.current = null;
+    setSwipe(0);
+    if (
+      start &&
+      !start.rejected &&
+      Math.abs(start.moved) > Math.min(110, innerWidth * 0.26)
+    ) {
+      // Return the page to its resting position before showing an unsaved prompt.
+      swipeNavigate(start.direction);
+    }
+  }
   if (failure)
     return (
       <div className="boot-error">
@@ -252,7 +355,8 @@ export function App() {
     accounts: <Accounts />,
     transactions: <TransactionsPage />,
     account: <TransactionsPage />,
-    reports: <Reports />,
+    reports: <ReportCatalog />,
+    report: <Reports />,
     settings: <Settings />,
     entry: <EntryForm />,
     detail: <Detail />,
@@ -271,17 +375,47 @@ export function App() {
         route,
         go,
         back,
+        forward,
+        swipe: swipeNavigate,
+        registerLayer,
+        leave,
         save,
         toast,
         setDirty,
         confirm,
         open: setModal,
-        close: () => setModal(null),
+        close: () => flushSync(() => setModal(null)),
       }}
     >
       <div
         className={`app-shell ${isRoot ? "root-page" : "sub-page"} ${route.page === "entry" ? "editing-page" : ""}`}
       >
+        {branch.past.length > 1 && (
+          <div
+            className="edge-swipe-zone back-edge"
+            aria-hidden="true"
+            onPointerDown={touchStart}
+            onPointerMove={touchMove}
+            onPointerUp={touchEnd}
+            onPointerCancel={() => {
+              startTouch.current = null;
+              setSwipe(0);
+            }}
+          />
+        )}
+        {!!branch.future.length && (
+          <div
+            className="edge-swipe-zone forward-edge"
+            aria-hidden="true"
+            onPointerDown={touchStart}
+            onPointerMove={touchMove}
+            onPointerUp={touchEnd}
+            onPointerCancel={() => {
+              startTouch.current = null;
+              setSwipe(0);
+            }}
+          />
+        )}
         <aside className="sidebar">
           <button className="brand" onClick={() => go({ page: "accounts" })}>
             <span className="brand-mark">厘</span>
@@ -293,14 +427,9 @@ export function App() {
             {navItems.map(([page, icon, label]) => (
               <button
                 key={page}
-                className={
-                  route.page === page ||
-                  (page === "accounts" && route.page === "account")
-                    ? "selected"
-                    : ""
-                }
+                className={navigation.tab === page ? "selected" : ""}
                 onClick={() => {
-                  if (route.page !== page) go({ page });
+                  go({ page });
                 }}
               >
                 <Icon name={icon} />
@@ -318,31 +447,11 @@ export function App() {
         </aside>
         <section
           className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
-          onTouchStart={(e) => {
-            const t = e.touches[0];
-            if (
-              t.clientX <= 24 &&
-              !isRoot &&
-              !modal &&
-              !(e.target as HTMLElement).closest(
-                "input,textarea,select,[data-no-back]",
-              )
-            )
-              startTouch.current = { x: t.clientX, y: t.clientY };
+          style={{
+            transform: swipe ? `translateX(${swipe}px)` : undefined,
+            transition: swipe ? "none" : "transform 160ms ease-out",
           }}
-          onTouchEnd={(e) => {
-            const start = startTouch.current;
-            startTouch.current = null;
-            if (start) {
-              const t = e.changedTouches[0];
-              if (
-                t.clientX - start.x > 85 &&
-                Math.abs(t.clientY - start.y) < 60
-              )
-                back();
-            }
-          }}
-          key={JSON.stringify(route)}
+          key={frame.key}
         >
           {pages[route.page]}
         </section>
@@ -351,10 +460,10 @@ export function App() {
             {navItems.map(([page, icon, label]) => (
               <button
                 key={page}
-                className={route.page === page ? "selected" : ""}
-                aria-current={route.page === page ? "page" : undefined}
+                className={navigation.tab === page ? "selected" : ""}
+                aria-current={navigation.tab === page ? "page" : undefined}
                 onClick={() => {
-                  if (route.page !== page) go({ page });
+                  go({ page });
                 }}
               >
                 <Icon name={icon} size={22} />
@@ -367,6 +476,7 @@ export function App() {
       {modal}
       {confirmState && (
         <Dialog
+          guard={false}
           title={confirmState.title}
           onClose={() => {
             confirmState.resolve(false);
@@ -383,7 +493,7 @@ export function App() {
                   setConfirm(null);
                 }}
               >
-                取消
+                {confirmState.cancelLabel || "取消"}
               </Button>
               <Button
                 variant={confirmState.danger ? "danger" : "primary"}

@@ -1,3 +1,4 @@
+import { moveAccount } from "../domain/organization.ts";
 import { useState } from "react";
 import {
   DndContext,
@@ -7,6 +8,7 @@ import {
   useSensors,
   DragOverlay,
   closestCenter,
+  pointerWithin,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -35,11 +37,15 @@ function AccountRow({
   manage,
   onMenu,
   overlay = false,
+  drop = false,
+  dropAfter = false,
 }: {
   account: Account;
   manage: boolean;
   onMenu: () => void;
   overlay?: boolean;
+  drop?: boolean;
+  dropAfter?: boolean;
 }) {
   const app = useApp(),
     sort = useSortable({
@@ -56,7 +62,7 @@ function AccountRow({
         transition: sort.transition,
         opacity: sort.isDragging ? 0.2 : 1,
       }}
-      className={`account-row ${overlay ? "drag-overlay" : ""}`}
+      className={`account-row ${overlay ? "drag-overlay" : ""} ${drop ? (dropAfter ? "drop-account-after" : "drop-account") : ""}`}
     >
       {manage && (
         <button
@@ -109,11 +115,15 @@ function GroupSection({
   manage,
   onAccount,
   onGroup,
+  drop,
+  dropAfter,
 }: {
   group: Group;
   manage: boolean;
   onAccount: (a: Account) => void;
   onGroup: () => void;
+  drop?: string | null;
+  dropAfter?: boolean;
 }) {
   const { book } = useApp(),
     sort = useSortable({
@@ -133,7 +143,7 @@ function GroupSection({
   );
   return (
     <section
-      className="account-group"
+      className={`account-group ${drop === group.id || accounts.some((a) => a.id === drop) ? "drop-group" : ""}`}
       ref={sort.setNodeRef}
       style={{
         transform: CSS.Transform.toString(sort.transform),
@@ -179,6 +189,8 @@ function GroupSection({
               key={a.id}
               account={a}
               manage={manage}
+              drop={drop === a.id}
+              dropAfter={dropAfter}
               onMenu={() => onAccount(a)}
             />
           ))}
@@ -192,7 +204,9 @@ export function Accounts() {
   const app = useApp(),
     { book } = app,
     [manage, setManage] = useState(false),
-    [drag, setDrag] = useState<string | null>(null);
+    [drag, setDrag] = useState<string | null>(null),
+    [drop, setDrop] = useState<string | null>(null),
+    [dropAfter, setDropAfter] = useState(false);
   const sensors = useSensors(
       useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
       useSensor(KeyboardSensor, {
@@ -359,6 +373,7 @@ export function Accounts() {
   }
   async function end(event: DragEndEvent) {
     setDrag(null);
+    setDrop(null);
     const { active, over } = event;
     if (!over || over.id === active.id) return;
     if (active.data.current?.type === "group") {
@@ -371,19 +386,23 @@ export function Accounts() {
         ).forEach((g, i) => (b.groups.find((x) => x.id === g.id)!.order = i)),
       );
     } else {
-      if (active.data.current?.groupId !== over.data.current?.groupId) return;
+      const targetAccount = book.accounts.find((a) => a.id === over.id);
+      const groupId = targetAccount?.groupId || String(over.id);
+      const after =
+        active.rect.current.translated &&
+        active.rect.current.translated.top +
+          active.rect.current.translated.height / 2 >
+          over.rect.top + over.rect.height / 2;
       const siblings = book.accounts
-        .filter(
-          (a) => a.groupId === active.data.current?.groupId && !a.archived,
-        )
+        .filter((a) => a.groupId === groupId && a.id !== active.id)
         .sort((a, b) => a.order - b.order);
-      if (!siblings.some((a) => a.id === over.id)) return;
-      await app.save("排列账户", (b) =>
-        arrayMove(
-          siblings,
-          siblings.findIndex((a) => a.id === active.id),
-          siblings.findIndex((a) => a.id === over.id),
-        ).forEach((a, i) => (b.accounts.find((x) => x.id === a.id)!.order = i)),
+      const next =
+        targetAccount && after
+          ? siblings[siblings.findIndex((a) => a.id === targetAccount.id) + 1]
+              ?.id
+          : targetAccount?.id;
+      await app.save("移动账户", (b) =>
+        moveAccount(b, String(active.id), groupId, next),
       );
     }
   }
@@ -395,37 +414,35 @@ export function Accounts() {
             完成
           </Button>
         ) : (
-          <>
-            <Button variant="plain" onClick={() => setManage(true)}>
-              管理
-            </Button>
-            <IconButton
-              name="Plus"
-              label="新增账户或分组"
-              onClick={() =>
-                app.open(
-                  <Dialog title="添加" onClose={app.close}>
-                    <div className="menu-list">
-                      <button onClick={() => editAccount()}>
-                        <Icon name="Wallet" />
-                        新增账户
-                      </button>
-                      <button onClick={() => editGroup()}>
-                        <Icon name="Folder" />
-                        新增分组
-                      </button>
-                    </div>
-                  </Dialog>,
-                )
-              }
-            />
-          </>
+          <Button variant="plain" onClick={() => setManage(true)}>
+            管理
+          </Button>
         )}
       </Header>
       <main className="page-content accounts-page">
+        {manage && (
+          <div className="management-toolbar">
+            <Button variant="soft" icon="Wallet" onClick={() => editAccount()}>
+              新增账户
+            </Button>
+            <Button
+              variant="plain"
+              icon="FolderPlus"
+              onClick={() => editGroup()}
+            >
+              新增分组
+            </Button>
+          </div>
+        )}
+        {!book.accounts.length && (
+          <Empty
+            title="还没有账户"
+            action={<Button onClick={() => editAccount()}>新增账户</Button>}
+          />
+        )}
         <button
           className="net-summary"
-          onClick={() => app.go({ page: "reports", report: "net" })}
+          onClick={() => app.go({ page: "report", report: "net" })}
         >
           <div>
             <span>
@@ -455,21 +472,47 @@ export function Accounts() {
               onDragCancel: () => "已取消排序",
             },
           }}
-          collisionDetection={(args) =>
-            closestCenter({
+          collisionDetection={(args) => {
+            const containers = args.droppableContainers.filter((c) =>
+              args.active.data.current?.type === "group"
+                ? c.data.current?.type === "group"
+                : true,
+            );
+            const hits = pointerWithin({
               ...args,
-              droppableContainers: args.droppableContainers.filter(
-                (container) =>
-                  args.active.data.current?.type === "group"
-                    ? container.data.current?.type === "group"
-                    : container.data.current?.type === "account" &&
-                      container.data.current?.groupId ===
-                        args.active.data.current?.groupId,
-              ),
-            })
+              droppableContainers: containers,
+            });
+            const accountHits = hits.filter(
+              (h) =>
+                containers.find((c) => c.id === h.id)?.data.current?.type ===
+                "account",
+            );
+            return accountHits.length
+              ? accountHits
+              : hits.length
+                ? hits
+                : closestCenter({ ...args, droppableContainers: containers });
+          }}
+          onDragOver={(e) =>
+            setDrop(
+              e.over && e.over.id !== e.active.id ? String(e.over.id) : null,
+            )
           }
+          onDragMove={(e) => {
+            const r = e.active.rect.current.translated;
+            setDropAfter(
+              !!(
+                e.over &&
+                r &&
+                r.top + r.height / 2 > e.over.rect.top + e.over.rect.height / 2
+              ),
+            );
+          }}
           onDragStart={(e) => setDrag(String(e.active.id))}
-          onDragCancel={() => setDrag(null)}
+          onDragCancel={() => {
+            setDrag(null);
+            setDrop(null);
+          }}
           onDragEnd={end}
         >
           <SortableContext
@@ -490,6 +533,8 @@ export function Accounts() {
                   key={g.id}
                   group={g}
                   manage={manage}
+                  drop={drop}
+                  dropAfter={dropAfter}
                   onAccount={accountMenu}
                   onGroup={() => groupMenu(g)}
                 />
@@ -527,7 +572,7 @@ export function Accounts() {
       {!manage && book.accounts.some((a) => !a.archived) && (
         <div className="floating-entry">
           <Button
-            icon="Plus"
+            icon="SquarePen"
             onClick={() =>
               app.go({
                 page: "entry",

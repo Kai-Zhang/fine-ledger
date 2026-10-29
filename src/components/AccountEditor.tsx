@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
   Dialog,
@@ -27,7 +27,8 @@ export function AccountEditor({
   groupId?: string;
   onClose: () => void;
 }) {
-  const { book, save } = useApp(),
+  const app = useApp();
+  const { book, save } = app,
     [name, setName] = useState(account?.name || ""),
     [type, setType] = useState(account?.type || "bank"),
     [currency, setCurrency] = useState(account?.currency || book.currency),
@@ -41,6 +42,17 @@ export function AccountEditor({
     [net, setNet] = useState(account?.netWorth !== false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const snapshot = JSON.stringify({
+      name,
+      type,
+      currency,
+      group,
+      opening,
+      at,
+      net,
+    }),
+    initialSnapshot = useRef(snapshot),
+    dirty = initialSnapshot.current !== snapshot;
   const hasHistory =
     !!account &&
     book.entries.some(
@@ -92,7 +104,11 @@ export function AccountEditor({
     }
   }
   return (
-    <Dialog title={account ? "编辑账户" : "新增账户"} onClose={onClose}>
+    <Dialog
+      title={account ? "编辑账户" : "新增账户"}
+      dirty={dirty}
+      onClose={onClose}
+    >
       <form className="dialog-body" onSubmit={submit}>
         <Field label="名称">
           <input
@@ -171,7 +187,11 @@ export function AccountEditor({
         />
         <ErrorMessage message={error} />
         <div className="dialog-footer">
-          <Button type="button" variant="plain" onClick={onClose}>
+          <Button
+            type="button"
+            variant="plain"
+            onClick={() => app.leave(onClose, dirty)}
+          >
             取消
           </Button>
           <Button disabled={busy} type="submit">
@@ -189,13 +209,19 @@ export function GroupEditor({
   id?: string;
   onClose: () => void;
 }) {
-  const { book, save } = useApp(),
+  const app = useApp();
+  const { book, save } = app,
     [name, setName] = useState(
       book.groups.find((g) => g.id === id)?.name || "",
     ),
     [busy, setBusy] = useState(false);
+  const dirty = name !== (book.groups.find((g) => g.id === id)?.name || "");
   return (
-    <Dialog title={id ? "重命名分组" : "新增分组"} onClose={onClose}>
+    <Dialog
+      title={id ? "重命名分组" : "新增分组"}
+      dirty={dirty}
+      onClose={onClose}
+    >
       <form
         className="dialog-body"
         onSubmit={async (e) => {
@@ -228,7 +254,11 @@ export function GroupEditor({
           />
         </Field>
         <div className="dialog-footer">
-          <Button type="button" variant="plain" onClick={onClose}>
+          <Button
+            type="button"
+            variant="plain"
+            onClick={() => app.leave(onClose, dirty)}
+          >
             取消
           </Button>
           <Button disabled={busy}>保存分组</Button>

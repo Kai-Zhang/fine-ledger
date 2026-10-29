@@ -1,5 +1,8 @@
 import {
   Hotel,
+  SquarePen,
+  ChartPie,
+  FolderPlus,
   Landmark,
   Wallet,
   CreditCard,
@@ -69,6 +72,9 @@ import {
 } from "lucide-react";
 export const icons: Record<string, LucideIcon> = {
   Hotel,
+  SquarePen,
+  ChartPie,
+  FolderPlus,
   Landmark,
   Wallet,
   CreditCard,

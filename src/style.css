@@ -3338,3 +3338,215 @@ body:has(.app-shell) {
     gap: 4px;
   }
 }
+
+/* Application navigation and organization. */
+html,
+body {
+  overscroll-behavior-x: none;
+}
+.workspace {
+  will-change: transform;
+}
+.management-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.drop-group .account-surface {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  background: var(--accent-soft);
+}
+.category-block {
+  position: relative;
+  background: var(--surface);
+}
+.category-manage-row {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  gap: 4px;
+}
+.category-manage-row .drag-handle {
+  flex-shrink: 0;
+}
+.category-edit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  text-align: left;
+}
+.category-edit small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.category-expand {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.category-expand.expanded svg {
+  transform: rotate(90deg);
+}
+.child-category .category-manage-row {
+  padding-left: 35px;
+}
+.drop-category > .category-manage-row {
+  background: var(--accent-soft);
+  box-shadow: inset 0 2px var(--accent);
+}
+.add-child-category {
+  margin: 2px 0 2px 65px;
+  min-height: 36px;
+  font-size: 12px;
+}
+.report-catalog-surface {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.report-catalog-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  gap: 3px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.report-catalog-row:last-child {
+  border-bottom: 0;
+}
+.report-catalog-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 4px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.report-catalog-main > span:nth-child(2),
+.report-catalog-main > strong {
+  flex: 1;
+  min-width: 0;
+}
+.report-catalog-main strong {
+  font-size: 15px;
+  font-weight: 550;
+}
+.report-catalog-main small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.report-type-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.active-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.active-filter-chips button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 7px;
+  font-size: 11px;
+}
+.filter-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.filter-section summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 550;
+  min-height: 32px;
+}
+.filter-section summary small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.filter-section h4 {
+  margin: 12px 0 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.filter-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.transaction-filters .child {
+  padding-left: 24px;
+}
+.transaction-filters .dialog-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  padding: 12px 0 max(6px, env(safe-area-inset-bottom));
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace {
+    transition: none !important;
+  }
+}
+.account-row.drop-account {
+  box-shadow: inset 0 2px var(--accent);
+}
+.edge-swipe-zone {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  bottom: env(safe-area-inset-bottom);
+  width: 20px;
+  z-index: 20;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.back-edge {
+  left: 0;
+}
+.forward-edge {
+  right: 0;
+}
+@media (min-width: 761px) {
+  .edge-swipe-zone {
+    width: 16px;
+  }
+}
+.account-row.drop-account-after {
+  box-shadow: inset 0 -2px var(--accent);
+}
+.drop-category-after > .category-manage-row {
+  background: var(--accent-soft);
+  box-shadow: inset 0 -2px var(--accent);
+}

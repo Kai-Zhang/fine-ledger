@@ -48,8 +48,12 @@ export async function registerPWA() {
     });
     const update = () => {
       if (document.visibilityState === "visible")
-        void registration.update().catch(() => {});
+        void registration
+          .update()
+          .catch(() => {})
+          .finally(probe);
     };
+    update();
     document.addEventListener("visibilitychange", update);
     window.addEventListener("online", update);
     window.setInterval(update, 5 * 60 * 1000);

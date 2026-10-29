@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { incomingEndpoint } from "../domain/filters.ts";
+import { useState, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
@@ -47,17 +48,23 @@ export function Transactions({
   entries,
   scope,
   matched,
+  currency,
 }: {
   entries: Entry[];
   scope?: string;
+  currency?: string;
   matched?: Map<string, string>;
 }) {
   const app = useApp(),
     { book } = app;
-  const [limit, setLimit] = useState(80);
+  const limitKey = `transaction-limit:${JSON.stringify(app.route)}`;
+  const [limit, setLimit] = useState((app.views.get(limitKey) as number) || 80);
+  useEffect(() => {
+    app.views.set(limitKey, limit);
+  }, [limitKey, limit]);
   const sorted = sortEntries(
     entries.map((e) =>
-      e.kind === "transfer" && e.toAccountId === scope && e.receivedAt
+      incomingEndpoint(book, e, scope, [], currency) && e.receivedAt
         ? { ...e, occurredAt: e.receivedAt }
         : e,
     ),
@@ -72,8 +79,7 @@ export function Transactions({
         last = day;
         const account = book.accounts.find((a) => a.id === e.accountId),
           to = book.accounts.find((a) => a.id === e.toAccountId),
-          incoming =
-            !!scope && e.kind === "transfer" && e.toAccountId === scope;
+          incoming = incomingEndpoint(book, e, scope, [], currency);
         const category = e.splits
           .map((s) => book.categories.find((c) => c.id === s.categoryId)?.name)
           .filter(Boolean)
@@ -155,7 +161,7 @@ export function Transactions({
                       }
                     />
                   </span>
-                  {account?.currency !== book.currency && (
+                  {(incoming ? to : account)?.currency !== book.currency && (
                     <small>{(incoming ? to : account)?.currency}</small>
                   )}
                   {matched?.has(e.id) && (

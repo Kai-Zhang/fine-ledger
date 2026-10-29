@@ -1,3 +1,11 @@
+import { TransactionFilters } from "../components/TransactionFilters.tsx";
+import {
+  emptyFilter,
+  filterEntries,
+  matchingSplits,
+  categoryMatches,
+  type TransactionFilter,
+} from "../domain/filters.ts";
 import { useMemo, useState, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
@@ -7,7 +15,6 @@ import {
   Amount,
   Dialog,
   Empty,
-  Field,
 } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
 import {
@@ -22,100 +29,166 @@ import {
   remainingRefund,
   removeEntry,
   restoreEntry,
-  categoryStats,
 } from "../domain/ledger.ts";
 import { localDate, displayTime, compareTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
 export function TransactionsPage() {
   const app = useApp(),
     { book, route } = app;
-  const viewKey = `${app.mode}:transactions:${JSON.stringify(route)}`,
-    cached = app.views.get(viewKey) as
-      | {
-          query: string;
-          pending: boolean;
-          accountId: string;
-          showFilters: boolean;
-        }
-      | undefined;
+  const viewKey = `${app.mode}:transactions:${JSON.stringify(route)}`;
+  const cached = app.views.get(viewKey) as
+    { query: string; filters: TransactionFilter } | undefined;
+  const account =
+    route.page === "account"
+      ? book.accounts.find((a) => a.id === route.id)
+      : undefined;
   const [query, setQuery] = useState(cached?.query || ""),
-    [pending, setPending] = useState(
-      cached?.pending ?? route.filter === "pending",
+    [filters, setFilters] = useState<TransactionFilter>(
+      cached?.filters || {
+        ...emptyFilter(),
+        accounts: route.accountId ? [route.accountId] : [],
+        currency: account?.currency || "",
+        status: route.filter === "pending" ? "pending" : "all",
+      },
     ),
-    [accountId, setAccount] = useState(
-      cached?.accountId || route.accountId || "",
-    ),
-    [showFilters, setShowFilters] = useState(cached?.showFilters || false);
+    [showFilters, setShowFilters] = useState(false);
   useEffect(() => {
-    app.views.set(viewKey, { query, pending, accountId, showFilters });
-  }, [query, pending, accountId, showFilters, viewKey]);
+    app.views.set(viewKey, { query, filters });
+  }, [viewKey, query, filters]);
   const fromReport = !!(
     route.from ||
     route.to ||
     route.accountIds ||
     route.reportKind
   );
-  const account =
-    route.page === "account"
-      ? book.accounts.find((a) => a.id === route.id)
-      : undefined;
-  const entries = useMemo(
+  const base = useMemo(
     () =>
       liveEntries(book).filter((e) => {
-        const scope = account?.id || accountId;
         const at =
-          scope && e.kind === "transfer" && e.toAccountId === scope
+          (account?.id || route.accountId) === e.toAccountId &&
+          e.kind === "transfer"
             ? e.receivedAt || e.occurredAt
             : e.occurredAt;
         return (
-          (!scope || e.accountId === scope || e.toAccountId === scope) &&
-          (!pending || !e.posted) &&
           (!route.postedOnly || e.posted) &&
           (route.reportKind !== "expense" ||
             e.kind === "expense" ||
             e.kind === "refund") &&
-          (!route.accountIds || route.accountIds.includes(e.accountId)) &&
-          (!query ||
-            e.description
-              .normalize("NFKC")
-              .toLocaleLowerCase()
-              .includes(query.normalize("NFKC").toLocaleLowerCase())) &&
+          (!route.accountIds ||
+            route.accountIds.includes(e.accountId) ||
+            (route.reportKind !== "expense" &&
+              !!e.toAccountId &&
+              route.accountIds.includes(e.toAccountId))) &&
           (!route.from || compareTime(at, route.from) >= 0) &&
           (!route.to || compareTime(at, route.to) <= 0) &&
           (!route.categoryIds?.length ||
-            e.splits.some(
-              (s) =>
-                route.categoryIds!.includes(s.categoryId) ||
-                route.categoryIds!.includes(
-                  book.categories.find((c) => c.id === s.categoryId)
-                    ?.parentId || "",
-                ),
-            ))
+            matchingSplits(book, e, {
+              categories: route.categoryIds,
+              projects: [],
+            }).length > 0)
         );
       }),
-    [book, account, query, pending, accountId, route],
+    [book, route, account],
   );
+  const select = (f: TransactionFilter) =>
+    filterEntries(book, base, f, query, account?.id).filter(
+      (e) =>
+        !route.categoryIds?.length ||
+        matchingSplits(book, e, f).some((s) =>
+          categoryMatches(book, s, route.categoryIds!),
+        ),
+    );
+  const entries = useMemo(
+    () => select(filters),
+    [book, base, filters, query, account, route],
+  );
+  const scope =
+    account?.id ||
+    (filters.accounts.length === 1 ? filters.accounts[0] : undefined);
   const matched = useMemo(() => {
-    if (!route.categoryIds?.length) return undefined;
-    const result = categoryStats(
-      book,
-      route.from || "0001-01-01T00:00:00Z",
-      route.to || "9999",
-      route.accountIds || book.accounts.map((a) => a.id),
-      route.categoryIds,
-    );
+    if (
+      !filters.categories.length &&
+      !filters.projects.length &&
+      !route.categoryIds?.length
+    )
+      return undefined;
     return new Map(
-      result.rows
-        .filter((r) => r.entry.splits.length > 1)
-        .map((r) => [
-          r.entry.id,
-          money(
-            r.native,
-            book.accounts.find((a) => a.id === r.entry.accountId)!.currency,
-          ),
-        ]),
+      entries
+        .filter((e) => e.splits.length > 1)
+        .map((e) => {
+          const splits = matchingSplits(book, e, filters).filter(
+            (s) =>
+              !route.categoryIds?.length ||
+              matchingSplits(
+                book,
+                { ...e, splits: [s] },
+                { categories: route.categoryIds, projects: [] },
+              ).length,
+          );
+          const sum = splits.reduce((n, s) => n + BigInt(s.amountMinor), 0n);
+          return [
+            e.id,
+            money(
+              sum,
+              book.accounts.find((a) => a.id === e.accountId)!.currency,
+            ),
+          ];
+        }),
     );
-  }, [book, route]);
+  }, [book, entries, filters, route]);
+  const chips: { label: string; clear: () => void }[] = [];
+  const clear = (key: keyof TransactionFilter) =>
+    setFilters((f) => ({ ...f, [key]: emptyFilter()[key] }));
+  if (filters.period)
+    chips.push({
+      label:
+        filters.period === "month"
+          ? "本月"
+          : filters.period === "lastMonth"
+            ? "上月"
+            : filters.period === "30"
+              ? "近30天"
+              : `${filters.from}—${filters.to}`,
+      clear: () => clear("period"),
+    });
+  if (filters.accounts.length)
+    chips.push({
+      label: filters.accounts
+        .map((id) => book.accounts.find((a) => a.id === id)?.name)
+        .join("、"),
+      clear: () => clear("accounts"),
+    });
+  if (filters.kinds.length)
+    chips.push({
+      label: filters.kinds.map((k) => kindLabel[k]).join("、"),
+      clear: () => clear("kinds"),
+    });
+  if (filters.categories.length)
+    chips.push({
+      label: `类目 · ${filters.categories.length}`,
+      clear: () => clear("categories"),
+    });
+  if (filters.projects.length)
+    chips.push({
+      label: `项目 · ${filters.projects.length}`,
+      clear: () => clear("projects"),
+    });
+  if (filters.status !== "all")
+    chips.push({
+      label: filters.status === "posted" ? "已入账" : "未入账",
+      clear: () => clear("status"),
+    });
+  if (filters.min || filters.max || (!account && filters.currency))
+    chips.push({
+      label: `${filters.currency} ${filters.min || "0"}—${filters.max || "不限"}`,
+      clear: () =>
+        setFilters((f) => ({
+          ...f,
+          currency: account?.currency || "",
+          min: "",
+          max: "",
+        })),
+    });
   function menu() {
     if (!account) return;
     app.open(
@@ -177,15 +250,14 @@ export function TransactionsPage() {
         title={account?.name || (fromReport ? "报表明细" : "交易")}
         back={!!account || fromReport}
       >
-        {account ? (
+        {account && (
           <IconButton name="MoreHorizontal" label="账户菜单" onClick={menu} />
-        ) : (
-          <IconButton
-            name="SlidersHorizontal"
-            label="筛选交易"
-            onClick={() => setShowFilters(!showFilters)}
-          />
         )}
+        <IconButton
+          name="SlidersHorizontal"
+          label="筛选交易"
+          onClick={() => setShowFilters(!showFilters)}
+        />
       </Header>
       <main className="page-content transactions-page">
         {account && (
@@ -204,77 +276,68 @@ export function TransactionsPage() {
           <Icon name="Search" size={19} />
           <input
             type="search"
-            placeholder="搜索描述"
-            aria-label="搜索交易描述"
+            placeholder="搜索描述、备注"
+            aria-label="搜索交易描述和备注"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <div className="filter-bar">
           <button
-            className={!pending ? "selected" : ""}
-            onClick={() => setPending(false)}
+            className={filters.status === "all" ? "selected" : ""}
+            onClick={() => clear("status")}
           >
             全部
           </button>
           {!route.postedOnly && (
             <button
-              className={pending ? "selected" : ""}
-              onClick={() => setPending(true)}
+              className={filters.status === "pending" ? "selected" : ""}
+              onClick={() => setFilters((f) => ({ ...f, status: "pending" }))}
             >
-              未入账{" "}
-              <small>
-                {liveEntries(book).filter(
-                  (e) =>
-                    !e.posted &&
-                    (!account ||
-                      e.accountId === account.id ||
-                      e.toAccountId === account.id),
-                ).length || ""}
-              </small>
+              未入账
             </button>
           )}
-          {(route.from || route.categoryIds?.length) && (
-            <span className="filter-label">报表筛选</span>
-          )}
-          {!account && (
-            <span className="record-count">{entries.length} 笔</span>
-          )}
+          {fromReport && <span className="filter-label">报表筛选</span>}
+          <span className="record-count">{entries.length} 笔</span>
         </div>
-        {showFilters && !account && (
-          <div className="filter-panel">
-            <Field label="账户">
-              <select
-                value={accountId}
-                onChange={(e) => setAccount(e.target.value)}
-              >
-                <option value="">所有账户</option>
-                {book.accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                    {a.archived ? "（已归档）" : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        {chips.length > 0 && (
+          <div className="active-filter-chips">
+            {chips.map((c, i) => (
+              <button key={i} onClick={c.clear}>
+                {c.label}
+                <Icon name="X" size={12} />
+              </button>
+            ))}
           </div>
         )}
         <Transactions
           entries={entries}
-          scope={account?.id || accountId || undefined}
+          scope={scope}
+          currency={filters.currency}
           matched={matched}
         />
       </main>
+      {showFilters && (
+        <TransactionFilters
+          value={filters}
+          scope={account?.id}
+          count={(f) => select(f).length}
+          onApply={setFilters}
+          onClose={() => setShowFilters(false)}
+        />
+      )}
       {!account?.archived && book.accounts.some((a) => !a.archived) && (
         <div className="floating-entry">
           <Button
-            icon="Plus"
+            icon="SquarePen"
             onClick={() =>
               app.go({
                 page: "entry",
                 accountId:
                   account?.id ||
-                  accountId ||
+                  (filters.accounts.length === 1
+                    ? filters.accounts[0]
+                    : undefined) ||
                   book.accounts.find((a) => !a.archived)?.id,
               })
             }

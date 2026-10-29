@@ -1,5 +1,5 @@
 import { timeZones } from "../domain/dates.ts";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
   Header,
@@ -192,39 +192,6 @@ export function Settings() {
             />
           </div>
         </div>
-        {book.settings.savedReports.length > 0 && (
-          <div className="settings-section">
-            <h2>已保存的报表</h2>
-            <div className="settings-surface">
-              {book.settings.savedReports.map((r) => (
-                <div className="setting-row" key={r.id}>
-                  <Icon name="ChartNoAxesCombined" />
-                  <span>{r.name}</span>
-                  <IconButton
-                    name="Trash2"
-                    label={`删除报表 ${r.name}`}
-                    onClick={async () => {
-                      if (
-                        await app.confirm({
-                          title: "删除已保存报表？",
-                          message: "交易数据不会改变。",
-                          label: "删除",
-                          danger: true,
-                        })
-                      )
-                        await app.save("删除报表", (b) => {
-                          b.settings.savedReports =
-                            b.settings.savedReports.filter(
-                              (x) => x.id !== r.id,
-                            );
-                        });
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         <p className="app-version">厘序 · {__APP_BUILD__}</p>
       </main>
       {info && (
@@ -280,7 +247,7 @@ function NameEditor({
   const [name, setName] = useState(initial),
     [busy, setBusy] = useState(false);
   return (
-    <Dialog title={title} onClose={onClose}>
+    <Dialog title={title} dirty={name !== initial} onClose={onClose}>
       <form
         className="dialog-body"
         onSubmit={async (e) => {
@@ -361,162 +328,6 @@ export function Projects() {
     </>
   );
 }
-export function Categories() {
-  const app = useApp(),
-    { book } = app,
-    [kind, setKind] = useState<"expense" | "income">("expense"),
-    [showArchived, setShowArchived] = useState(false);
-  const parents = book.categories
-    .filter(
-      (c) => c.kind === kind && !c.parentId && (showArchived || !c.archived),
-    )
-    .sort((a, b) => a.order - b.order);
-  const edit = (category?: Category, parentId?: string) =>
-    app.open(
-      <CategoryEditor
-        category={category}
-        kind={kind}
-        parentId={parentId}
-        onClose={app.close}
-      />,
-    );
-  function menu(c: Category) {
-    const siblings = book.categories
-      .filter((x) => x.parentId === c.parentId && x.kind === c.kind)
-      .sort((a, b) => a.order - b.order);
-    app.open(
-      <Dialog title={c.name} onClose={app.close}>
-        <div className="menu-list">
-          <button onClick={() => edit(c)}>
-            <Icon name="Pencil" />
-            编辑类目
-          </button>
-          {!c.parentId && !c.archived && (
-            <button onClick={() => edit(undefined, c.id)}>
-              <Icon name="Plus" />
-              新增子类目
-            </button>
-          )}
-          {[-1, 1].map((offset) => (
-            <button
-              key={offset}
-              disabled={!siblings[siblings.indexOf(c) + offset]}
-              onClick={async () => {
-                await app.save("排列类目", (b) => {
-                  const index = siblings.indexOf(c),
-                    other = siblings[index + offset];
-                  b.categories.find((x) => x.id === c.id)!.order =
-                    index + offset;
-                  b.categories.find((x) => x.id === other.id)!.order = index;
-                });
-                app.close();
-              }}
-            >
-              <Icon name={offset === -1 ? "ArrowUpRight" : "ArrowDownLeft"} />
-              {offset === -1 ? "上移" : "下移"}
-            </button>
-          ))}
-          <button
-            onClick={async () => {
-              app.close();
-              if (
-                c.archived ||
-                (await app.confirm({
-                  title: "归档类目？",
-                  message:
-                    "历史交易和报表保留该类目，新增交易时隐藏。归档大类会同时隐藏其子类目。",
-                  label: "归档",
-                }))
-              )
-                await app.save("归档类目", (b) => {
-                  b.categories
-                    .filter((x) => x.id === c.id || x.parentId === c.id)
-                    .forEach((x) => (x.archived = !c.archived));
-                });
-            }}
-          >
-            <Icon name={c.archived ? "ArchiveRestore" : "Archive"} />
-            {c.archived ? "取消归档" : "归档类目"}
-          </button>
-        </div>
-      </Dialog>,
-    );
-  }
-  return (
-    <>
-      <Header title="类目" back>
-        <IconButton name="Plus" label="新增类目" onClick={() => edit()} />
-      </Header>
-      <main className="page-content">
-        <div className="segmented">
-          <button
-            className={kind === "expense" ? "selected" : ""}
-            onClick={() => setKind("expense")}
-          >
-            支出
-          </button>
-          <button
-            className={kind === "income" ? "selected" : ""}
-            onClick={() => setKind("income")}
-          >
-            收入
-          </button>
-        </div>
-        <div className="manage-categories">
-          {parents.map((p) => (
-            <section key={p.id}>
-              <div className="setting-row">
-                <span className="category-symbol" style={{ color: p.color }}>
-                  <Icon name={p.icon} />
-                </span>
-                <strong className="grow">
-                  {p.name}
-                  {p.archived && <small>已归档</small>}
-                </strong>
-                <IconButton
-                  name="MoreHorizontal"
-                  label={`管理类目 ${p.name}`}
-                  onClick={() => menu(p)}
-                />
-              </div>
-              {book.categories
-                .filter(
-                  (c) => c.parentId === p.id && (showArchived || !c.archived),
-                )
-                .sort((a, b) => a.order - b.order)
-                .map((c) => (
-                  <div className="setting-row child-category" key={c.id}>
-                    <span
-                      className="category-symbol"
-                      style={{ color: c.color }}
-                    >
-                      <Icon name={c.icon} size={19} />
-                    </span>
-                    <span className="grow">
-                      {c.name}
-                      {c.archived && <small>已归档</small>}
-                    </span>
-                    <IconButton
-                      name="MoreHorizontal"
-                      label={`管理类目 ${c.name}`}
-                      onClick={() => menu(c)}
-                    />
-                  </div>
-                ))}
-            </section>
-          ))}
-        </div>
-        <button
-          className="quiet-link"
-          onClick={() => setShowArchived(!showArchived)}
-        >
-          <Icon name="Archive" size={16} />
-          {showArchived ? "隐藏已归档类目" : "显示已归档类目"}
-        </button>
-      </main>
-    </>
-  );
-}
 const categoryIcons = [
   "Utensils",
   "Coffee",
@@ -547,7 +358,7 @@ const categoryIcons = [
   "Tag",
   "CalendarDays",
 ];
-function CategoryEditor({
+export function CategoryEditor({
   category,
   kind,
   parentId,
@@ -564,10 +375,17 @@ function CategoryEditor({
     [icon, setIcon] = useState(category?.icon || "Tag"),
     [color, setColor] = useState(category?.color || "#477B66"),
     [error, setError] = useState("");
+  const snapshot = JSON.stringify({ name, parent, icon, color }),
+    initialSnapshot = useRef(snapshot),
+    dirty = snapshot !== initialSnapshot.current;
   const hasChildren =
     category && app.book.categories.some((c) => c.parentId === category.id);
   return (
-    <Dialog title={category ? "编辑类目" : "新增类目"} onClose={onClose}>
+    <Dialog
+      title={category ? "编辑类目" : "新增类目"}
+      dirty={dirty}
+      onClose={onClose}
+    >
       <form
         className="dialog-body"
         onSubmit={async (e) => {

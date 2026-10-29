@@ -1,4 +1,4 @@
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import { useEffect, useRef, useId, useState, type ReactNode } from "react";
 import { Icon } from "./icons.tsx";
 import { useApp } from "./context.tsx";
 import { money } from "../domain/money.ts";
@@ -137,14 +137,34 @@ export function Dialog({
   children,
   wide = false,
   onClose,
+  dirty,
+  guard = true,
 }: {
   title: string;
   children: ReactNode;
   wide?: boolean;
+  dirty?: boolean;
+  guard?: boolean;
   onClose: () => void;
 }) {
+  const app = useApp();
   const ref = useRef<HTMLDialogElement>(null),
     id = useId();
+  const [changed, setChanged] = useState(false);
+  const closeRef = useRef(() => {}),
+    dirtyRef = useRef(false);
+  dirtyRef.current = guard && (dirty ?? changed);
+  closeRef.current = () =>
+    guard ? app.leave(onClose, dirty ?? changed) : onClose();
+  useEffect(
+    () =>
+      app.registerLayer(
+        () => closeRef.current(),
+        () => dirtyRef.current,
+      ),
+    [app.registerLayer],
+  );
+  const dialogTouch = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     const d = ref.current!;
     d.showModal();
@@ -155,17 +175,35 @@ export function Dialog({
       ref={ref}
       className={`dialog ${wide ? "wide" : ""}`}
       aria-labelledby={id}
+      onChangeCapture={(e) => {
+        if ((e.target as HTMLElement).closest("form")) setChanged(true);
+      }}
+      onTouchStart={(e) => {
+        const t = e.touches[0];
+        if (t.clientX < 24)
+          dialogTouch.current = { x: t.clientX, y: t.clientY };
+      }}
+      onTouchEnd={(e) => {
+        const start = dialogTouch.current;
+        dialogTouch.current = null;
+        if (
+          start &&
+          e.changedTouches[0].clientX - start.x > 85 &&
+          Math.abs(e.changedTouches[0].clientY - start.y) < 60
+        )
+          app.swipe("back");
+      }}
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        closeRef.current();
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) closeRef.current();
       }}
     >
       <div className="dialog-head">
         <h2 id={id}>{title}</h2>
-        <IconButton name="X" label="关闭" onClick={onClose} />
+        <IconButton name="X" label="关闭" onClick={() => closeRef.current()} />
       </div>
       {children}
     </dialog>
