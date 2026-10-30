@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-30",
+  "status": "proposal-only",
+  "fragment": "/Users/kai/.codex/visualizations/2026/10/27/01a17d51-3857-7b32-8266-60996cd27d86/ledger-visual-directions.html",
+  "fragmentSha256": "f61820bf3933928e92a509dc6c68a9572730afda19a01257e90229a5e3b65347",
+  "variants": [
+    "纸白松绿",
+    "雾白靛蓝",
+    "暖纸墨灰"
+  ],
+  "browserChecks": [
+    "736px layout",
+    "320px layout for all three variants without account row overflow",
+    "local account navigation and ten transaction rows",
+    "entry split rows and lock state",
+    "report catalog to two-level expense chart with thirteen parent/child sectors",
+    "light and dark appearance switching",
+    "carousel switches all three variants",
+    "no console errors or warnings"
+  ],
+  "contrastPairs": 78,
+  "minimumContrastRatio": 4.895,
+  "productionSourceChanged": false,
+  "productionRelease": "0.7.2-9cf0441e6a565f60"
+}

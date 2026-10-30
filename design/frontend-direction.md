@@ -32,3 +32,8 @@ React + TypeScript，Vite 打包，Dexie 本地事务，Lucide 图标，dnd-kit 
 源文件为 `public/icon.svg`，使用 SVG 原生几何图形，192/512 PNG 与 iPhone 180px 图标从同一源文件输出。背景完全不透明、画布不预裁圆角，主体放在中央安全范围；应用内部按容器裁圆角。相同图形用于启动、侧栏、设置与建账页。
 
 尺寸和简化原则参考 [Apple App icons](https://developer.apple.com/design/human-interface-guidelines/app-icons)，PWA 的静态 PNG 接入参考 [Apple Web Clip 图标配置](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html)。原应用身份、访问地址和端口不变。
+
+
+## 统一视觉方案评审（2026-10-30）
+
+三套可比较方向及颜色、字体、密度、图标、组件、深色模式规范见[视觉设计方案比较](visual-system-proposals.md)，建议纸白松绿。当前仅形成提案；选定方案后再统一应用，线上版本保持 0.7.2，备份导入按原阶段推进。

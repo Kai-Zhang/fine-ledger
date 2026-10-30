@@ -1,0 +1,27 @@
+{
+  "status": "proposal",
+  "date": "2026-10-30",
+  "schemes": {
+    "pine": {
+      "name": "纸白松绿",
+      "structure": "分组面板",
+      "radius": 12,
+      "light": {"bg":"#F7F8F5","surface":"#FFFFFF","text":"#202A27","muted":"#5D6B63","line":"#DDE5DE","brand":"#205B4D","brandText":"#FFFFFF","soft":"#E7EFE9","income":"#25705A","expense":"#AA4B3E","warning":"#87602B","coin":"#DBB871","food":"#4E7D68","shopping":"#B7845D","transport":"#5C7E9B","leisure":"#8F78A5"},
+      "dark": {"bg":"#151B18","surface":"#1F2822","text":"#E7EFE9","muted":"#A4B3A9","line":"#35443A","brand":"#A2D2B5","brandText":"#132B20","soft":"#2A3D30","income":"#91CCAE","expense":"#F0A08F","warning":"#DDB877","coin":"#DBB871","food":"#82B899","shopping":"#D4A77B","transport":"#9AB6D0","leisure":"#B8A3CC"}
+    },
+    "indigo": {
+      "name": "雾白靛蓝",
+      "structure": "平面列表",
+      "radius": 8,
+      "light": {"bg":"#F3F5F9","surface":"#FFFFFF","text":"#202C3E","muted":"#59687C","line":"#DDE3ED","brand":"#3C5890","brandText":"#FFFFFF","soft":"#E8EDF7","income":"#26715C","expense":"#AD4C43","warning":"#87612F","coin":"#CBB687","food":"#557BA3","shopping":"#9B759B","transport":"#739181","leisure":"#B58A5F"},
+      "dark": {"bg":"#151B25","surface":"#202939","text":"#E8EDF6","muted":"#A8B5C8","line":"#37445A","brand":"#A8BFF1","brandText":"#182A49","soft":"#2C3B55","income":"#8CCCB2","expense":"#F4A799","warning":"#D6B676","coin":"#CBB687","food":"#8FAFD0","shopping":"#C4A1C4","transport":"#A3C5B2","leisure":"#D1B183"}
+    },
+    "ink": {
+      "name": "暖纸墨灰",
+      "structure": "账簿式分隔",
+      "radius": 6,
+      "light": {"bg":"#F3EFE6","surface":"#FBF9F3","text":"#2D2C28","muted":"#6A6358","line":"#DAD2C5","brand":"#3A423B","brandText":"#FBF9F3","soft":"#E6E5DA","income":"#326953","expense":"#A34B3C","warning":"#87602B","coin":"#BE9A5B","food":"#557D65","shopping":"#AA815B","transport":"#6A8495","leisure":"#948178"},
+      "dark": {"bg":"#1D1C18","surface":"#292821","text":"#F0ECE1","muted":"#BDB5A5","line":"#464137","brand":"#D5D4BF","brandText":"#2E3128","soft":"#383A2F","income":"#A3C1A7","expense":"#EAA28F","warning":"#D6BA83","coin":"#BE9A5B","food":"#98B49D","shopping":"#CFAB84","transport":"#9FB5C4","leisure":"#B5A591"}
+    }
+  }
+}
