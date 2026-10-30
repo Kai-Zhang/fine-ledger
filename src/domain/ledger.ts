@@ -30,16 +30,16 @@ export function blankBook(currency = "CNY", name = "我的账本"): Book {
 }
 export function defaultCategories(): Book["categories"] {
   return [
-    ["food", "餐饮", "Utensils", "#C68254", ["餐食", "咖啡茶饮", "买菜"]],
-    ["transport", "交通", "TramFront", "#608D9D", ["公共交通", "打车", "汽车"]],
-    ["shopping", "购物", "ShoppingBag", "#B87B91", ["日用品", "衣物", "数码"]],
-    ["life", "生活", "House", "#7C9872", ["居住", "通讯", "医疗"]],
-    ["leisure", "休闲", "Sparkles", "#9A87B4", ["娱乐", "旅行", "学习"]],
+    ["food", "餐饮", "Utensils", "#4E7D68", ["餐食", "咖啡茶饮", "买菜"]],
+    ["transport", "交通", "TramFront", "#5C7E9B", ["公共交通", "打车", "汽车"]],
+    ["shopping", "购物", "ShoppingBag", "#B7845D", ["日用品", "衣物", "数码"]],
+    ["life", "生活", "House", "#6B8264", ["居住", "通讯", "医疗"]],
+    ["leisure", "休闲", "Sparkles", "#8F78A5", ["娱乐", "旅行", "学习"]],
     [
       "earning",
       "收入",
       "BriefcaseBusiness",
-      "#498874",
+      "#25705A",
       ["工资", "奖金", "其他收入"],
     ],
   ].flatMap(([id, name, icon, color, children], i) => [

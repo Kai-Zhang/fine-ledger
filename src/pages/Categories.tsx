@@ -1,3 +1,4 @@
+import { categoryColor } from "../ui/category-color.ts";
 import {
   useOrganization,
   dragId,
@@ -84,7 +85,10 @@ function CategoryRow({
             if (!window.getSelection()?.toString()) edit();
           }}
         >
-          <span className="category-symbol" style={{ color: c.color }}>
+          <span
+            className="category-symbol category-ink"
+            style={categoryColor(c.color)}
+          >
             <Icon name={c.icon} />
           </span>
           <span className="copyable-name">

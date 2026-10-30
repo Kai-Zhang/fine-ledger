@@ -1,3 +1,4 @@
+import { categoryColor } from "../ui/category-color.ts";
 import { incomingEndpoint } from "../domain/filters.ts";
 import { useState, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
@@ -20,14 +21,14 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   );
   return (
     <span
-      className={`transaction-symbol ${entry.posted ? "" : "unposted"}`}
-      style={{
-        color: entry.posted
+      className={`transaction-symbol ${entry.posted ? "category-ink" : "unposted"}`}
+      style={categoryColor(
+        entry.posted
           ? entry.kind === "expense"
             ? category?.color
             : undefined
           : undefined,
-      }}
+      )}
     >
       <Icon
         name={
@@ -145,7 +146,7 @@ export function Transactions({
                   </div>
                 </div>
                 <div
-                  className={`transaction-amount ${e.kind === "income" || e.kind === "refund" || incoming ? "positive" : ""}`}
+                  className={`transaction-amount ${e.kind === "income" || e.kind === "refund" ? "positive" : e.kind === "expense" ? "negative" : ""}`}
                 >
                   <span>
                     {e.kind === "expense" ||

@@ -1,3 +1,4 @@
+import { categoryColor } from "../ui/category-color.ts";
 import { useState } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Dialog } from "../ui/components.tsx";
@@ -47,7 +48,10 @@ export function CategoryPicker({
                 }
                 aria-expanded={children.length ? open : undefined}
               >
-                <span className="category-symbol" style={{ color: p.color }}>
+                <span
+                  className="category-symbol category-ink"
+                  style={categoryColor(p.color)}
+                >
                   <Icon name={p.icon} />
                 </span>
                 <span>{p.name}</span>

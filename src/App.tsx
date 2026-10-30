@@ -163,6 +163,20 @@ export function App() {
   useEffect(() => {
     const theme = book?.settings.theme || "system";
     document.documentElement.dataset.theme = theme;
+    const system = matchMedia("(prefers-color-scheme: dark)");
+    const updateChrome = () => {
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute(
+          "content",
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--bg")
+            .trim(),
+        );
+    };
+    updateChrome();
+    if (theme === "system") system.addEventListener("change", updateChrome);
+    return () => system.removeEventListener("change", updateChrome);
   }, [book?.settings.theme]);
   useEffect(() => {
     requestAnimationFrame(() => {

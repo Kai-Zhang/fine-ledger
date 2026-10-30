@@ -1,0 +1,23 @@
+{
+  "descriptionFont": "16px",
+  "metadataFont": "12px",
+  "release": "0.8.0-b28e2bf10a6a6e5c",
+  "rowHeights": [
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50,
+    50
+  ],
+  "viewport": [
+    390,
+    844
+  ],
+  "visibleRows": 10,
+  "width": 390
+}

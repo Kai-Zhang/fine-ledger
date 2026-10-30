@@ -1,53 +1,8 @@
+/* Layout and behavior. Visual tokens and component rhythm: ui/pine-theme.css. */
 :root {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", sans-serif;
-  color: #202a27;
-  background: #f7f8f5;
-  font-synthesis: none;
-  font-weight: 400;
-  --bg: #f7f8f5;
-  --surface: #fff;
-  --text: #202a27;
-  --muted: #7c8580;
-  --line: #e3e8e2;
-  --accent: #205b4d;
-  --accent-soft: #e6efea;
-  --negative: #b95543;
-  --warning: #997343;
-  --overlay: rgba(20, 35, 29, 0.28);
   --nav-height: 76px;
   --view-height: 100dvh;
   --view-top: 0px;
-  color-scheme: light;
-}
-:root[data-theme="dark"] {
-  --bg: #171e1b;
-  --surface: #202925;
-  --text: #e5eae6;
-  --muted: #9aa69e;
-  --line: #35413b;
-  --accent: #9bc7af;
-  --accent-soft: #2d4438;
-  --negative: #e59987;
-  --warning: #d1b483;
-  --overlay: rgba(0, 0, 0, 0.55);
-  color-scheme: dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="system"] {
-    --bg: #171e1b;
-    --surface: #202925;
-    --text: #e5eae6;
-    --muted: #9aa69e;
-    --line: #35413b;
-    --accent: #9bc7af;
-    --accent-soft: #2d4438;
-    --negative: #e59987;
-    --warning: #d1b483;
-    --overlay: rgba(0, 0, 0, 0.55);
-    color-scheme: dark;
-  }
 }
 * {
   box-sizing: border-box;
@@ -204,7 +159,7 @@ input[type="search"]::-webkit-search-cancel-button {
   white-space: nowrap;
 }
 .amount small {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--muted);
   margin-left: 6px;
@@ -350,7 +305,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .brand small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0;
   color: var(--muted);
@@ -386,7 +341,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .sidebar-book small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 3px;
 }
 .workspace {
@@ -466,7 +421,7 @@ input[type="search"]::-webkit-search-cancel-button {
   color: var(--text);
 }
 .net-summary small {
-  font-size: 10px;
+  font-size: 12px;
   margin-left: 5px;
 }
 .net-summary .warning {
@@ -493,7 +448,7 @@ input[type="search"]::-webkit-search-cancel-button {
   gap: 9px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.3;
 }
@@ -503,7 +458,7 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: baseline;
 }
 .group-totals small {
-  font-size: 9px;
+  font-size: 12px;
 }
 .account-surface {
   border: 1px solid var(--line);
@@ -573,7 +528,7 @@ input[type="search"]::-webkit-search-cancel-button {
   white-space: nowrap;
 }
 .account-name small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .account-main > .amount {
@@ -700,7 +655,7 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: center;
 }
 .field-label .muted {
-  font-size: 10px;
+  font-size: 12px;
 }
 .form-grid {
   display: grid;
@@ -713,7 +668,7 @@ input[type="search"]::-webkit-search-cancel-button {
   gap: 7px;
 }
 .type-options button {
-  font-size: 11px;
+  font-size: 12px;
   border: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -741,7 +696,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .toggle-row small {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .switch {
@@ -853,7 +808,7 @@ input[type="search"]::-webkit-search-cancel-button {
   font-size: 13px;
 }
 .archive-account .button {
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   padding: 6px;
 }
@@ -918,14 +873,14 @@ input[type="search"]::-webkit-search-cancel-button {
 .record-count {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .filter-label {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .date-divider {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   padding: 19px 0 9px;
   display: flex;
@@ -998,7 +953,7 @@ input[type="search"]::-webkit-search-cancel-button {
   white-space: nowrap;
 }
 .transaction-copy > small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1009,13 +964,13 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .transaction-meta em {
   font-style: normal;
   color: var(--warning);
-  font-size: 9px;
+  font-size: 12px;
 }
 .transaction-amount {
   display: flex;
@@ -1028,7 +983,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .transaction-amount > small {
   font-weight: 400;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .filter-panel {
@@ -1039,7 +994,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 10px;
 }
 .status-badge {
-  font-size: 10px;
+  font-size: 12px;
   border: 1px solid var(--line);
   color: var(--muted);
   border-radius: 5px;
@@ -1133,7 +1088,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .detail-split small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .detail-split .amount {
   font-size: 13px;
@@ -1188,7 +1143,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .linked-refunds h3 {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   margin-bottom: 5px;
 }
@@ -1350,7 +1305,7 @@ input[type="search"]::-webkit-search-cancel-button {
   padding: 3px 20px 3px 28px;
   max-width: 180px;
   border: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   flex-basis: 100%;
   margin-bottom: 5px;
@@ -1359,7 +1314,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: 12px;
   border-top: 1px dashed var(--line);
   padding: 12px 0 3px;
   color: var(--accent);
@@ -1371,7 +1326,7 @@ input[type="search"]::-webkit-search-cancel-button {
   font-weight: 500;
 }
 .add-split {
-  font-size: 11px;
+  font-size: 12px;
 }
 .disclosure-row {
   display: flex;
@@ -1420,7 +1375,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   padding: 0 0 15px;
   flex-wrap: wrap;
@@ -1432,14 +1387,14 @@ input[type="search"]::-webkit-search-cancel-button {
   color: var(--text);
 }
 .rate-line {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
   font-variant-numeric: tabular-nums;
 }
 .receive-date {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 7px;
 }
 .suggestions-inline {
@@ -1514,7 +1469,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .category-children small {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
 }
 .reports-page {
   padding-top: 3px;
@@ -1541,7 +1496,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-left: auto;
   min-height: 38px;
@@ -1562,14 +1517,14 @@ input[type="search"]::-webkit-search-cancel-button {
   gap: 5px;
 }
 .report-value > span:first-child {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   display: flex;
   gap: 7px;
   align-items: center;
 }
 .report-value > span:first-child small {
-  font-size: 10px;
+  font-size: 12px;
 }
 .report-value > .amount {
   font-size: 31px;
@@ -1577,7 +1532,7 @@ input[type="search"]::-webkit-search-cancel-button {
   letter-spacing: -0.8px;
 }
 .report-value > small {
-  font-size: 10px;
+  font-size: 12px;
 }
 .net-chart {
   margin-top: 15px;
@@ -1626,7 +1581,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .chart-granularity button {
   min-width: 45px;
   min-height: 30px;
-  font-size: 10px;
+  font-size: 12px;
   border-radius: 6px;
   color: var(--muted);
 }
@@ -1635,13 +1590,13 @@ input[type="search"]::-webkit-search-cancel-button {
   background: var(--accent-soft);
 }
 .provisional-label {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   display: block;
   margin-top: 8px;
 }
 .report-warning {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--warning);
   margin-top: 12px;
   line-height: 1.7;
@@ -1672,14 +1627,14 @@ input[type="search"]::-webkit-search-cancel-button {
 .report-account-list small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 .report-account-list .amount {
   font-size: 14px;
 }
 .report-account-list .amount small {
   display: inline;
-  font-size: 9px;
+  font-size: 12px;
 }
 .report-account-list .account-symbol {
   width: 30px;
@@ -1698,7 +1653,7 @@ input[type="search"]::-webkit-search-cancel-button {
   gap: 5px;
 }
 .expense-summary > div:first-child > span:first-child {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .expense-summary .amount {
@@ -1710,7 +1665,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   text-align: right;
 }
@@ -1741,7 +1696,7 @@ input[type="search"]::-webkit-search-cancel-button {
   opacity: 0.75;
 }
 .donut-caption {
-  font-size: 10px;
+  font-size: 12px;
   fill: var(--muted);
   font-family: inherit;
 }
@@ -1789,7 +1744,7 @@ input[type="search"]::-webkit-search-cancel-button {
   flex-shrink: 0;
 }
 .percent {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-left: auto;
   min-width: 36px;
@@ -1807,7 +1762,7 @@ input[type="search"]::-webkit-search-cancel-button {
   min-height: 44px;
   width: 100%;
   padding: 5px 14px 5px 29px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
   border-radius: 0;
 }
@@ -1826,7 +1781,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   width: 100%;
   min-height: 49px;
   padding: 8px 14px;
@@ -1854,7 +1809,7 @@ input[type="search"]::-webkit-search-cancel-button {
   flex: 1;
 }
 .check-row small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .check-row > span small {
@@ -1875,7 +1830,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .category-check .child {
   padding-left: 27px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .restore-default {
   margin-top: 12px;
@@ -1885,7 +1840,7 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: center;
   gap: 7px;
   margin-bottom: 13px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .date-range input {
@@ -1902,7 +1857,7 @@ input[type="search"]::-webkit-search-cancel-button {
   scrollbar-width: none;
 }
 .saved-reports button {
-  font-size: 11px;
+  font-size: 12px;
   border: 1px solid var(--line);
   padding: 7px 12px;
   border-radius: 7px;
@@ -1927,7 +1882,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .settings-book small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
 }
@@ -1935,7 +1890,7 @@ input[type="search"]::-webkit-search-cancel-button {
   margin-top: 25px;
 }
 .settings-section > h2 {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted);
   margin-bottom: 10px;
@@ -1970,7 +1925,7 @@ input[type="search"]::-webkit-search-cancel-button {
   flex: 1;
 }
 .setting-row > small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .setting-row select {
@@ -1986,7 +1941,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .setting-row > span > small,
 .setting-row strong small {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .setting-row .icon-button {
@@ -1995,7 +1950,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 .app-version {
   text-align: center;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   opacity: 0.75;
   margin-top: 35px;
@@ -2009,14 +1964,14 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 10px;
   padding: 12px;
   margin-top: 17px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--accent);
 }
 .example-notice span {
   flex: 1;
 }
 .example-notice .button {
-  font-size: 11px;
+  font-size: 12px;
   min-height: 36px;
   padding: 7px 9px;
   white-space: nowrap;
@@ -2137,7 +2092,7 @@ input[type="search"]::-webkit-search-cancel-button {
   color: var(--muted);
 }
 .boot-error details {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   max-width: 500px;
   word-break: break-all;
@@ -2195,13 +2150,13 @@ input[type="search"]::-webkit-search-cancel-button {
   margin-top: 7px;
 }
 .welcome-foot {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   text-align: center;
   margin-top: auto;
 }
 .welcome-content .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
 }
 .welcome .brand-mark {
   width: 32px;
@@ -2328,7 +2283,7 @@ input[type="search"]::-webkit-search-cancel-button {
     letter-spacing: -0.3px;
   }
   .page-header .eyebrow {
-    font-size: 9px;
+    font-size: 12px;
     margin-bottom: 1px;
   }
   .page-header .button {
@@ -2363,7 +2318,7 @@ input[type="search"]::-webkit-search-cancel-button {
     align-items: center;
     justify-content: center;
     gap: 3px;
-    font-size: 9px;
+    font-size: 12px;
     color: var(--muted);
     border-radius: 9px;
   }
@@ -2391,13 +2346,13 @@ input[type="search"]::-webkit-search-cancel-button {
     letter-spacing: -0.7px;
   }
   .net-summary > div > span:first-child {
-    font-size: 10px;
+    font-size: 12px;
   }
   .net-summary > svg {
     width: 18px;
   }
   .net-summary small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .account-group {
     margin-bottom: 17px;
@@ -2408,15 +2363,15 @@ input[type="search"]::-webkit-search-cancel-button {
     gap: 5px;
   }
   .group-heading h2 {
-    font-size: 11px;
+    font-size: 12px;
   }
   .group-totals {
-    font-size: 10px;
+    font-size: 12px;
     gap: 5px;
     max-width: 61%;
   }
   .group-totals small {
-    font-size: 8px;
+    font-size: 12px;
   }
   .account-surface {
     border-radius: 10px;
@@ -2442,7 +2397,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 12px;
   }
   .account-name small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .account-main > .amount {
     font-size: 15px;
@@ -2518,7 +2473,7 @@ input[type="search"]::-webkit-search-cancel-button {
     gap: 5px;
   }
   .type-options button {
-    font-size: 9px;
+    font-size: 12px;
     min-width: 52px;
     min-height: 58px;
     flex: 1;
@@ -2528,7 +2483,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 12px;
   }
   .toggle-row small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .dialog-body > p {
     font-size: 13px;
@@ -2541,7 +2496,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 29px;
   }
   .account-balance > span:first-child {
-    font-size: 10px;
+    font-size: 12px;
   }
   .search-bar {
     margin-bottom: 13px;
@@ -2555,7 +2510,7 @@ input[type="search"]::-webkit-search-cancel-button {
     padding-bottom: 9px;
   }
   .filter-bar button {
-    font-size: 11px;
+    font-size: 12px;
     padding: 5px 11px;
     min-height: 32px;
   }
@@ -2570,15 +2525,15 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 12px;
   }
   .transaction-copy > small {
-    font-size: 9px;
+    font-size: 12px;
     max-width: 180px;
   }
   .transaction-meta {
-    font-size: 8px;
+    font-size: 12px;
     gap: 5px;
   }
   .transaction-meta em {
-    font-size: 8px;
+    font-size: 12px;
   }
   .transaction-amount {
     font-size: 14px;
@@ -2596,11 +2551,11 @@ input[type="search"]::-webkit-search-cancel-button {
     min-width: 35px;
   }
   .date-divider {
-    font-size: 10px;
+    font-size: 12px;
     padding: 17px 0 5px;
   }
   .record-count {
-    font-size: 10px;
+    font-size: 12px;
   }
   .detail-hero {
     padding: 17px 0 26px;
@@ -2620,10 +2575,10 @@ input[type="search"]::-webkit-search-cancel-button {
     min-height: 50px;
   }
   .detail-line > span:first-child {
-    font-size: 11px;
+    font-size: 12px;
   }
   .detail-line time {
-    font-size: 11px;
+    font-size: 12px;
   }
   .detail-split {
     font-size: 12px;
@@ -2633,7 +2588,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 12px;
   }
   .detail-split small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .detail-actions .button {
     font-size: 12px;
@@ -2654,7 +2609,7 @@ input[type="search"]::-webkit-search-cancel-button {
     padding: 12px 1px 18px;
   }
   .entry-amount-block > label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .entry-amount-block input {
     font-size: 43px;
@@ -2670,7 +2625,7 @@ input[type="search"]::-webkit-search-cancel-button {
     gap: 7px;
   }
   .field-label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .entry-form .field input,
   .entry-form .field select,
@@ -2702,10 +2657,10 @@ input[type="search"]::-webkit-search-cancel-button {
     width: 28px;
   }
   .split-header .text-button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .split-summary {
-    font-size: 10px;
+    font-size: 12px;
     gap: 5px;
   }
   .entry-submit > .button {
@@ -2722,16 +2677,16 @@ input[type="search"]::-webkit-search-cancel-button {
   }
   .disclosure-row {
     min-height: 51px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .inline-reference {
-    font-size: 9px;
+    font-size: 12px;
   }
   .suggestions-inline {
     padding: 7px 0;
   }
   .suggestions-inline button {
-    font-size: 11px;
+    font-size: 12px;
     min-height: 31px;
   }
   .keyboard-open .keyboard-suggestions {
@@ -2789,7 +2744,7 @@ input[type="search"]::-webkit-search-cancel-button {
     padding: 6px;
   }
   .category-parents button {
-    font-size: 11px;
+    font-size: 12px;
     gap: 7px;
     min-height: 46px;
   }
@@ -2810,10 +2765,10 @@ input[type="search"]::-webkit-search-cancel-button {
     margin-bottom: 10px;
   }
   .report-toolbar > select {
-    font-size: 11px;
+    font-size: 12px;
   }
   .report-toolbar > button:nth-child(2) {
-    font-size: 10px;
+    font-size: 12px;
   }
   .chart-panel {
     padding: 17px 15px;
@@ -2823,10 +2778,10 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 28px;
   }
   .report-value > span:first-child {
-    font-size: 10px;
+    font-size: 12px;
   }
   .report-value > small {
-    font-size: 9px;
+    font-size: 12px;
   }
   .net-chart {
     margin-top: 17px;
@@ -2843,7 +2798,7 @@ input[type="search"]::-webkit-search-cancel-button {
     margin-top: 9px;
   }
   .provisional-label {
-    font-size: 8px;
+    font-size: 12px;
   }
   .section-title {
     margin: 20px 0 10px;
@@ -2852,7 +2807,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 13px;
   }
   .section-title > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .report-account-list {
     padding: 0 11px;
@@ -2860,14 +2815,14 @@ input[type="search"]::-webkit-search-cancel-button {
   }
   .report-account-list > button {
     min-height: 59px;
-    font-size: 11px;
+    font-size: 12px;
     gap: 9px;
   }
   .report-account-list .amount {
     font-size: 12px;
   }
   .report-account-list .amount small {
-    font-size: 8px;
+    font-size: 12px;
     margin-left: 3px;
   }
   .report-account-list .account-symbol {
@@ -2878,10 +2833,10 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 26px;
   }
   .expense-summary > div:first-child > span:first-child {
-    font-size: 10px;
+    font-size: 12px;
   }
   .expense-breakdown {
-    font-size: 9px;
+    font-size: 12px;
     gap: 4px;
   }
   .donut-wrap {
@@ -2889,10 +2844,10 @@ input[type="search"]::-webkit-search-cancel-button {
     margin: 12px auto 0;
   }
   .expense-panel .compact-note {
-    font-size: 10px;
+    font-size: 12px;
   }
   .category-stat-list summary {
-    font-size: 11px;
+    font-size: 12px;
     padding: 7px 11px;
     gap: 7px;
   }
@@ -2901,16 +2856,16 @@ input[type="search"]::-webkit-search-cancel-button {
     min-width: 69px;
   }
   .category-stat-list details > button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 5px 10px 5px 23px;
     gap: 7px;
   }
   .category-stat-list details > button > .amount {
     min-width: 69px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .percent {
-    font-size: 9px;
+    font-size: 12px;
     min-width: 30px;
   }
   .settings-book {
@@ -2935,7 +2890,7 @@ input[type="search"]::-webkit-search-cancel-button {
     width: 18px;
   }
   .setting-row > small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .setting-row select {
     font-size: 13px;
@@ -2944,13 +2899,13 @@ input[type="search"]::-webkit-search-cancel-button {
     padding: 0 13px;
   }
   .settings-section > h2 {
-    font-size: 10px;
+    font-size: 12px;
   }
   .manage-categories {
     margin-top: 20px;
   }
   .child-category {
-    font-size: 11px;
+    font-size: 12px;
     padding-left: 22px;
     min-height: 47px;
   }
@@ -3008,7 +2963,7 @@ input[type="search"]::-webkit-search-cancel-button {
     gap: 12px;
   }
   .welcome .field-label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .welcome-foot {
     padding-top: 15px;
@@ -3040,7 +2995,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 14px;
   }
   .account-name strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .account-row {
     padding: 0 9px;
@@ -3050,7 +3005,7 @@ input[type="search"]::-webkit-search-cancel-button {
     height: 30px;
   }
   .group-totals {
-    font-size: 9px;
+    font-size: 12px;
   }
   .transaction-copy > small {
     max-width: 143px;
@@ -3062,7 +3017,7 @@ input[type="search"]::-webkit-search-cancel-button {
     gap: 5px;
   }
   .transaction-copy > strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .transaction-row {
     gap: 7px;
@@ -3078,7 +3033,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 23px;
   }
   .expense-breakdown {
-    font-size: 8px;
+    font-size: 12px;
   }
   .chart-panel {
     padding: 15px 12px;
@@ -3151,13 +3106,13 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 13px;
   }
   .transaction-copy > small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .detail-split {
     font-size: 13px;
   }
   .transaction-meta {
-    font-size: 9px;
+    font-size: 12px;
   }
 }
 @media (max-width: 350px) {
@@ -3168,7 +3123,7 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 12px;
   }
   .transaction-copy > small {
-    font-size: 9px;
+    font-size: 12px;
   }
 }
 .entry-form .form-surface > .field:has(.datetime-controls) {
@@ -3191,7 +3146,7 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .seconds-control input {
@@ -3227,7 +3182,7 @@ body:has(.app-shell) {
   min-width: 0;
 }
 .transaction-secondary > small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -3239,7 +3194,7 @@ body:has(.app-shell) {
   white-space: nowrap;
 }
 .menu-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   padding: 0 15px 10px;
   line-height: 1.6;
@@ -3309,20 +3264,20 @@ body:has(.app-shell) {
     gap: 6px;
   }
   .transaction-secondary > small {
-    font-size: 10px;
+    font-size: 12px;
     max-width: 190px;
   }
   .transaction-secondary .transaction-meta {
-    font-size: 9px;
+    font-size: 12px;
     gap: 4px;
   }
   .transaction-secondary .transaction-meta em {
-    font-size: 9px;
+    font-size: 12px;
   }
   .date-divider {
     padding: 4px 0 2px;
     line-height: 12px;
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (max-width: 350px) {
@@ -3378,7 +3333,7 @@ body {
 }
 .category-edit small {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .category-expand {
@@ -3442,7 +3397,7 @@ body {
   display: block;
   margin-top: 5px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .report-type-icon {
   width: 38px;
@@ -3470,7 +3425,7 @@ body {
   background: var(--accent-soft);
   color: var(--accent);
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .filter-section {
   padding: 12px 0;
@@ -3604,7 +3559,7 @@ body {
     align-items: center;
     gap: 3px;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
   }
   .preview-bottom-nav .selected {
     color: var(--accent);

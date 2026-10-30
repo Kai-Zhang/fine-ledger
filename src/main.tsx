@@ -2,6 +2,7 @@ import { Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import "./style.css";
+import "./ui/pine-theme.css";
 window.__ledgerStartup?.mark("main-script");
 class ErrorBoundary extends Component<
   { children: ReactNode },

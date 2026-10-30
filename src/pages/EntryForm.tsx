@@ -1,3 +1,4 @@
+import { categoryColor } from "../ui/category-color.ts";
 import {
   allocateSplits,
   descriptionSplits,
@@ -561,7 +562,10 @@ export function EntryForm() {
                       className="category-choice"
                       onClick={() => setPicker(i)}
                     >
-                      <span style={{ color: c?.color }}>
+                      <span
+                        className="category-ink"
+                        style={categoryColor(c?.color)}
+                      >
                         <Icon name={c?.icon || "Tag"} />
                       </span>
                       <span>{c?.name || "选择类目"}</span>

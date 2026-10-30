@@ -1,3 +1,4 @@
+import { categoryColor } from "../ui/category-color.ts";
 export { ReportCatalog } from "./ReportCatalog.tsx";
 import { useMemo, useState, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
@@ -22,10 +23,10 @@ import {
 import { money } from "../domain/money.ts";
 import { uid, type SavedReport } from "../domain/types.ts";
 const colors = [
-  "#477B66",
-  "#83A28B",
-  "#C4AA78",
-  "#A486A6",
+  "#4E7D68",
+  "#B7845D",
+  "#5C7E9B",
+  "#8F78A5",
   "#799EAA",
   "#CA8C6B",
   "#7E8AB3",
@@ -432,9 +433,10 @@ export function Reports() {
                         return (
                           <g
                             key={p.id}
-                            style={{
-                              color: p.color || colors[i % colors.length],
-                            }}
+                            className="category-ink"
+                            style={categoryColor(
+                              p.color || colors[i % colors.length],
+                            )}
                           >
                             <path
                               className="donut-segment"
@@ -529,10 +531,10 @@ export function Reports() {
                 <details key={p.id} open>
                   <summary>
                     <span
-                      className="legend-dot"
-                      style={{
-                        background: p.color || colors[i % colors.length],
-                      }}
+                      className="legend-dot category-ink"
+                      style={categoryColor(
+                        p.color || colors[i % colors.length],
+                      )}
                     />
                     <strong>{p.name}</strong>
                     <span className="percent">

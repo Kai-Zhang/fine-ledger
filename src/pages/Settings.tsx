@@ -378,7 +378,7 @@ export function CategoryEditor({
     [name, setName] = useState(category?.name || ""),
     [parent, setParent] = useState(category?.parentId || parentId || ""),
     [icon, setIcon] = useState(category?.icon || "Tag"),
-    [color, setColor] = useState(category?.color || "#477B66"),
+    [color, setColor] = useState(category?.color || "#4E7D68"),
     [error, setError] = useState("");
   const snapshot = JSON.stringify({ name, parent, icon, color }),
     initialSnapshot = useRef(snapshot),
@@ -479,26 +479,29 @@ export function CategoryEditor({
         <Field label="颜色">
           <span className="color-picker">
             {[
-              "#477B66",
-              "#608D9D",
-              "#C68254",
-              "#B87B91",
-              "#7C9872",
-              "#9A87B4",
-              "#B95543",
+              "#4E7D68",
+              "#5C7E9B",
+              "#B7845D",
+              "#6B8264",
+              "#8F78A5",
+              "#25705A",
+              "#AA4B3E",
               "#7383A8",
-            ].map((c) => (
-              <button
-                type="button"
-                key={c}
-                aria-label={`颜色 ${c}`}
-                className={color === c ? "selected" : ""}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-              >
-                {c === color && <Icon name="Check" size={16} />}
-              </button>
-            ))}
+            ]
+              .concat(category?.color ? [category.color] : [])
+              .filter((c, i, all) => all.indexOf(c) === i)
+              .map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  aria-label={`颜色 ${c}`}
+                  className={color === c ? "selected" : ""}
+                  style={{ background: c }}
+                  onClick={() => setColor(c)}
+                >
+                  {c === color && <Icon name="Check" size={16} />}
+                </button>
+              ))}
           </span>
         </Field>
         <ErrorMessage message={error} />

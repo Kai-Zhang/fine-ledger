@@ -1,4 +1,4 @@
-const CONFIG = {"release":"0.7.2-9cf0441e6a565f60","root":"/","shell":"/assets/0.7.2-9cf0441e6a565f60/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.7.2-9cf0441e6a565f60/bootstrap.js","/assets/0.7.2-9cf0441e6a565f60/index-BLmiPyGH.js","/assets/0.7.2-9cf0441e6a565f60/index-DCgnodXo.css","/assets/0.7.2-9cf0441e6a565f60/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon-ledger-v1.png"]};
+const CONFIG = {"release":"0.8.0-b28e2bf10a6a6e5c","root":"/","shell":"/assets/0.8.0-b28e2bf10a6a6e5c/index.html","cachePrefix":"fine-ledger-shell-","assets":["/assets/0.8.0-b28e2bf10a6a6e5c/bootstrap.js","/assets/0.8.0-b28e2bf10a6a6e5c/index-D5tOF1tD.js","/assets/0.8.0-b28e2bf10a6a6e5c/index-D5yz3kRT.css","/assets/0.8.0-b28e2bf10a6a6e5c/index.html","/manifest.webmanifest","/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon-ledger-v1.png"]};
 const CACHE = CONFIG.cachePrefix + CONFIG.release;
 const appURL = new URL(CONFIG.root, self.location.origin).href;
 const shellURL = new URL(CONFIG.shell, self.location.origin).href;

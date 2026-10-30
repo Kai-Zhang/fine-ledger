@@ -161,6 +161,6 @@ export function Icon({
 }) {
   const Component = icons[name] || Tag;
   return (
-    <Component size={size} strokeWidth={1.7} aria-hidden="true" {...props} />
+    <Component size={size} strokeWidth={1.75} aria-hidden="true" {...props} />
   );
 }
