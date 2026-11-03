@@ -103,3 +103,27 @@ test('category and project reports keep the selected-range summary without time 
  assert.equal(trend.periods[0].expense,0n);
  assert.equal(trend.periods[0].refund,0n);
 });
+
+test('market quotes price unanchored income and unpaid card spending without overriding booked amounts', () => {
+ const b=fixture();
+ const base=b.entries.find(e=>e.id==='flight');
+ b.entries.push(
+  {...base,id:'covered',accountId:'JPY',amountMinor:'1000',splits:[{...base.splits[0],amountMinor:'1000'}]},
+  {...base,id:'unpaid',accountId:'JPY',occurredAt:'2024-02-10T00:00:00Z',amountMinor:'1000',splits:[{...base.splits[0],amountMinor:'1000'}]},
+  {...base,id:'foreign-income',kind:'income',accountId:'EUR',occurredAt:'2024-02-10T00:00:00Z',amountMinor:'1000',splits:[]},
+ );
+ const referenceQuotes=[
+  {base:'CNY',quote:'JPY',date:'2024-02-09',rate:25},
+  {base:'CNY',quote:'EUR',date:'2024-02-09',rate:0.125},
+  {base:'CNY',quote:'EUR',date:'2024-02-11',rate:0.1},
+ ];
+ const rows=reportRows(request(b,'cashflow',{referenceQuotes}));
+ const amount=(id)=>rows.find(r=>r.entry.id===id)?.amount;
+ assert.equal(amount('flight'),300000n);
+ assert.equal(amount('covered'),5000n);
+ assert.equal(amount('unpaid'),4000n);
+ assert.equal(amount('foreign-income'),8000n);
+ const net=calculateReport(request(b,'net',{from:'2024-02-10',to:'2024-02-11',ids:['EUR'],referenceQuotes}));
+ assert.deepEqual(net.points.map(p=>p.total),[8000n,10000n]);
+ assert.deepEqual(net.points.map(p=>p.missing.length),[0,0]);
+});

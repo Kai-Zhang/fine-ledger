@@ -68,19 +68,20 @@ export function roundedRatio(
     n = (amount < 0n ? -amount : amount) * numerator;
   return sign * ((n + denominator / 2n) / denominator);
 }
+const exchangeRateFormat = new Intl.NumberFormat("zh-CN", {
+  maximumSignificantDigits: 6,
+  useGrouping: false,
+});
 export function rateText(
-  baseMinor: string,
-  foreignMinor: string,
-  base: string,
-  foreign: string,
+  fromMinor: bigint,
+  toMinor: bigint,
+  fromCurrency: string,
+  toCurrency: string,
 ) {
-  const numerator =
-      BigInt(foreignMinor) * 10n ** BigInt(digits(base)) * 1000000n,
-    denominator = BigInt(baseMinor) * 10n ** BigInt(digits(foreign));
-  if (denominator === 0n) return "—";
-  const r = numerator / denominator;
-  return `${r / 1000000n}.${(r % 1000000n).toString().padStart(6, "0")}`.replace(
-    /\.?0+$/,
-    "",
-  );
+  const rate =
+    (Number(toMinor) / Number(fromMinor)) *
+    10 ** (digits(fromCurrency) - digits(toCurrency));
+  return Number.isFinite(rate) && rate > 0
+    ? exchangeRateFormat.format(rate)
+    : "—";
 }

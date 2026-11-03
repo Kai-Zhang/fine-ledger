@@ -1,3 +1,4 @@
+import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { PostingDialog } from "../components/PostingDialog.tsx";
 import { TransactionFilters } from "../components/TransactionFilters.tsx";
 import {
@@ -35,7 +36,7 @@ import {
 } from "../domain/ledger.ts";
 import { localDate, displayTime, compareTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
-import { reportIndex, reportRows } from "../domain/reporting.ts";
+import { reportRows } from "../domain/reporting.ts";
 export function TransactionsPage() {
   const app = useApp(),
     { book, route } = app;
@@ -65,11 +66,7 @@ export function TransactionsPage() {
     route.accountIds ||
     route.reportKind ||
     route.reportKinds ||
-    route.reportIssue
-  );
-  const pricingIndex = useMemo(
-    () => (route.reportIssue ? reportIndex(book) : undefined),
-    [book, route.reportIssue],
+    route.entryIds
   );
   const selectedEntryIds = useMemo(
     () => route.entryIds && new Set(route.entryIds),
@@ -80,13 +77,6 @@ export function TransactionsPage() {
       liveEntries(book).filter((e) => {
         if (selectedEntryIds && !selectedEntryIds.has(e.id)) return false;
         if (route.reportKinds && !route.reportKinds.includes(e.kind))
-          return false;
-        if (
-          route.reportIssue === "unpriced" &&
-          (e.kind === "transfer" ||
-            e.kind === "adjustment" ||
-            pricingIndex?.rate(e.accountId, e.occurredAt))
-        )
           return false;
         const at =
           (account?.id || route.accountId) === e.toAccountId &&
@@ -129,7 +119,7 @@ export function TransactionsPage() {
             }).length > 0)
         );
       }),
-    [book, route, account, pricingIndex, selectedEntryIds],
+    [book, route, account, selectedEntryIds],
   );
   const select = (f: TransactionFilter) =>
     filterEntries(book, base, f, query, account?.id).filter(
@@ -178,6 +168,15 @@ export function TransactionsPage() {
         }),
     );
   }, [book, entries, filters, route]);
+  const referenceQuotes = useReferenceRates(
+    book.currency,
+    book.accounts
+      .filter((a) => route.accountIds?.includes(a.id))
+      .map((a) => a.currency),
+    route.from && localDate(route.from, book.timeZone),
+    route.to && localDate(route.to, book.timeZone),
+    !!route.reportCurrency && !app.preview,
+  );
   const priced = useMemo(() => {
     if (!route.reportCurrency) return;
     const visible = new Set(entries.map((e) => e.id));
@@ -190,6 +189,7 @@ export function TransactionsPage() {
       categoryIds: route.categoryIds || [],
       projectIds: route.projectIds || [],
       now: new Date().toISOString(),
+      referenceQuotes,
     });
     const labels = new Map<string, string>();
     let total = 0n,
@@ -226,7 +226,7 @@ export function TransactionsPage() {
       labels.set(row.entry.id, money(amount, route.reportCurrency, true));
     }
     return { total, missing, labels };
-  }, [book, entries, filters, route]);
+  }, [book, entries, filters, route, referenceQuotes]);
   const chips: { label: string; clear: () => void }[] = [];
   const clear = (key: keyof TransactionFilter) =>
     setFilters((f) => ({ ...f, [key]: emptyFilter()[key] }));

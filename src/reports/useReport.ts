@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReportRequest, ReportResult } from "../domain/reporting.ts";
 // Project drilldown remounts the overview. Reuse completed calculations for
 // the same immutable book and report scope while that book remains loaded.
@@ -13,17 +13,21 @@ export function useReport(request: ReportRequest | null) {
     result?: ReportResult;
     error?: string;
   }>({ request: null });
-  const projectKey =
-    request?.type === "project"
-      ? JSON.stringify([
-          request.from,
-          request.to,
-          request.ids,
-          request.categoryIds,
-          request.projectIds,
-          request.grain,
-        ])
-      : undefined;
+  const projectKey = useMemo(
+    () =>
+      request?.type === "project"
+        ? JSON.stringify([
+            request.from,
+            request.to,
+            request.ids,
+            request.categoryIds,
+            request.projectIds,
+            request.grain,
+            request.referenceQuotes,
+          ])
+        : undefined,
+    [request],
+  );
   const cached =
     request && projectKey
       ? projectResults.get(request.book)?.get(projectKey)

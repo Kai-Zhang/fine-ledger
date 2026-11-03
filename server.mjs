@@ -17,7 +17,7 @@ export async function serveStatic(req, res) {
       'Cache-Control': pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-store',
       ...(pathname === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {}),
       'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     }).end(req.method === 'HEAD' ? undefined : body);
   } catch { res.writeHead(404).end('Not found'); }
 }

@@ -1,3 +1,4 @@
+import type { ReferenceQuote } from "../domain/reference-rates.ts";
 import type { ServicePage } from "../sync/service.ts";
 import { createContext, useContext } from "react";
 import type { Book, Entry, ReportType, ReportGrain } from "../domain/types.ts";
@@ -35,7 +36,6 @@ export type Route = {
   reportMeasure?: "income" | "expense" | "refund" | "net" | "surplus";
   grain?: ReportGrain;
   reportDays?: string;
-  reportIssue?: "unpriced";
   entryIds?: string[];
   from?: string;
   to?: string;
@@ -46,6 +46,7 @@ export interface AppContextValue {
   preview?: boolean;
   frameKey?: number;
   localSync: LocalSyncView;
+  currentReferenceQuotes: readonly ReferenceQuote[];
   views: Map<string, unknown>;
   restored: () => void;
   book: Book;

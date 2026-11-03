@@ -1,3 +1,4 @@
+import { useReferenceRates } from "./reports/useReferenceRates.ts";
 import { LocalBackup, LocalBackupPanel } from "./pages/LocalBackup.tsx";
 import { useSyncCoordinator } from "./sync/useSync.ts";
 import { requestSync } from "./sync/engine.ts";
@@ -108,6 +109,12 @@ export function App() {
         ? { ...storedBook, timeZone: effectiveTimeZone(storedBook, systemZone) }
         : storedBook,
     [storedBook, systemZone],
+  );
+  const currentReferenceQuotes = useReferenceRates(
+    book?.currency || "",
+    book?.accounts
+      .filter((account) => account.netWorth)
+      .map((account) => account.currency) || [],
   );
   useSyncCoordinator(
     ready && !!book,
@@ -446,6 +453,7 @@ export function App() {
         frameKey: frame.key,
         views,
         localSync,
+        currentReferenceQuotes,
         restored,
         book,
         mode,
@@ -526,6 +534,7 @@ export function App() {
               preview: true,
               frameKey: swipeTarget.key,
               localSync,
+              currentReferenceQuotes,
               restored: () => {},
               views,
               book,

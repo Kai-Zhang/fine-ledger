@@ -4,10 +4,8 @@ import {
   reportGroups,
   isTimeSeriesReport,
   reportGrains,
-  reportRange,
-  reportRows,
 } from "../domain/reporting.ts";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -128,18 +126,6 @@ export function ReportCatalog() {
   const pendingCount = app.book.entries.filter(
     (e) => !e.deletedAt && !e.posted,
   ).length;
-  const unpricedCount = useMemo(() => {
-    const now = new Date().toISOString(),
-      range = reportRange(app.book, "all", now);
-    return reportRows({
-      book: app.book,
-      type: "cashflow",
-      ...range,
-      ids: app.book.accounts.map((a) => a.id),
-      categoryIds: [],
-      now,
-    }).filter((r) => r.missing).length;
-  }, [app.book]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -254,7 +240,7 @@ export function ReportCatalog() {
             </div>
           </section>
         ))}
-        {(pendingCount > 0 || unpricedCount > 0 || app.localSync.issue) && (
+        {(pendingCount > 0 || app.localSync.issue) && (
           <section className="report-tasks">
             <div className="section-title">
               <h2>待处理</h2>
@@ -267,20 +253,6 @@ export function ReportCatalog() {
                   value={`${pendingCount} 笔`}
                   onClick={() =>
                     app.go({ page: "transactions", filter: "pending" })
-                  }
-                />
-              )}
-              {unpricedCount > 0 && (
-                <SettingRow
-                  icon="CircleHelp"
-                  label="缺少折算依据"
-                  value={`${unpricedCount} 笔`}
-                  onClick={() =>
-                    app.go({
-                      page: "transactions",
-                      reportIssue: "unpriced",
-                      postedOnly: true,
-                    })
                   }
                 />
               )}

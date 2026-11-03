@@ -20,6 +20,7 @@ import {
   type ReportPeriod,
   type ReportRequest,
 } from "../domain/reporting.ts";
+import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { useReport } from "../reports/useReport.ts";
 import { NetChart } from "../reports/NetChart.tsx";
 import { PeriodChart } from "../reports/PeriodChart.tsx";
@@ -172,6 +173,13 @@ export function Reports() {
       : book.currency;
   const projectOverview = type === "project" && !projectIds.length;
   const valid = !!from && !!to && from <= to;
+  const referenceQuotes = useReferenceRates(
+    book.currency,
+    accounts.filter((a) => ids.includes(a.id)).map((a) => a.currency),
+    from,
+    to,
+    valid && type !== "balance" && !app.preview,
+  );
   const request = useMemo<ReportRequest | null>(
     () =>
       valid && (type !== "balance" || ids.length === 1)
@@ -184,10 +192,22 @@ export function Reports() {
             categoryIds,
             projectIds,
             grain,
+            referenceQuotes,
             now: new Date().toISOString(),
           }
         : null,
-    [book, type, from, to, ids, categoryIds, projectIds, grain, valid],
+    [
+      book,
+      type,
+      from,
+      to,
+      ids,
+      categoryIds,
+      projectIds,
+      grain,
+      valid,
+      referenceQuotes,
+    ],
   );
   const { result, pending, error } = useReport(request);
   const periods = result?.periods || [],
@@ -607,6 +627,11 @@ export function Reports() {
           </>
         ) : (
           <>
+            {!stock && referenceQuotes.length > 0 && (
+              <p className="compact-note muted">
+                外币参考折算按交易日；实扣实收及已有还款折算沿用账本记录。
+              </p>
+            )}
             {missing > 0 && (
               <p className="report-warning">
                 部分外币金额未计入{stock ? "净值" : "汇总"}（{missing}{" "}
@@ -632,7 +657,9 @@ export function Reports() {
                             : ["expense", "refund"],
                         projectIds,
                         categoryIds,
-                        reportIssue: "unpriced",
+                        entryIds: result.rows
+                          .filter((row) => row.missing)
+                          .map((row) => row.entry.id),
                       })
                     }
                   >
@@ -649,6 +676,7 @@ export function Reports() {
                     <span>
                       {current?.label || "—"} · {missing ? "已计入部分 · " : ""}
                       {valueName}
+                      {current?.provisional ? " · 估值" : ""}
                       <small>{currency}</small>
                     </span>
                     <Amount value={current?.total || 0n} currency={currency} />

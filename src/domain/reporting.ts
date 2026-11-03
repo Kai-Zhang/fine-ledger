@@ -4,6 +4,7 @@ import { localDate, endOfDay, dateOffset } from "./dates.ts";
 import { roundedRatio } from "./money.ts";
 import { categoryStats, refundOriginalId } from "./ledger.ts";
 import { convertedSplits } from "./report-amounts.ts";
+import { referenceRateLookup, type ReferenceQuote } from "./reference-rates.ts";
 import { categoryMatches } from "./filters.ts";
 
 export const reportPresets = [
@@ -84,7 +85,11 @@ const lower = <T>(rows: T[], test: (row: T) => boolean) => {
   return lo;
 };
 type Rate = { n: bigint; d: bigint; provisional: boolean };
-export function reportIndex(book: Book) {
+export function reportIndex(
+  book: Book,
+  quotes: readonly ReferenceQuote[] = [],
+) {
+  const reference = referenceRateLookup(quotes, book.currency, book.timeZone);
   const accounts = new Map(book.accounts.map((a) => [a.id, a]));
   const timelines = new Map<string, { at: bigint; amount: bigint }[]>();
   const anchors = new Map<string, { at: bigint; entry: Entry }[]>();
@@ -161,6 +166,14 @@ export function reportIndex(book: Book) {
     memo.set(key, null);
     return null;
   }
+  function flowRate(id: string, at: string, kind?: Entry["kind"]) {
+    const account = accounts.get(id);
+    if (!account || account.currency === book.currency) return rate(id, at);
+    const estimated = reference(account.currency, at);
+    if (kind === "income" && estimated) return estimated;
+    const inferred = rate(id, at);
+    return inferred && !inferred.provisional ? inferred : estimated || inferred;
+  }
   function balanceAt(id: string, at: string) {
     const rows = timelines.get(id) || [],
       time = instant(at);
@@ -175,7 +188,7 @@ export function reportIndex(book: Book) {
       if (!accounts.has(id)) continue;
       const amount = balanceAt(id, at);
       balances[id] = amount;
-      const r = rate(id, at);
+      const r = reference(accounts.get(id)!.currency, at) || rate(id, at);
       if (r) {
         total += roundedRatio(amount, r.n, r.d);
         provisional ||= r.provisional && amount !== 0n;
@@ -183,7 +196,7 @@ export function reportIndex(book: Book) {
     }
     return { total, missing, provisional, balances };
   }
-  return { balanceAt, rate, netAt };
+  return { balanceAt, rate, flowRate, netAt };
 }
 export type NetPoint = ReturnType<ReturnType<typeof reportIndex>["netAt"]> & {
   date: string;
@@ -223,6 +236,7 @@ export type ReportRequest = {
   projectIds?: string[];
   grain?: ReportGrain;
   now: string;
+  referenceQuotes?: readonly ReferenceQuote[];
 };
 export function reportPeriods(from: string, to: string, grain: ReportGrain) {
   let first = Temporal.PlainDate.from(from);
@@ -268,7 +282,7 @@ export interface FlowRow {
 }
 export function reportRows(
   request: ReportRequest,
-  index = reportIndex(request.book),
+  index = reportIndex(request.book, request.referenceQuotes),
 ): FlowRow[] {
   const { book, from, to, ids, categoryIds, projectIds = [] } = request;
   const accounts = new Set(ids),
@@ -290,7 +304,7 @@ export function reportRows(
       continue;
     const at = instant(entry.occurredAt);
     if (at < start || at > end) continue;
-    const rate = index.rate(entry.accountId, entry.occurredAt);
+    const rate = index.flowRate(entry.accountId, entry.occurredAt, entry.kind);
     const values = rate ? convertedSplits(entry, rate.n, rate.d) : [];
     const splits = entry.splits.flatMap((s, i) =>
       categoryMatches(book, s, categoryIds) &&
@@ -380,7 +394,7 @@ export function calculateReport(request: ReportRequest) {
   if (!reportGrains.some((g) => g.value === grain)) throw Error("聚合粒度无效");
   const series = isTimeSeriesReport(type);
   const ranges = reportPeriods(from, to, series ? grain : "year"),
-    index = reportIndex(book);
+    index = reportIndex(book, request.referenceQuotes);
   if (type === "balance" && ids.length !== 1)
     throw Error("请选择一个账户查看原币余额");
   const stock = type === "net" || type === "balance";
@@ -480,7 +494,7 @@ export function calculateReport(request: ReportRequest) {
           endOfDay(to, book.timeZone),
           ids,
           categoryIds,
-          index.rate,
+          index.flowRate,
         )
       : {
           values,

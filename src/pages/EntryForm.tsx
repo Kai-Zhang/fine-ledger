@@ -1,3 +1,5 @@
+import { useReferenceRates } from "../reports/useReferenceRates.ts";
+import { referenceRateLookup } from "../domain/reference-rates.ts";
 import { sortedProjects } from "../domain/organization.ts";
 import { categoryColor } from "../ui/category-color.ts";
 import {
@@ -36,6 +38,7 @@ import {
   decimal,
   money,
   rateText,
+  roundedRatio,
 } from "../domain/money.ts";
 import { localInput, dateToISO } from "../domain/dates.ts";
 import { kindLabel } from "../components/Transactions.tsx";
@@ -145,6 +148,77 @@ export function EntryForm() {
     descriptionRef = useRef<HTMLInputElement>(null),
     secondsEdited = useRef(false),
     receivedSecondsEdited = useRef(false);
+  const transferCurrency =
+    kind === "transfer" && to?.currency !== currency ? to?.currency : undefined;
+  const [transferDriver, setTransferDriver] = useState<"out" | "in" | null>(
+    null,
+  );
+  const quotes = useReferenceRates(
+    book.currency,
+    transferCurrency ? [currency, transferCurrency] : [],
+    undefined,
+    undefined,
+    !app.preview,
+  );
+  const reference = useMemo(() => {
+    if (!transferCurrency) return null;
+    const lookup = referenceRateLookup(
+      [...app.currentReferenceQuotes, ...quotes],
+      book.currency,
+      book.timeZone,
+    );
+    const now = new Date().toISOString();
+    const inBase = (c: string) =>
+      c === book.currency ? { n: 1n, d: 1n } : lookup(c, now);
+    const from = inBase(currency),
+      to = inBase(transferCurrency);
+    return from && to ? { n: from.n * to.d, d: from.d * to.n } : null;
+  }, [
+    app.currentReferenceQuotes,
+    quotes,
+    book.currency,
+    book.timeZone,
+    currency,
+    transferCurrency,
+  ]);
+  function positiveMinor(raw: string, unit: string) {
+    try {
+      const value = BigInt(minor(raw, unit));
+      return value > 0n ? value : 0n;
+    } catch {
+      return 0n;
+    }
+  }
+  const fromAmount = transferCurrency ? positiveMinor(amount, currency) : 0n;
+  const toAmount = transferCurrency
+    ? positiveMinor(received, transferCurrency)
+    : 0n;
+  useEffect(() => {
+    if (app.preview || !reference || !transferCurrency || !transferDriver)
+      return;
+    if (transferDriver === "out") {
+      const next = roundedRatio(fromAmount, reference.n, reference.d);
+      setReceived(next > 0n ? decimal(next.toString(), transferCurrency) : "");
+    } else {
+      const next = roundedRatio(toAmount, reference.d, reference.n);
+      setAmount(next > 0n ? decimal(next.toString(), currency) : "");
+    }
+  }, [
+    reference,
+    transferCurrency,
+    transferDriver,
+    fromAmount,
+    toAmount,
+    currency,
+    app.preview,
+  ]);
+  const manualRate = !transferDriver && fromAmount > 0n && toAmount > 0n;
+  const displayedRate =
+    transferCurrency &&
+    (manualRate
+      ? rateText(fromAmount, toAmount, currency, transferCurrency)
+      : reference &&
+        rateText(reference.d, reference.n, currency, transferCurrency));
   const currencySelection = useRef(inputCurrency);
   currencySelection.current = inputCurrency;
   function changeInputCurrency(next: string) {
@@ -224,6 +298,8 @@ export function EntryForm() {
   }
   function updateTotal(raw: string) {
     setAmount(raw);
+    if (kind === "transfer")
+      setTransferDriver(!received || transferDriver === "out" ? "out" : null);
     if (splitMode) setSplits(distribute(splits, raw));
   }
   const initialJSON = useRef<string | undefined>(undefined),
@@ -595,6 +671,8 @@ export function EntryForm() {
                   setInputCurrency(next.currency);
                   setFee("");
                   setAmount("");
+                  setReceived("");
+                  setTransferDriver(null);
                   setSplits(
                     splits.map((s) => ({ ...s, amount: "", locked: false })),
                   );
@@ -616,7 +694,19 @@ export function EntryForm() {
           {kind === "transfer" && (
             <>
               <Field label="转入账户">
-                <select value={toId} onChange={(e) => setTo(e.target.value)}>
+                <select
+                  value={toId}
+                  onChange={(e) => {
+                    const next = book.accounts.find(
+                      (a) => a.id === e.target.value,
+                    );
+                    if (next?.currency !== to?.currency) {
+                      setReceived("");
+                      setTransferDriver(amount ? "out" : null);
+                    }
+                    setTo(e.target.value);
+                  }}
+                >
                   <option value="">选择转入账户</option>
                   {choices
                     .filter((a) => a.id !== accountId)
@@ -633,30 +723,23 @@ export function EntryForm() {
                     <input
                       inputMode="decimal"
                       value={received}
-                      onChange={(e) => setReceived(e.target.value)}
+                      onChange={(e) => {
+                        setReceived(e.target.value);
+                        setTransferDriver(
+                          !amount || transferDriver === "in" ? "in" : null,
+                        );
+                      }}
                       placeholder="银行实际到账金额"
                     />
                   </Field>
-                  {total > 0n &&
-                    (() => {
-                      try {
-                        const v = minor(received, to.currency);
-                        return BigInt(v) > 0n ? (
-                          <div className="rate-line">
-                            1 {currency} ={" "}
-                            {rateText(
-                              total.toString(),
-                              v,
-                              currency,
-                              to.currency,
-                            )}{" "}
-                            {to.currency}
-                          </div>
-                        ) : null;
-                      } catch {
-                        return null;
-                      }
-                    })()}
+                  <div className="rate-line">
+                    <span>{manualRate ? "实际汇率" : "参考汇率"}</span>
+                    <span>
+                      {displayedRate
+                        ? `1 ${currency} = ${displayedRate} ${transferCurrency}`
+                        : "暂无报价"}
+                    </span>
+                  </div>
                 </>
               )}
             </>

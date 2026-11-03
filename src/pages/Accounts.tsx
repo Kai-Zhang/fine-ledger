@@ -1,3 +1,4 @@
+import { referenceRateLookup } from "../domain/reference-rates.ts";
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   DndContext,
@@ -34,7 +35,7 @@ import {
   GroupEditor,
   GroupRemoval,
 } from "../components/AccountEditor.tsx";
-import { accountBalances, netWorth } from "../domain/ledger.ts";
+import { accountBalances, netWorth, rateFor } from "../domain/ledger.ts";
 import { moveAccount } from "../domain/organization.ts";
 import type { Account, Group, Book } from "../domain/types.ts";
 function AccountRow({
@@ -290,10 +291,21 @@ export function Accounts() {
   }, [addMenu, app.preview]);
   const sensors = useDragSensors();
   useDragSelection(!!drag);
+  const netAccounts = book.accounts.filter((account) => account.netWorth);
+  const lookup = referenceRateLookup(
+    app.currentReferenceQuotes,
+    book.currency,
+    book.timeZone,
+  );
   const groups = book.groups.slice().sort((a, b) => a.order - b.order),
     at = new Date().toISOString(),
     balances = accountBalances(book, at),
-    net = netWorth(book, at, undefined, balances),
+    net = netWorth(book, at, undefined, balances, (id, date) => {
+      const account = netAccounts.find((candidate) => candidate.id === id);
+      return (
+        (account && lookup(account.currency, date)) || rateFor(book, id, date)
+      );
+    }),
     activeAccount =
       drag?.type === "account"
         ? book.accounts.find((a) => a.id === drag.id)
@@ -387,7 +399,11 @@ export function Accounts() {
         >
           <div>
             <span>
-              {net.missing.length ? "已折算净值" : "总净值"}{" "}
+              {net.missing.length
+                ? "已折算净值"
+                : net.provisional
+                  ? "净值估算"
+                  : "总净值"}{" "}
               <small>{book.currency}</small>
             </span>
             <Amount value={net.total} currency={book.currency} />

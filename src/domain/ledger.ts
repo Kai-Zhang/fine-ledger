@@ -394,6 +394,7 @@ export function netWorth(
   at: string,
   ids = book.accounts.filter((a) => a.netWorth).map((a) => a.id),
   balances?: ReadonlyMap<string, bigint>,
+  getRate = (id: string, at: string) => rateFor(book, id, at),
 ) {
   let total = 0n,
     provisional = false;
@@ -402,7 +403,7 @@ export function netWorth(
     const a = book.accounts.find((a) => a.id === id);
     if (!a) continue;
     const amount = balances?.get(id) ?? balance(book, id, at),
-      rate = rateFor(book, id, at);
+      rate = getRate(id, at);
     if (rate) {
       total += roundedRatio(amount, rate.n, rate.d);
       provisional ||= rate.provisional && amount !== 0n;

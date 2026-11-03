@@ -374,7 +374,7 @@ export async function createService(
       reply.header("X-Content-Type-Options", "nosniff");
       reply.header(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+        "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.frankfurter.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
       );
       if (pathname === "/sw.js") reply.header("Service-Worker-Allowed", "/");
       return await readFile(file);
