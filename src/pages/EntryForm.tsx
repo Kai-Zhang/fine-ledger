@@ -450,15 +450,19 @@ export function EntryForm() {
         noValidate
       >
         {!existing && !["refund", "adjustment"].includes(kind) && (
-          <div className="segmented entry-types">
+          <div
+            className="compact-segments entry-types"
+            role="group"
+            aria-label="交易类型"
+          >
             {(["expense", "income", "transfer"] as const).map((k) => (
               <button
                 type="button"
                 key={k}
-                className={kind === k ? "selected" : ""}
+                aria-pressed={kind === k}
                 onClick={() => switchKind(k)}
               >
-                {kindLabel[k]}
+                <span>{kindLabel[k]}</span>
               </button>
             ))}
           </div>
@@ -474,6 +478,23 @@ export function EntryForm() {
                     ? "退款金额"
                     : kindLabel[kind] + "金额"}
             </label>
+          </div>
+          <div className="entry-amount-row">
+            <input
+              id="entry-amount"
+              ref={amountRef}
+              inputMode={kind === "adjustment" ? "text" : "decimal"}
+              value={amount}
+              onChange={(e) => updateTotal(e.target.value)}
+              placeholder={digits(currency) === 0 ? "0" : "0.00"}
+              autoComplete="off"
+              aria-label="金额"
+              onFocus={() => {
+                setFocused(true);
+                setShowSuggestions(true);
+              }}
+              onBlur={() => setFocused(false)}
+            />
             {["expense", "income"].includes(kind) ? (
               <select
                 className="entry-currency"
@@ -492,21 +513,6 @@ export function EntryForm() {
               <span className="entry-currency-code">{currency}</span>
             )}
           </div>
-          <input
-            id="entry-amount"
-            ref={amountRef}
-            inputMode={kind === "adjustment" ? "text" : "decimal"}
-            value={amount}
-            onChange={(e) => updateTotal(e.target.value)}
-            placeholder={digits(currency) === 0 ? "0" : "0.00"}
-            autoComplete="off"
-            aria-label="金额"
-            onFocus={() => {
-              setFocused(true);
-              setShowSuggestions(true);
-            }}
-            onBlur={() => setFocused(false)}
-          />
           {foreign && (
             <p className="entry-settlement-note" role="status">
               {accountCurrency} 入账金额待确认

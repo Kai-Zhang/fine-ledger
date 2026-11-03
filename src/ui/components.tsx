@@ -1,4 +1,11 @@
-import { useEffect, useRef, useId, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useId,
+  useState,
+  type ReactNode,
+  type MouseEventHandler,
+} from "react";
 import { Icon } from "./icons.tsx";
 import { useApp } from "./context.tsx";
 import { money } from "../domain/money.ts";
@@ -81,15 +88,20 @@ export function Header({
   back,
   children,
   kicker,
+  onClick,
 }: {
   title: string;
   back?: boolean;
   children?: ReactNode;
   kicker?: string;
+  onClick?: MouseEventHandler<HTMLElement>;
 }) {
   const app = useApp();
   return (
-    <header className={`page-header ${back ? "has-back" : ""}`}>
+    <header
+      onClick={onClick}
+      className={`page-header ${back ? "has-back" : ""}`}
+    >
       {back && <IconButton name="ArrowLeft" label="返回" onClick={app.back} />}
       <div className="header-title">
         {kicker && <span className="eyebrow">{kicker}</span>}

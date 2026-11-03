@@ -1,6 +1,6 @@
 import { useMemo, useId, useRef, type PointerEvent } from "react";
 import type { NetPoint } from "../domain/reporting.ts";
-import { money } from "../domain/money.ts";
+import { compactMoney, money } from "../domain/money.ts";
 
 export function NetChart({
   values,
@@ -10,8 +10,8 @@ export function NetChart({
   label = "净值",
 }: {
   values: NetPoint[];
-  selected: number;
-  onSelect: (n: number) => void;
+  selected: number | null;
+  onSelect: (n: number | null) => void;
   currency: string;
   label?: string;
 }) {
@@ -75,22 +75,38 @@ export function NetChart({
   if (!values.length) return null;
   const { width, height, left, right, top, bottom, x, y, path, low, high } =
       geometry,
-    index = Math.min(Math.max(0, selected), values.length - 1);
-  function pick(e: PointerEvent<SVGSVGElement>) {
-    const r = e.currentTarget.getBoundingClientRect();
-    onSelect(
-      Math.max(
-        0,
-        Math.min(
-          values.length - 1,
-          Math.round(
-            ((((e.clientX - r.left) / r.width) * width - left) /
-              (right - left)) *
-              (values.length - 1),
-          ),
-        ),
-      ),
+    index = Math.min(
+      Math.max(0, selected ?? values.length - 1),
+      values.length - 1,
     );
+  function pick(e: PointerEvent<SVGSVGElement>, hitTest = false) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * width;
+    const py = ((e.clientY - r.top) / r.height) * height;
+    const position = ((px - left) / (right - left)) * (values.length - 1);
+    const next = Math.max(0, Math.min(values.length - 1, Math.round(position)));
+    if (hitTest) {
+      const start = values[Math.floor(position)],
+        end = values[Math.ceil(position)];
+      const point = values[next];
+      const fraction = position - Math.floor(position);
+      const hitY =
+        start && end && !start.missing.length && !end.missing.length
+          ? y(start.total) + fraction * (y(end.total) - y(start.total))
+          : y(point.total);
+      if (
+        point.missing.length ||
+        px < left - 14 ||
+        px > right + 14 ||
+        (values.length === 1 && Math.abs(px - x(next)) > 18) ||
+        Math.abs(py - hitY) > 18
+      ) {
+        onSelect(null);
+        return false;
+      }
+    }
+    onSelect(next);
+    return true;
   }
   return (
     <div className="net-chart" onContextMenu={(e) => e.preventDefault()}>
@@ -99,9 +115,9 @@ export function NetChart({
         role="img"
         aria-label={`${label}走势，点按或按住左右滑动查看期间`}
         onPointerDown={(e) => {
+          if (!pick(e, true)) return;
           dragging.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
-          pick(e);
         }}
         onPointerMove={(e) => {
           if (dragging.current === e.pointerId) pick(e);
@@ -136,10 +152,16 @@ export function NetChart({
           />
         ))}
         <text x={left} y="17" className="chart-label">
-          {money(high, currency)}
+          <title>
+            {money(high, currency)} {currency}
+          </title>
+          {compactMoney(high, currency)}
         </text>
         <text x={left} y={bottom - 5} className="chart-label">
-          {money(low, currency)}
+          <title>
+            {money(low, currency)} {currency}
+          </title>
+          {compactMoney(low, currency)}
         </text>
         {values.length > 1 && !values.some((v) => v.missing.length) && (
           <path
@@ -155,23 +177,26 @@ export function NetChart({
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        <line
-          x1={x(index)}
-          x2={x(index)}
-          y1={top}
-          y2={bottom}
-          className="chart-cursor"
-        />
-        {!values[index].missing.length && (
-          <circle
-            cx={x(index)}
-            cy={y(values[index].total)}
-            r="4"
-            fill="var(--accent)"
-            stroke="var(--surface)"
-            strokeWidth="2"
+        {selected !== null && (
+          <line
+            x1={x(index)}
+            x2={x(index)}
+            y1={top}
+            y2={bottom}
+            className="chart-cursor"
           />
         )}
+        {(selected !== null || values.length === 1) &&
+          !values[index].missing.length && (
+            <circle
+              cx={x(index)}
+              cy={y(values[index].total)}
+              r="4"
+              fill="var(--accent)"
+              stroke="var(--surface)"
+              strokeWidth="2"
+            />
+          )}
         <text x={left} y="333" className="chart-label">
           {values[0].date.replaceAll("-", "/")}
         </text>

@@ -102,11 +102,14 @@ const hash = (id: string) => {
   return value >>> 0;
 };
 export type PlotColor = { light: string; dark: string };
-export function categoryPlotColors(categories: Category[]) {
+export function categoryPlotColors(
+  categories: Category[],
+  kind: Category["kind"] = "expense",
+) {
   const colors = new Map<string, PlotColor>(),
     used = new Set<number>();
   const parents = categories
-    .filter((c) => c.kind === "expense" && !c.parentId)
+    .filter((c) => c.kind === kind && !c.parentId)
     .sort((a, b) => a.id.localeCompare(b.id));
   for (const parent of parents) {
     let slot = hash(parent.id) % hues.length;

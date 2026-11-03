@@ -202,58 +202,85 @@ export function TransactionFilters({
             ),
           )}
         </details>
-        <Field label="入账状态">
-          <select
-            value={draft.status}
-            onChange={(e) =>
-              change("status", e.target.value as TransactionFilter["status"])
-            }
-          >
-            <option value="all">全部</option>
-            <option value="posted">已入账</option>
-            <option value="pending">未入账</option>
-          </select>
-        </Field>
-        <div className="filter-section">
-          <h3>金额范围</h3>
-          <Field label="币种">
-            <select
-              value={draft.currency}
-              disabled={!!scope}
-              onChange={(e) =>
-                setDraft((f) => ({
-                  ...f,
-                  currency: e.target.value,
-                  min: "",
-                  max: "",
-                }))
+        <details className="filter-section" open>
+          <summary>
+            入账状态{" "}
+            <small>
+              {
+                { all: "全部", posted: "已入账", pending: "未入账" }[
+                  draft.status
+                ]
               }
-            >
-              <option value="">所有币种</option>
-              {currencies.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
-          <div className="form-grid">
-            <Field label="最低金额">
-              <input
-                inputMode="decimal"
-                value={draft.min}
-                placeholder="不限"
-                onChange={(e) => change("min", e.target.value)}
-              />
-            </Field>
-            <Field label="最高金额">
-              <input
-                inputMode="decimal"
-                value={draft.max}
-                placeholder="不限"
-                onChange={(e) => change("max", e.target.value)}
-              />
-            </Field>
+            </small>
+          </summary>
+          <div
+            className="filter-check-grid"
+            role="radiogroup"
+            aria-label="入账状态"
+          >
+            {(
+              [
+                ["all", "全部"],
+                ["posted", "已入账"],
+                ["pending", "未入账"],
+              ] as const
+            ).map(([status, label]) => (
+              <label className="check-row" key={status}>
+                <input
+                  type="radio"
+                  name="transaction-posting-status"
+                  checked={draft.status === status}
+                  onChange={() => change("status", status)}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
           </div>
-        </div>
+        </details>
+        <details className="filter-section" open>
+          <summary>
+            金额范围 <small>{draft.min || draft.max ? "已设置" : "不限"}</small>
+          </summary>
+          <div className="amount-filter-fields">
+            <Field label="币种">
+              <select
+                value={draft.currency}
+                disabled={!!scope}
+                onChange={(e) =>
+                  setDraft((f) => ({
+                    ...f,
+                    currency: e.target.value,
+                    min: "",
+                    max: "",
+                  }))
+                }
+              >
+                <option value="">所有币种</option>
+                {currencies.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+            <div className="form-grid">
+              <Field label="最低金额">
+                <input
+                  inputMode="decimal"
+                  value={draft.min}
+                  placeholder="不限"
+                  onChange={(e) => change("min", e.target.value)}
+                />
+              </Field>
+              <Field label="最高金额">
+                <input
+                  inputMode="decimal"
+                  value={draft.max}
+                  placeholder="不限"
+                  onChange={(e) => change("max", e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+        </details>
         <ErrorMessage message={error} />
         <div className="dialog-footer">
           <Button

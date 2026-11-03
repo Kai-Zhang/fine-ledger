@@ -36,8 +36,8 @@ export function CategoryBreakdown({
     negative = [...stats.values].filter(([, v]) => v < 0n),
     positiveTotal = positive.reduce((a, [, n]) => a + n, 0n);
   const plotColors = useMemo(
-    () => categoryPlotColors(book.categories),
-    [book.categories],
+    () => categoryPlotColors(book.categories, income ? "income" : "expense"),
+    [book.categories, income],
   );
   const parentValues = useMemo(() => {
     const positive = [...stats.values].filter(([, v]) => v > 0n);
@@ -104,7 +104,8 @@ export function CategoryBreakdown({
             currency={book.currency}
             colors={plotColors}
             label={income ? "收入分类" : "支出分类"}
-            totalLabel={income ? "收入" : "正向净支出"}
+            totalLabel={income ? "" : "正向净支出"}
+            singleRing={income}
           />
         ) : (
           <Empty
@@ -170,30 +171,41 @@ export function CategoryBreakdown({
         {parentValues.map((p) => (
           <details key={p.id} className="report-category-group" open>
             <summary>
-              <button
-                type="button"
-                className={`category-parent-main ${selectedCategory === p.id && selectedCategoryLayer === "parent" ? "is-selected" : ""}`}
-                aria-label={`选择大类 ${p.name}`}
-                aria-pressed={
-                  selectedCategory === p.id &&
-                  selectedCategoryLayer === "parent"
-                }
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  selectCategory(p.id, "parent");
-                }}
-              >
-                <span
-                  className="legend-dot report-category-ink"
-                  style={plotColor(plotColors.get(p.id))}
-                />
-                <span className="category-row-name">
-                  <strong>{p.name}</strong>
-                  <small>{percentage(p.amount)}</small>
-                </span>
-                <Amount value={p.amount} currency={book.currency} />
-              </button>
+              {income ? (
+                <div className="category-parent-main">
+                    <Icon name={p.icon} size={17} />
+                  <span className="category-row-name">
+                    <strong>{p.name}</strong>
+                    <small>{percentage(p.amount)}</small>
+                  </span>
+                  <Amount value={p.amount} currency={book.currency} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={`category-parent-main ${selectedCategory === p.id && selectedCategoryLayer === "parent" ? "is-selected" : ""}`}
+                  aria-label={`选择大类 ${p.name}`}
+                  aria-pressed={
+                    selectedCategory === p.id &&
+                    selectedCategoryLayer === "parent"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectCategory(p.id, "parent");
+                  }}
+                >
+                  <span
+                    className="legend-dot report-category-ink"
+                    style={plotColor(plotColors.get(p.id))}
+                  />
+                  <span className="category-row-name">
+                    <strong>{p.name}</strong>
+                    <small>{percentage(p.amount)}</small>
+                  </span>
+                  <Amount value={p.amount} currency={book.currency} />
+                </button>
+              )}
               <IconButton
                 name="List"
                 label={`查看大类${p.name}交易`}

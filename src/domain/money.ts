@@ -47,6 +47,15 @@ export function money(
     [a, b] = s.split(".");
   return `${a.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${b !== undefined ? "." + b : ""}${withCurrency ? " " + currency : ""}`;
 }
+const compactNumber = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+export function compactMoney(value: bigint, currency: string) {
+  return compactNumber
+    .format(Number(decimal(value.toString(), currency)))
+    .replace("K", "k");
+}
 export const sum = (values: string[]) =>
   values.reduce((a, n) => a + BigInt(n), 0n);
 export function roundedRatio(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
   Header,
@@ -366,6 +366,23 @@ export function Reports() {
   const missing = stock
     ? current?.missingCount || 0
     : summary?.missingCount || 0;
+  function clearOnBlank(event: MouseEvent<HTMLElement>) {
+    const target = event.target;
+    if (
+      !(target instanceof Element) ||
+      target.closest(
+        'button,input,select,textarea,summary,a,svg,[role="button"],[role="slider"]',
+      ) ||
+      (!target.closest("header") &&
+        Array.from(target.childNodes).some(
+          (node) =>
+            node.nodeType === Node.TEXT_NODE && !!node.textContent?.trim(),
+        ))
+    )
+      return;
+    setSelectedCategory(null);
+    setPoint(null);
+  }
   return (
     <>
       <Header
@@ -377,6 +394,7 @@ export function Reports() {
           title
         }
         back
+        onClick={clearOnBlank}
       >
         <IconButton
           name="Plus"
@@ -387,27 +405,13 @@ export function Reports() {
           }}
         />
       </Header>
-      <main
-        className="page-content reports-page"
-        onClick={(e) => {
-          const target = e.target;
-          if (
-            !(target instanceof Element) ||
-            target.closest(
-              'button,input,select,textarea,summary,a,svg,[role="button"],[role="slider"]',
-            )
-          )
-            return;
-          if (
-            !Array.from(target.childNodes).some(
-              (n) => n.nodeType === Node.TEXT_NODE && !!n.textContent?.trim(),
-            )
-          )
-            setSelectedCategory(null);
-        }}
-      >
+      <main className="page-content reports-page" onClick={clearOnBlank}>
         {stock && (
-          <div className="report-stock-mode" role="group" aria-label="查看口径">
+          <div
+            className="compact-segments report-stock-mode"
+            role="group"
+            aria-label="查看口径"
+          >
             <button
               aria-pressed={type === "net"}
               onClick={() => switchStock("net")}
@@ -437,6 +441,23 @@ export function Reports() {
               </option>
             ))}
           </select>
+          {series && (
+            <select
+              className="report-grain-select"
+              aria-label="聚合粒度"
+              value={grain}
+              onChange={(e) => {
+                setGrain(e.target.value as ReportGrain);
+                reset();
+              }}
+            >
+              {reportGrains.map((g) => (
+                <option key={g.value} value={g.value}>
+                  按{g.name}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             className="report-scope-button"
             aria-label="筛选报表"
@@ -444,11 +465,13 @@ export function Reports() {
             disabled={noForeignAccounts}
           >
             <Icon name="ListFilter" size={18} />
-            {type === "balance"
-              ? selectedAccount?.name || "选择账户"
-              : ids.length === book.accounts.length
-                ? "所有账户"
-                : `${ids.length} 个账户`}
+            <span>
+              {type === "balance"
+                ? selectedAccount?.name || "选择账户"
+                : ids.length === book.accounts.length
+                  ? "所有账户"
+                  : `${ids.length} 个账户`}
+            </span>
           </button>
         </div>
         {days === "custom" && (
@@ -480,68 +503,6 @@ export function Reports() {
             ` · ${projectIds.map((id) => book.projects.find((p) => p.id === id)?.name || (id === "none" ? "未设置项目" : "已删除项目")).join("、")}`}
           {categoryIds.length > 0 && ` · ${categoryIds.length} 个类目`}
         </p>
-        {series && (
-          <div className="report-aggregation">
-            <label>
-              <span>按期{stock ? "末" : "汇总"}</span>
-              <select
-                aria-label="聚合粒度"
-                value={grain}
-                onChange={(e) => {
-                  setGrain(e.target.value as ReportGrain);
-                  reset();
-                }}
-              >
-                {reportGrains.map((g) => (
-                  <option key={g.value} value={g.value}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {!stock && (
-              <>
-                {!income && type !== "cashflow" && (
-                  <label>
-                    <span>
-                      {type === "expense-trend" ? "指标" : "分期指标"}
-                    </span>
-                    <select
-                      aria-label="报表指标"
-                      value={metric}
-                      onChange={(e) => {
-                        setMetric(e.target.value as ReportMetric);
-                        reset();
-                      }}
-                    >
-                      <option value="expense">支出</option>
-                      <option value="net">净支出</option>
-                      <option value="refund">退款</option>
-                    </select>
-                  </label>
-                )}
-                <div
-                  className="chart-style-switch"
-                  role="group"
-                  aria-label="图表样式"
-                >
-                  <IconButton
-                    name="ChartNoAxesColumn"
-                    label="条形图"
-                    aria-pressed={chart === "bar"}
-                    onClick={() => setChart("bar")}
-                  />
-                  <IconButton
-                    name="ChartNoAxesCombined"
-                    label="折线图"
-                    aria-pressed={chart === "line"}
-                    onClick={() => setChart("line")}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
         {!valid ? (
           <p className="error-banner" role="alert">
             结束日期不能早于开始日期。
@@ -706,7 +667,7 @@ export function Reports() {
                   )}
                   <NetChart
                     values={result.points}
-                    selected={index}
+                    selected={point === null ? null : index}
                     onSelect={setPoint}
                     currency={currency}
                     label={valueName}
@@ -843,11 +804,42 @@ export function Reports() {
                 )}
                 {series && (
                   <>
-                    <div className="section-title">
+                    <div className="section-title period-chart-heading">
                       <h2>期间变化</h2>
-                      <span>
-                        按{reportGrains.find((g) => g.value === grain)?.name}
-                      </span>
+                      <div className="period-chart-controls">
+                        {!income && type !== "cashflow" && (
+                          <select
+                            aria-label="报表指标"
+                            value={metric}
+                            onChange={(e) => {
+                              setMetric(e.target.value as ReportMetric);
+                              reset();
+                            }}
+                          >
+                            <option value="expense">支出</option>
+                            <option value="net">净支出</option>
+                            <option value="refund">退款</option>
+                          </select>
+                        )}
+                        <div
+                          className="chart-style-switch"
+                          role="group"
+                          aria-label="图表样式"
+                        >
+                          <IconButton
+                            name="ChartNoAxesColumn"
+                            label="条形图"
+                            aria-pressed={chart === "bar"}
+                            onClick={() => setChart("bar")}
+                          />
+                          <IconButton
+                            name="ChartNoAxesCombined"
+                            label="折线图"
+                            aria-pressed={chart === "line"}
+                            onClick={() => setChart("line")}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <section className="chart-panel period-panel">
                       <PeriodChart
@@ -893,10 +885,17 @@ export function Reports() {
                         <div className="period-inspection" aria-live="polite">
                           <span>
                             <strong>{current.label}</strong>
-                            <small>
-                              {periodCount(current)} 笔
-                              {periodMissing(current) ? " · 金额不完整" : ""}
-                            </small>
+                            {type === "cashflow" ? (
+                              <small>
+                                结余
+                                {periodMissing(current) ? " · 金额不完整" : ""}
+                              </small>
+                            ) : (
+                              <small>
+                                {periodCount(current)} 笔
+                                {periodMissing(current) ? " · 金额不完整" : ""}
+                              </small>
+                            )}
                           </span>
                           <Amount
                             value={
@@ -960,12 +959,11 @@ export function Reports() {
                           <span>
                             <strong>{p.label}</strong>
                             <small>
-                              {stock ? "期末" : `${periodCount(p)} 笔`}{" "}
                               {stock
-                                ? valueName
+                                ? `期末 ${valueName}`
                                 : type === "cashflow"
                                   ? "收支结余"
-                                  : valueName}
+                                  : `${periodCount(p)} 笔 ${valueName}`}
                               {periodMissing(p) ? " · 金额不完整" : ""}
                             </small>
                           </span>

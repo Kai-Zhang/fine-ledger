@@ -26,6 +26,7 @@ export function ExpenseDonut({
   colors,
   label = "支出分类",
   totalLabel = "正向净支出",
+  singleRing = false,
 }: {
   groups: DonutGroup[];
   selectedId: string | null;
@@ -36,8 +37,16 @@ export function ExpenseDonut({
   colors: Map<string, PlotColor>;
   label?: string;
   totalLabel?: string;
+  singleRing?: boolean;
 }) {
-  const segments = useMemo(() => ringLayout(groups), [groups]);
+  const segments = useMemo(() => {
+    const layout = ringLayout(groups);
+    return singleRing
+      ? layout.filter((segment) => segment.layer === "child")
+      : layout;
+  }, [groups, singleRing]);
+  const singleRadius = 111;
+  const singleWidth = 44;
   const total = groups.reduce((n, g) => n + g.amount, 0n);
   const selected = segments.find(
     (s) => s.id === selectedId && s.layer === layer,
@@ -68,11 +77,20 @@ export function ExpenseDonut({
   }
   function hit(clientX: number, clientY: number, locked?: RingLayer) {
     const box = svg.current!.getBoundingClientRect();
+    const x = ((clientX - box.left) / box.width) * 300;
+    const y = ((clientY - box.top) / box.height) * 300;
+    if (
+      singleRing &&
+      !locked &&
+      Math.abs(Math.hypot(x - 150, y - 150) - singleRadius) >
+        singleWidth / 2 + 6
+    )
+      return undefined;
     return ringHit(
       latest.current.segments,
-      ((clientX - box.left) / box.width) * 300,
-      ((clientY - box.top) / box.height) * 300,
-      locked,
+      x,
+      y,
+      singleRing ? "child" : locked,
     );
   }
   function begin(x: number, y: number) {
@@ -224,7 +242,9 @@ export function ExpenseDonut({
     if (e.pointerType === "touch") return;
     if (move(e.clientX, e.clientY)) e.preventDefault();
   };
-  const rows = segments.filter((s) => s.layer === layer),
+  const rows = segments.filter(
+      (s) => s.layer === (singleRing ? "child" : layer),
+    ),
     index = rows.findIndex((s) => s.id === selectedId),
     current = Math.max(0, index);
   function openFine() {
@@ -250,7 +270,7 @@ export function ExpenseDonut({
         ref={svg}
         viewBox="0 0 300 300"
         role="group"
-        aria-label={`${label}双层环形图，内环大类、外环子类，点按选择，按住后左右滑动精细选择`}
+        aria-label={`${label}${singleRing ? "环形图" : "双层环形图，内环大类、外环子类"}，点按选择，按住后左右滑动精细选择`}
         onPointerDown={(e) => {
           if (
             e.pointerType !== "touch" &&
@@ -276,7 +296,10 @@ export function ExpenseDonut({
             finish(true);
         }}
       >
-        <title>{label}：内环大类，外环子类；图形和比例保持真实金额</title>
+        <title>
+          {label}
+          {singleRing ? "" : "：内环大类，外环子类"}
+        </title>
         {segments.map((s) => {
           const related =
             !selected ||
@@ -292,14 +315,20 @@ export function ExpenseDonut({
               }}
               className={`ring-segment report-category-ink ${selected?.id === s.id && selected.layer === s.layer ? "is-selected" : ""} ${related ? "" : "is-muted"}`}
               style={plotColor(colors.get(s.id))}
-              d={ringArc(s.layer === "parent" ? 91 : 123, s.start, s.end)}
+              d={ringArc(
+                singleRing ? singleRadius : s.layer === "parent" ? 91 : 123,
+                s.start,
+                s.end,
+              )}
               stroke="currentColor"
-              strokeWidth={s.layer === "parent" ? 34 : 22}
+              strokeWidth={
+                singleRing ? singleWidth : s.layer === "parent" ? 34 : 22
+              }
               strokeLinecap="butt"
               fill="none"
               tabIndex={0}
               role="button"
-              aria-label={`${s.layer === "parent" ? "内环" : "外环"} ${s.name} ${categoryShare(s.amount, total)} ${money(s.amount, currency)}`}
+              aria-label={`${singleRing ? "" : s.layer === "parent" ? "内环 " : "外环 "}${s.name} ${categoryShare(s.amount, total)} ${money(s.amount, currency)}`}
               aria-pressed={selected?.id === s.id && selected.layer === s.layer}
               onClick={() => choose(s)}
               onKeyDown={(e) => {
@@ -365,12 +394,14 @@ export function ExpenseDonut({
           </g>
         )}
         <g className="ring-center" aria-hidden="true" pointerEvents="none">
-          <text x="150" y="129" textAnchor="middle" className="donut-caption">
-            {selected ? selected.name.slice(0, 10) : totalLabel}
-          </text>
+          {(selected || totalLabel) && (
+            <text x="150" y="129" textAnchor="middle" className="donut-caption">
+              {selected ? selected.name.slice(0, 10) : totalLabel}
+            </text>
+          )}
           <text
             x="150"
-            y="155"
+            y={selected || totalLabel ? 155 : 146}
             textAnchor="middle"
             className="donut-total"
             style={{
@@ -382,7 +413,12 @@ export function ExpenseDonut({
           >
             {money(selected?.amount ?? total, currency)}
           </text>
-          <text x="150" y="179" textAnchor="middle" className="donut-share">
+          <text
+            x="150"
+            y={selected || totalLabel ? 179 : 170}
+            textAnchor="middle"
+            className="donut-share"
+          >
             {selected ? categoryShare(selected.amount, total) : "100%"}
           </text>
         </g>
@@ -407,10 +443,13 @@ export function ExpenseDonut({
         <div
           className={`ring-precision ${fine === "gesture" ? "is-gesture" : "is-manual"} at-${finePlacement}`}
           role="group"
-          aria-label={`精细选择${layer === "parent" ? "大类" : "子类"}`}
+          aria-label={`精细选择${singleRing ? "类目" : layer === "parent" ? "大类" : "子类"}`}
         >
           <div className="ring-precision-heading">
-            <span>{layer === "parent" ? "大类" : "子类"} · 精细选择</span>
+            <span>
+              {singleRing ? "类目" : layer === "parent" ? "大类" : "子类"} ·
+              精细选择
+            </span>
             <span>
               {current + 1} / {rows.length}
             </span>

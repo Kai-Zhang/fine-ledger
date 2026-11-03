@@ -474,17 +474,6 @@ textarea::placeholder {
 .report-value > span:first-child {
   font-size: 13px;
 }
-.report-toolbar > .icon-button {
-  width: 44px;
-  height: 44px;
-}
-.report-toolbar > select {
-  font-size: 16px;
-  min-height: 48px;
-}
-.report-toolbar > button:nth-child(2) {
-  min-height: 44px;
-}
 .date-range input {
   font-size: 16px;
   min-height: 48px;
@@ -690,16 +679,41 @@ textarea::placeholder {
 
 /* Reports give the chart the primary canvas and reveal detail on selection. */
 .report-toolbar {
+  justify-content: flex-start;
   gap: 12px;
 }
+.report-toolbar > select {
+  min-width: 0;
+  max-width: 170px;
+  padding-inline: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.report-toolbar > select:first-child {
+  flex: 1;
+}
+.report-toolbar > .report-grain-select {
+  flex: 0 0 auto;
+}
 .report-toolbar > .report-scope-button {
-  min-height: 44px;
+  display: flex;
+  align-items: center;
   gap: 8px;
+  margin-inline-start: auto;
   color: var(--text);
   font-size: 14px;
+  min-width: 44px;
+  max-width: 42%;
+  min-height: 48px;
+  text-align: start;
 }
-.report-toolbar > select {
-  max-width: 170px;
+.report-scope-button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-scope-button > svg {
+  flex-shrink: 0;
 }
 .report-scope-summary {
   color: var(--muted);
@@ -1048,11 +1062,13 @@ textarea::placeholder {
 
 /* P3 uses the existing form sizes, paper/pine tokens and 4px spacing scale. */
 .entry-amount-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 4px;
+}
+.entry-amount-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
 }
 .entry-amount-heading > label {
   color: var(--muted);
@@ -1060,7 +1076,7 @@ textarea::placeholder {
   line-height: 18px;
   font-weight: 500;
 }
-.entry-amount-heading .entry-currency {
+.entry-amount-row .entry-currency {
   width: auto;
   min-width: 88px;
   min-height: 44px;
@@ -1225,33 +1241,24 @@ textarea::placeholder {
 }
 
 /* P4 analytics: shared calendar aggregation, project summaries and period lists. */
-.report-aggregation {
+.period-chart-heading {
+  align-items: center;
+  gap: 8px;
+}
+.period-chart-controls {
   display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
 }
-.report-aggregation > label {
-  display: grid;
-  gap: 4px;
-  min-width: 76px;
-  flex: 1;
-}
-.report-aggregation > label > span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 18px;
-}
-.report-aggregation select,
+.period-chart-controls > select,
 .report-toolbar > select {
   font-size: 16px;
   min-height: 48px;
   border-radius: var(--radius-input);
 }
-.report-aggregation select {
-  width: 100%;
-  padding: 10px 12px;
+.period-chart-controls > select {
+  padding-inline: 8px;
 }
 .chart-style-switch {
   display: flex;
@@ -1405,14 +1412,12 @@ textarea::placeholder {
   margin-left: auto;
   font-size: 12px;
 }
-.period-chart-scale {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+.period-chart-plot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.period-chart-axis {
+  display: block;
 }
 .period-chart-scroll {
   overflow-x: auto;
@@ -1540,15 +1545,6 @@ textarea::placeholder {
   }
 }
 @media (max-width: 350px) {
-  .report-aggregation {
-    gap: 8px;
-  }
-  .report-aggregation select {
-    padding: 10px 8px;
-  }
-  .report-aggregation > label {
-    min-width: 64px;
-  }
   .report-flow-summary,
   .period-panel {
     padding: 16px;
@@ -1584,16 +1580,17 @@ textarea::placeholder {
 }
 
 /* A thin, full-width track inside the 44px touch area. */
-.report-stock-mode {
+.compact-segments {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   padding-inline: 2px;
   margin-bottom: 4px;
 }
-.report-stock-mode::before {
+.compact-segments::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -1602,7 +1599,7 @@ textarea::placeholder {
   background: var(--accent-soft);
   pointer-events: none;
 }
-.report-stock-mode > button {
+.compact-segments > button {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -1611,13 +1608,37 @@ textarea::placeholder {
   line-height: 20px;
   color: var(--muted);
 }
-.report-stock-mode > button > span {
+.compact-segments > button > span {
   width: 100%;
   padding: 4px 12px;
   border-radius: var(--radius-input);
 }
-.report-stock-mode > button[aria-pressed="true"] > span {
+.compact-segments > button[aria-pressed="true"] > span {
   background: var(--surface);
   color: var(--accent);
   font-weight: 600;
+}
+
+.entry-form .compact-segments {
+  max-width: none;
+  margin: 0 0 12px;
+  gap: 4px;
+  padding-inline: 4px;
+}
+.entry-form .compact-segments::before {
+  inset-block: 4px;
+}
+@media (max-width: 359px) {
+  .report-toolbar {
+    gap: 6px;
+  }
+  .report-toolbar:has(.report-grain-select) > .report-scope-button {
+    max-width: 34%;
+    gap: 4px;
+  }
+}
+.transaction-filters .amount-filter-fields {
+  display: grid;
+  gap: 16px;
+  padding-block: 8px 4px;
 }
