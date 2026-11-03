@@ -4,7 +4,9 @@
 
 家庭 NAS 已接收实际账本。2026-11-03 用户确认厘序与 MoneyWiz 并跑试用。自动备份关闭，升级前单独创建 SQLite 一致性恢复点。
 
-2026-11-03 当前服务镜像为 `fine-ledger:0.14.5-nas-ios-edge-d613d5b9`，发布指纹为 `0.14.5-d613d5b97ed99424`。镜像基于上一版 `fine-ledger:0.14.5-nas-swipe-581956c7`，保留大账本滑动优化并恢复 iOS 边缘返回的触摸捕获。升级前的一次性 SQLite 一致性恢复点与上一版 Compose 配置位于 NAS 的 `/share/Container/fine-ledger/data/pre-upgrade-ios-edge-d613d5b9/`，提交水位为 5；恢复数据库前先核对水位 5 之后的交易。
+2026-11-03 当前服务镜像为 `fine-ledger:0.14.5-nas-fx-5236d7f`，发布指纹为 `0.14.5-19e2dd64cdc1d793`。该版本包含参考汇率、历史估值和跨币种转账双向计算。上一版 `fine-ledger:0.14.5-nas-ios-edge-d613d5b9` 的资源保留用于平滑升级。用户已确认本次 NAS 版本验收通过。
+
+升级前的一次性 SQLite 恢复点和旧 Compose 配置位于 NAS 的 `/share/Container/fine-ledger/data/pre-upgrade-fx-5236d7f/`。恢复点通过 SQLite 完整性和外键检查，升级前后的提交水位均为 5。恢复数据库前先核对水位 5 之后的交易。
 
 以下创建步骤用于首次安装。现有实例升级沿用应用名和持久挂载。
 
