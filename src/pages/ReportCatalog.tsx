@@ -65,7 +65,7 @@ function SavedRow({
             ? edit()
             : app.go({
                 page: "report",
-                report: report.type,
+                report: report.type === "expense" ? "expense" : "net",
                 savedReportId: report.id,
               })
         }

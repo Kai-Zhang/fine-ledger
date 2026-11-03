@@ -1,3 +1,13 @@
+import { LocalBackup, LocalBackupPanel } from "./pages/LocalBackup.tsx";
+import { useSyncCoordinator } from "./sync/useSync.ts";
+import { requestSync } from "./sync/engine.ts";
+import { readLocalSyncState, type LocalSyncView } from "./sync/local-view.ts";
+import {
+  initialStartNavigation,
+  startNavigate,
+  type StartPage,
+} from "./navigation/onboarding.ts";
+import { ServicePanel } from "./pages/ServicePanel.tsx";
 import { useSwipe } from "./navigation/useSwipe.ts";
 import { flushSync } from "react-dom";
 import { Categories } from "./pages/Categories.tsx";
@@ -12,12 +22,21 @@ import {
   timeZones,
   effectiveTimeZone,
 } from "./domain/dates.ts";
-import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AppContext, type Route } from "./ui/context.tsx";
 import { Icon } from "./ui/icons.tsx";
 import {
   Button,
+  IconButton,
+  SettingRow,
   Dialog,
   Field,
   ErrorMessage,
@@ -28,7 +47,12 @@ import { TransactionsPage, Detail, Trash } from "./pages/TransactionsPage.tsx";
 import { EntryForm } from "./pages/EntryForm.tsx";
 import { Reports, ReportCatalog } from "./pages/Reports.tsx";
 import { Settings, Projects, Sync } from "./pages/Settings.tsx";
-import { initialize, readBook, mutate } from "./storage/repository.ts";
+import {
+  databases,
+  initialize,
+  readBook,
+  mutate,
+} from "./storage/repository.ts";
 import { blankBook } from "./domain/ledger.ts";
 import { uid, type Book } from "./domain/types.ts";
 import { currencies, minor } from "./domain/money.ts";
@@ -58,6 +82,7 @@ export function App() {
     route = frame.route;
   const navigationRef = useRef(navigation);
   navigationRef.current = navigation;
+  const editBase = useRef<Book | undefined>(undefined);
   const dirtyRef = useRef(false),
     toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     layers = useRef<{ close: () => void; dirty: () => boolean }[]>([]),
@@ -68,6 +93,14 @@ export function App() {
 
   const views = useRef(new Map<string, unknown>()).current;
   const storedBook = useLiveQuery(() => readBook(mode), [mode]);
+  const syncState = useLiveQuery(
+    () => readLocalSyncState(databases.personal),
+    [],
+  );
+  const localSync = useMemo(
+    () => (syncState ? { ...syncState, book: storedBook } : undefined),
+    [syncState, storedBook],
+  );
   const [systemZone, setSystemZone] = useState(deviceTimeZone);
   const book = useMemo(
     () =>
@@ -75,6 +108,22 @@ export function App() {
         ? { ...storedBook, timeZone: effectiveTimeZone(storedBook, systemZone) }
         : storedBook,
     [storedBook, systemZone],
+  );
+  useSyncCoordinator(
+    ready && !!book,
+    () =>
+      !dirtyRef.current &&
+      !modalOpen.current &&
+      !(
+        ["entry", "local-backup"].includes(
+          navigationRef.current.stacks[navigationRef.current.tab].past.at(-1)
+            ?.route.page || "",
+        ) ||
+        ["restore", "review", "publish"].includes(
+          navigationRef.current.stacks[navigationRef.current.tab].past.at(-1)
+            ?.route.servicePage || "",
+        )
+      ),
   );
   useEffect(() => {
     const update = () => setSystemZone(deviceTimeZone());
@@ -94,10 +143,14 @@ export function App() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setMessage(""), 5000);
   };
-  function setDirty(value: boolean) {
+  const setDirty = useCallback((value: boolean) => {
+    const wasDirty = dirtyRef.current;
     dirtyRef.current = value;
-    if (!value) checkDeferredUpdate();
-  }
+    if (wasDirty && !value) {
+      checkDeferredUpdate();
+      requestSync();
+    }
+  }, []);
   useEffect(() => {
     setReady(false);
     setFailure("");
@@ -218,6 +271,10 @@ export function App() {
   function commit(action: NavigationAction) {
     const next = navigate(navigationRef.current, action);
     if (next === navigationRef.current) return;
+    editBase.current =
+      currentFrame(next).route.page === "entry" && storedBook
+        ? structuredClone(storedBook)
+        : undefined;
     const scroll = document.querySelector(
       ".workspace[data-active] .page-content",
     );
@@ -274,7 +331,14 @@ export function App() {
   ).current;
   async function save(action: string, change: (book: Book) => void) {
     try {
-      await mutate(mode, action, change);
+      const saved = await mutate(
+        mode,
+        action,
+        change,
+        editBase.current || storedBook,
+      );
+      if (editBase.current) editBase.current = structuredClone(saved);
+      requestSync();
       return true;
     } catch (e) {
       toast(
@@ -289,7 +353,7 @@ export function App() {
   const isRoot = branch.past.length === 1;
   const { motion, pointer } = useSwipe(
     navigation,
-    () => pendingLeave.current || !!confirmState,
+    () => !book || pendingLeave.current || !!confirmState,
     () => !!layers.current.length,
     (d) => requestRef.current(d),
     () => dirtyRef.current,
@@ -308,6 +372,15 @@ export function App() {
       return yes;
     },
   );
+  function restored() {
+    views.clear();
+    scrolls.current.clear();
+    setDirty(false);
+    setModal(null);
+    const next = initialNavigation();
+    navigationRef.current = next;
+    setNavigation(next);
+  }
   if (failure)
     return (
       <div className="boot-error">
@@ -321,7 +394,7 @@ export function App() {
         </details>
       </div>
     );
-  if (!ready)
+  if (!ready || !localSync)
     return (
       <div className="boot-loading" data-startup-shell>
         <BrandMark />
@@ -333,6 +406,9 @@ export function App() {
   if (!book)
     return (
       <Welcome
+        localSync={localSync}
+        onRestored={restored}
+        onDirtyChange={setDirty}
         onCreate={async (b) => {
           try {
             await initialize("personal", b);
@@ -358,16 +434,21 @@ export function App() {
     projects: <Projects />,
     trash: <Trash />,
     sync: <Sync />,
+    "local-backup": <LocalBackup />,
   };
   return (
     <AppContext.Provider
       value={{
+        frameKey: frame.key,
         views,
+        localSync,
+        restored,
         book,
         mode,
         route,
         go,
         back,
+        backAfterSave: () => commit({ type: "back" }),
         forward,
         swipe: swipeNavigate,
         registerLayer,
@@ -376,8 +457,17 @@ export function App() {
         toast,
         setDirty,
         confirm,
-        open: setModal,
-        close: () => flushSync(() => setModal(null)),
+        open: (node) => {
+          editBase.current = storedBook
+            ? structuredClone(storedBook)
+            : undefined;
+          setModal(node);
+        },
+        close: () => {
+          editBase.current = undefined;
+          flushSync(() => setModal(null));
+          requestSync();
+        },
       }}
     >
       <div
@@ -430,12 +520,16 @@ export function App() {
           <AppContext.Provider
             value={{
               preview: true,
+              frameKey: motion.target.key,
+              localSync,
+              restored: () => {},
               views,
               book,
               mode,
               route: motion.target.route,
               go: () => {},
               back: () => {},
+              backAfterSave: () => {},
               forward: () => {},
               swipe: () => {},
               registerLayer: () => () => {},
@@ -554,118 +648,282 @@ export function App() {
     </AppContext.Provider>
   );
 }
-function Welcome({ onCreate }: { onCreate: (book: Book) => Promise<boolean> }) {
+function Welcome({
+  localSync,
+  onCreate,
+  onRestored,
+  onDirtyChange,
+}: {
+  localSync: LocalSyncView;
+  onCreate: (book: Book) => Promise<boolean>;
+  onRestored: () => void;
+  onDirtyChange: (value: boolean) => void;
+}) {
+  const [navigation, setNavigation] = useState(initialStartNavigation);
+  const current = navigation.stacks.start.past.at(-1)!;
+  const seen = useRef(new Set<StartPage>(["choose"]));
+  seen.current.add(current.page);
   const [currency, setCurrency] = useState("CNY"),
     [timeZone, setTimeZone] = useState("system"),
     [name, setName] = useState("我的账本"),
     [account, setAccount] = useState(""),
     [opening, setOpening] = useState("0"),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [serviceBusy, setServiceBusy] = useState(false),
+    [connectDirty, setConnectDirty] = useState(false);
+  const createDirty =
+    account !== "" ||
+    name !== "我的账本" ||
+    opening !== "0" ||
+    currency !== "CNY" ||
+    timeZone !== "system";
+  useEffect(() => {
+    onDirtyChange(createDirty || connectDirty || busy || serviceBusy);
+    return () => onDirtyChange(false);
+  }, [createDirty, connectDirty, busy, serviceBusy, onDirtyChange]);
+  function step(direction: "back" | "forward") {
+    if (!busy && !serviceBusy)
+      setNavigation((n) => startNavigate(n, { type: direction }));
+  }
+  const { motion, pointer } = useSwipe(
+    navigation,
+    () => busy || serviceBusy,
+    () => false,
+    step,
+    () => false,
+    async () => true,
+  );
+  const title = (page: StartPage) =>
+    page === "create"
+      ? "新建账本"
+      : page === "connect"
+        ? "连接已有账本"
+        : page === "file"
+          ? "从备份文件恢复"
+          : "开始使用厘序";
   return (
-    <main className="welcome">
-      <div className="welcome-brand">
-        <BrandMark />
-        <span>厘序</span>
-      </div>
-      <div className="welcome-content">
-        <span className="eyebrow">从第一笔开始</span>
-        <h1>
-          把生活的账，
-          <br />
-          理得清楚。
-        </h1>
-        <p>账户、消费与净值，在一本账里。</p>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setError("");
-            try {
-              if (!account.trim()) throw Error("请填写第一个账户的名称");
-              const b = blankBook(currency, name.trim() || "我的账本");
-              b.groups = [];
-              b.timeZone = timeZone === "system" ? deviceTimeZone() : timeZone;
-              b.settings.timeZoneMode =
-                timeZone === "system" ? "system" : "fixed";
-              b.accounts.push({
-                id: uid(),
-                name: account.trim(),
-                type: "bank",
-                groupId: "",
-                currency,
-                openingMinor: minor(opening, currency),
-                openingAt: new Date().toISOString(),
-                icon: "Landmark",
-                order: 0,
-                archived: false,
-                netWorth: true,
-              });
-              setBusy(true);
-              if (!(await onCreate(b))) setError("创建失败，请重试");
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <div className="form-grid">
-            <Field label="账本名称">
-              <input
-                value={name}
-                maxLength={40}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </Field>
-            <Field label="主币种">
-              <select
-                value={currency}
-                onChange={(e) => {
-                  setCurrency(e.target.value);
-                  setOpening("0");
-                }}
-              >
-                {currencies.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="时区">
-            <select
-              value={timeZone}
-              onChange={(e) => setTimeZone(e.target.value)}
+    <div className="start-flow">
+      <div
+        className="edge-swipe-zone back-edge"
+        aria-hidden="true"
+        {...pointer}
+      />
+      <div
+        className="edge-swipe-zone forward-edge"
+        aria-hidden="true"
+        {...pointer}
+      />
+      {(["choose", "create", "connect", "file"] as const)
+        .filter((page) => seen.current.has(page))
+        .map((page) => {
+          const active = current.page === page,
+            underlay = motion.target?.page === page;
+          return (
+            <section
+              key={page}
+              className={`start-frame ${underlay && !active ? "start-underlay" : ""}`}
+              hidden={!active && !underlay}
+              inert={!active}
+              aria-hidden={!active}
+              style={
+                active
+                  ? {
+                      transform: motion.offset
+                        ? `translateX(${motion.offset}px)`
+                        : undefined,
+                      transition: motion.duration
+                        ? `transform ${motion.duration}ms cubic-bezier(.2,.7,.2,1)`
+                        : "none",
+                    }
+                  : undefined
+              }
             >
-              <option value="system">跟随系统 · {deviceTimeZone()}</option>
-              {timeZones().map((zone) => (
-                <option key={zone}>{zone}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="第一个账户">
-            <input
-              value={account}
-              maxLength={40}
-              onChange={(e) => setAccount(e.target.value)}
-              placeholder="例如：日常储蓄卡"
-              required
-            />
-          </Field>
-          <Field label={`当前余额 · ${currency}`}>
-            <input
-              inputMode="decimal"
-              value={opening}
-              onChange={(e) => setOpening(e.target.value)}
-            />
-          </Field>
-          <ErrorMessage message={error} />
-          <Button type="submit" disabled={busy}>
-            {busy ? "创建中…" : "开始记账"}
-            <Icon name="ArrowRight" size={18} />
-          </Button>
-        </form>
-      </div>
-      <p className="welcome-foot">数据保存在本机，离线也能记。</p>
-    </main>
+              <header
+                className={`page-header ${page !== "choose" ? "has-back" : ""}`}
+              >
+                {page !== "choose" && (
+                  <IconButton
+                    name="ArrowLeft"
+                    label="返回账本选择"
+                    disabled={busy || serviceBusy}
+                    onClick={() => step("back")}
+                  />
+                )}
+                <div className="header-title">
+                  <h1>{title(page)}</h1>
+                </div>
+              </header>
+              <main className="page-content start-content">
+                {page === "choose" && (
+                  <>
+                    <div className="start-brand">
+                      <BrandMark />
+                      <p>账户、消费与净值，保存在自己的账本里。</p>
+                    </div>
+                    <div
+                      className="settings-surface start-choices"
+                      aria-label="选择账本来源"
+                    >
+                      <SettingRow
+                        icon="BookOpen"
+                        label="新建账本"
+                        detail="从空白账本开始记录"
+                        onClick={() =>
+                          setNavigation((n) =>
+                            startNavigate(n, { type: "open", page: "create" }),
+                          )
+                        }
+                      />
+                      <SettingRow
+                        icon="Cloud"
+                        label="连接已有账本"
+                        detail="下载远端账本，在本机继续使用"
+                        onClick={() =>
+                          setNavigation((n) =>
+                            startNavigate(n, { type: "open", page: "connect" }),
+                          )
+                        }
+                      />
+                      <SettingRow
+                        icon="ArchiveRestore"
+                        label="从备份文件恢复"
+                        detail="导入完整备份，在本机恢复账本"
+                        onClick={() =>
+                          setNavigation((n) =>
+                            startNavigate(n, { type: "open", page: "file" }),
+                          )
+                        }
+                      />
+                    </div>
+                    <p className="section-note">
+                      数据保存在本机，离线也能记账。
+                    </p>
+                  </>
+                )}
+                {page === "create" && (
+                  <>
+                    <p className="section-note">
+                      先建立账本和第一个账户，之后可继续添加。
+                    </p>
+                    <form
+                      className="form-surface start-create-form"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        setError("");
+                        try {
+                          if (!account.trim())
+                            throw Error("请填写第一个账户的名称");
+                          const b = blankBook(
+                            currency,
+                            name.trim() || "我的账本",
+                          );
+                          b.groups = [];
+                          b.timeZone =
+                            timeZone === "system" ? deviceTimeZone() : timeZone;
+                          b.settings.timeZoneMode =
+                            timeZone === "system" ? "system" : "fixed";
+                          b.accounts.push({
+                            id: uid(),
+                            name: account.trim(),
+                            type: "bank",
+                            groupId: "",
+                            currency,
+                            openingMinor: minor(opening, currency),
+                            openingAt: new Date().toISOString(),
+                            icon: "Landmark",
+                            order: 0,
+                            archived: false,
+                            netWorth: true,
+                          });
+                          setBusy(true);
+                          if (!(await onCreate(b)))
+                            setError("创建失败，请重试");
+                        } catch (e) {
+                          setError((e as Error).message);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      <div className="form-grid">
+                        <Field label="账本名称">
+                          <input
+                            value={name}
+                            maxLength={40}
+                            onChange={(e) => setName(e.target.value)}
+                          />
+                        </Field>
+                        <Field label="主币种">
+                          <select
+                            value={currency}
+                            onChange={(e) => {
+                              setCurrency(e.target.value);
+                              setOpening("0");
+                            }}
+                          >
+                            {currencies.map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+                      <Field label="时区">
+                        <select
+                          value={timeZone}
+                          onChange={(e) => setTimeZone(e.target.value)}
+                        >
+                          <option value="system">
+                            跟随系统 · {deviceTimeZone()}
+                          </option>
+                          {timeZones().map((zone) => (
+                            <option key={zone}>{zone}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="第一个账户">
+                        <input
+                          value={account}
+                          maxLength={40}
+                          onChange={(e) => setAccount(e.target.value)}
+                          placeholder="例如：日常储蓄卡"
+                          required
+                        />
+                      </Field>
+                      <Field label={`当前余额 · ${currency}`}>
+                        <input
+                          inputMode="decimal"
+                          value={opening}
+                          onChange={(e) => setOpening(e.target.value)}
+                        />
+                      </Field>
+                      <ErrorMessage message={error} />
+                      <Button type="submit" disabled={busy}>
+                        {busy ? "创建中…" : "开始记账"}
+                        <Icon name="ArrowRight" size={18} />
+                      </Button>
+                    </form>
+                  </>
+                )}
+                {page === "file" && (
+                  <LocalBackupPanel
+                    onRestored={onRestored}
+                    onBusyChange={setServiceBusy}
+                  />
+                )}
+                {page === "connect" && (
+                  <ServicePanel
+                    onboarding
+                    localSync={localSync}
+                    onRestored={onRestored}
+                    onBusyChange={setServiceBusy}
+                    onDirtyChange={setConnectDirty}
+                  />
+                )}
+              </main>
+            </section>
+          );
+        })}
+    </div>
   );
 }

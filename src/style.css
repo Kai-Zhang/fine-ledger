@@ -1159,6 +1159,10 @@ input[type="search"]::-webkit-search-cancel-button {
 .linked-refunds button > span:first-child {
   flex: 1;
 }
+.linked-refunds button > span:first-child > small {
+  display: block;
+  color: var(--muted);
+}
 .detail-actions {
   display: flex;
   align-items: center;
@@ -2138,6 +2142,74 @@ input[type="search"]::-webkit-search-cancel-button {
   margin-top: 5px;
   justify-content: space-between;
 }
+.welcome-choices {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0 32px;
+}
+.welcome-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  min-height: 90px;
+  cursor: pointer;
+}
+.welcome-choice > span {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+.welcome-choice strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.welcome-choice small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.welcome-choice:hover,
+.welcome-choice:focus-visible {
+  border-color: var(--accent);
+}
+.welcome-content .welcome-back {
+  margin-bottom: 20px;
+}
+.restore-preview {
+  display: grid;
+  gap: 14px;
+  padding-block: 8px;
+}
+.restore-preview h3 {
+  margin: 0;
+}
+.restore-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding-block: 10px;
+  font-size: 14px;
+  line-height: 22px;
+  cursor: pointer;
+}
+.settings-section + .restore-confirm {
+  margin-top: 16px;
+}
+.restore-confirm > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.restore-confirm input {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
 .welcome-demo {
   display: flex;
   align-items: center;
@@ -2648,10 +2720,6 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 16px;
     width: 91px;
     min-height: 38px;
-  }
-  .split-project {
-    font-size: 10px !important;
-    min-height: 30px !important;
   }
   .split-row .icon-button {
     width: 28px;
@@ -3855,4 +3923,333 @@ body {
 
 .datetime-field {
   display: block;
+}
+
+/* First-run steps and service settings reuse the product page and row system. */
+.start-flow {
+  position: relative;
+  height: var(--view-height);
+  overflow: hidden;
+}
+.start-frame {
+  position: relative;
+  height: var(--view-height);
+  max-width: 720px;
+  margin: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.start-frame[hidden] {
+  display: none;
+}
+.start-underlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.start-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
+.start-brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 20px 0 28px;
+}
+.start-brand p {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--muted);
+}
+.start-choices .setting-row {
+  min-height: 76px;
+}
+.start-choices .setting-row > span > small {
+  margin-top: 6px;
+  line-height: 18px;
+}
+.start-create-form {
+  margin-top: 20px;
+  padding-block: 16px;
+  display: grid;
+  gap: 16px;
+}
+.start-create-form > .button {
+  min-height: 48px;
+}
+.section-note {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted);
+  margin: 12px 2px 0;
+  overflow-wrap: anywhere;
+}
+.service-panel {
+  display: block;
+}
+.service-panel > .settings-section:first-child {
+  margin-top: 0;
+}
+.service-panel > .section-note + .service-form {
+  margin-top: 16px;
+}
+.service-panel .form-surface.service-form {
+  display: block;
+  padding: 0 16px;
+}
+.service-form > .field {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.service-form > .field:last-child {
+  border-bottom: 0;
+}
+.service-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.service-actions .button {
+  justify-self: auto;
+  min-width: 120px;
+  min-height: 48px;
+}
+.service-form > .service-actions {
+  margin: 0;
+  padding: 16px 0;
+}
+.service-secondary {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.service-info > small {
+  max-width: 62%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.service-info > span {
+  min-width: 0;
+}
+.service-sync-summary {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+}
+.service-sync-summary > dt,
+.service-sync-summary > dd {
+  margin: 0;
+}
+.service-sync-summary > dd {
+  font-variant-numeric: tabular-nums;
+}
+.service-sync-summary time {
+  white-space: nowrap;
+}
+.service-confirm {
+  padding-block: 16px;
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 22px;
+}
+.restore-confirm input {
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+  padding: 0;
+}
+.service-empty {
+  color: var(--muted);
+  padding-block: 18px;
+  font-size: 14px;
+}
+.service-feedback {
+  margin-top: 20px;
+}
+.danger-text {
+  color: var(--negative);
+}
+@media (max-width: 760px) {
+  .service-actions > .button:only-child {
+    flex: 1;
+  }
+}
+.conflict-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.conflict-item {
+  padding-block: 16px;
+}
+.conflict-item summary {
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 22px;
+}
+.conflict-versions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.conflict-version {
+  min-width: 0;
+}
+.conflict-version h3 {
+  font-size: 14px;
+}
+.conflict-version dl {
+  font-size: 14px;
+  line-height: 22px;
+}
+.conflict-version dl > div {
+  margin-top: 12px;
+}
+.conflict-version dt {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.conflict-version dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.conflict-choices {
+  border: 0;
+  padding: 14px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.conflict-choices legend {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 16px;
+}
+.conflict-choices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+}
+.conflict-choices input {
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+@media (max-width: 760px) {
+  .conflict-versions {
+    grid-template-columns: 1fr;
+  }
+  .conflict-version + .conflict-version {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+}
+
+/* Trailing row actions stay separate from the 24px navigation edges. */
+.settings-surface:has(> .swipe-action-row) {
+  padding-inline: 0;
+  overflow: hidden;
+}
+.swipe-action-row {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.swipe-action-row:last-child {
+  border-bottom: 0;
+}
+.swipe-row-content.setting-row {
+  position: relative;
+  z-index: 1;
+  min-height: 64px;
+  border: 0;
+  background: var(--surface);
+  transition: transform 180ms ease-out;
+  touch-action: pan-y;
+  border-radius: 0;
+  padding: 8px 16px;
+}
+.swipe-row-content.editing {
+  width: calc(100% - 52px);
+  padding-right: 8px;
+}
+.swipe-row-content.dragging {
+  transition: none;
+  cursor: grabbing;
+  user-select: none;
+}
+.swipe-row-content > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.swipe-row-content > span > small {
+  margin-top: 4px;
+}
+.swipe-delete {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  min-height: 44px;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  background: var(--negative);
+  color: var(--on-negative);
+  font-size: 13px;
+}
+.swipe-delete:disabled {
+  opacity: 1;
+}
+.swipe-action-row.editing > .swipe-delete {
+  right: 8px;
+  width: 44px;
+  background: transparent;
+  color: var(--negative);
+}
+.swipe-row-content:focus-visible,
+.swipe-delete:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+.backup-undo {
+  position: fixed;
+  z-index: 10;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 16px;
+  right: 16px;
+  max-width: 480px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 4px 16px var(--overlay);
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-row-content.setting-row {
+    transition: none;
+  }
 }

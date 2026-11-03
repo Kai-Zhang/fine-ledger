@@ -46,6 +46,36 @@ export function IconButton({
     </button>
   );
 }
+export function SettingRow({
+  icon,
+  label,
+  detail,
+  value,
+  danger = false,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  icon: string;
+  label: string;
+  detail?: string;
+  value?: string;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={`setting-row ${danger ? "danger-text" : ""} ${props.className || ""}`}
+    >
+      <Icon name={icon} />
+      <span>
+        {label}
+        {detail && <small>{detail}</small>}
+      </span>
+      {value && <small>{value}</small>}
+      <Icon name="ChevronRight" size={16} />
+    </button>
+  );
+}
 export function Header({
   title,
   back,

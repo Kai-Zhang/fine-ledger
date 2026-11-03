@@ -1,4 +1,7 @@
 import {
+  ChartNoAxesColumn,
+  LoaderCircle,
+  Crosshair,
   LockKeyhole,
   LockKeyholeOpen,
   ListOrdered,
@@ -17,6 +20,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   ArrowLeftRight,
+  Scale,
   Plus,
   ChevronRight,
   ChevronDown,
@@ -75,6 +79,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 export const icons: Record<string, LucideIcon> = {
+  ChartNoAxesColumn,
+  LoaderCircle,
+  Crosshair,
   LockKeyhole,
   LockKeyholeOpen,
   ListOrdered,
@@ -93,6 +100,7 @@ export const icons: Record<string, LucideIcon> = {
   ArrowUpRight,
   ArrowDownLeft,
   ArrowLeftRight,
+  Scale,
   Plus,
   ChevronRight,
   ChevronDown,

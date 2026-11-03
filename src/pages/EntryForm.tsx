@@ -66,7 +66,7 @@ export function EntryForm() {
           )
         : original
           ? decimal(
-              remainingRefund(book, original.id).toString(),
+              (remainingRefund(book, original.id) ?? 0n).toString(),
               book.accounts.find((a) => a.id === initial.accountId)!.currency,
             )
           : "",
@@ -378,7 +378,7 @@ export function EntryForm() {
             <Icon name="RotateCcw" size={17} />
             <span>原消费 · {original.description}</span>
             <Amount
-              value={remainingRefund(book, original.id)}
+              value={remainingRefund(book, original.id) ?? 0n}
               currency={currency}
             />
             <small>可退</small>

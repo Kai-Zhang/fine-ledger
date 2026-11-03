@@ -102,7 +102,7 @@ test("local mutation, operation log and recovery revision commit atomically, err
   assert.equal(await db.outbox.count(), 1);
   const backup = await exportBook("personal");
   assert.equal(backup.book.name, "已保存");
-  assert.equal(backup.revisions[0].changes[0].before, "我的账本");
+  assert.equal(backup.revisions[0].changes[0].before.name, "我的账本");
   const previousPut = db.outbox.put;
   db.outbox.put = async () => {
     throw Error("模拟写日志失败");

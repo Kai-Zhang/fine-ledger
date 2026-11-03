@@ -7,6 +7,7 @@ import {
   type Kind,
 } from "./types.ts";
 import { sum, roundedRatio } from "./money.ts";
+import { convertedSplits } from "./report-amounts.ts";
 export function blankBook(currency = "CNY", name = "我的账本"): Book {
   return {
     schema: 3,
@@ -112,18 +113,82 @@ export function balance(
 }
 export function remainingRefund(book: Book, id: string) {
   const e = book.entries.find((e) => e.id === id);
-  return e
-    ? BigInt(e.amountMinor) -
-        sum(
-          liveEntries(book)
-            .filter((r) => r.kind === "refund" && r.originalId === id)
-            .map((r) => r.amountMinor),
-        )
-    : 0n;
+  if (!e) return 0n;
+  const currency = book.accounts.find((a) => a.id === e.accountId)?.currency;
+  const refunds = refundTotals(book, id);
+  if (refunds.some((total) => total.currency !== currency)) return null;
+  // A same-currency difference is a suggestion, never a refund limit.
+  return BigInt(e.amountMinor) - sum(refunds.map((r) => r.amountMinor));
+}
+// Read v2 source references as ordinary associations for backward compatibility.
+export const refundOriginalId = (entry: Entry) =>
+  entry.originalId || entry.refundReference?.originalId;
+export function refundTotals(book: Book, id: string) {
+  const totals = new Map<string, bigint>();
+  for (const entry of liveEntries(book)) {
+    if (entry.kind !== "refund" || refundOriginalId(entry) !== id) continue;
+    const currency = book.accounts.find(
+      (a) => a.id === entry.accountId,
+    )?.currency;
+    if (currency)
+      totals.set(
+        currency,
+        (totals.get(currency) || 0n) + BigInt(entry.amountMinor),
+      );
+  }
+  return [...totals].map(([currency, amount]) => ({
+    currency,
+    amountMinor: amount.toString(),
+  }));
+}
+export function entryCurrency(book: Book, e: Entry) {
+  return (
+    e.amountCurrency ||
+    book.accounts.find((a) => a.id === e.accountId)?.currency ||
+    book.currency
+  );
+}
+export function needsSettlement(book: Book, e: Entry) {
+  return (
+    entryCurrency(book, e) !==
+    book.accounts.find((a) => a.id === e.accountId)?.currency
+  );
 }
 export function validateEntry(book: Book, e: Entry, old?: Entry) {
   const a = book.accounts.find((a) => a.id === e.accountId);
   if (!a) throw Error("请选择账户");
+  if (e.amountCurrency !== undefined && !/^[A-Z]{3}$/.test(e.amountCurrency))
+    throw Error("金额币种无效");
+  if (
+    e.originalAmount &&
+    (!/^[A-Z]{3}$/.test(e.originalAmount.currency) ||
+      !/^\d+$/.test(e.originalAmount.amountMinor) ||
+      BigInt(e.originalAmount.amountMinor) <= 0n)
+  )
+    throw Error("原币金额无效");
+  if (
+    e.estimatedMinor !== undefined &&
+    (!/^\d+$/.test(e.estimatedMinor) || BigInt(e.estimatedMinor) <= 0n)
+  )
+    throw Error("暂估金额需要大于零");
+  const foreign = needsSettlement(book, e);
+  if (foreign && (e.posted || !["expense", "income"].includes(e.kind)))
+    throw Error("请先填写账户币种的实际入账金额");
+  if (
+    foreign &&
+    (!e.originalAmount ||
+      e.originalAmount.currency !== e.amountCurrency ||
+      e.originalAmount.amountMinor !== e.amountMinor)
+  )
+    throw Error("原币记录与录入金额不一致");
+  if (e.originalAmount && !["expense", "income"].includes(e.kind))
+    throw Error("此交易类型不支持原始消费金额");
+  if (e.transferId) {
+    const transfer = book.entries.find((t) => t.id === e.transferId);
+    if (e.kind !== "expense" || transfer?.kind !== "transfer")
+      throw Error("关联转账不存在或类型无效");
+    if (!old && transfer.deletedAt) throw Error("不能为已删除转账新增费用");
+  }
   if (a.archived && old?.accountId !== a.id)
     throw Error("请先取消账户归档，再新增交易");
   if (!e.description.trim()) throw Error("请填写描述");
@@ -150,7 +215,7 @@ export function validateEntry(book: Book, e: Entry, old?: Entry) {
       throw Error("各类目金额合计需要等于交易总额");
     const inherited =
       e.kind === "refund"
-        ? book.entries.find((t) => t.id === e.originalId)?.splits
+        ? book.entries.find((t) => t.id === refundOriginalId(e))?.splits
         : undefined;
     for (const s of e.splits) {
       const c = book.categories.find((c) => c.id === s.categoryId);
@@ -177,26 +242,11 @@ export function validateEntry(book: Book, e: Entry, old?: Entry) {
       if (BigInt(s.amountMinor) <= 0n) throw Error("每个类目的金额需要大于零");
     }
   }
-  if (
-    e.kind === "refund" &&
-    e.originalId &&
-    (!old ||
-      old.originalId !== e.originalId ||
-      old.amountMinor !== e.amountMinor)
-  ) {
-    const original = book.entries.find((t) => t.id === e.originalId);
-    if (!original || original.kind !== "expense") throw Error("原消费不存在");
-    const originAccount = book.accounts.find(
-      (a) => a.id === original.accountId,
-    );
-    if (originAccount?.currency !== a.currency)
-      throw Error("退款账户需要与原消费币种相同");
-    if (
-      n >
-      remainingRefund(book, original.id) +
-        (old && !old.deletedAt ? BigInt(old.amountMinor) : 0n)
-    )
-      throw Error("退款金额超过剩余可退金额");
+  const originalId = refundOriginalId(e);
+  if (originalId) {
+    const original = book.entries.find((t) => t.id === originalId);
+    if (e.kind !== "refund" || original?.kind !== "expense")
+      throw Error("退款关联的原记录不存在或类型无效");
   }
 }
 export function upsertEntry(book: Book, e: Entry) {
@@ -205,6 +255,8 @@ export function upsertEntry(book: Book, e: Entry) {
   if (old && old.revision !== e.revision)
     throw Error("这笔交易已在其他页面更新，请重新打开");
   validateEntry(book, e, old);
+  if (e.amountCurrency || e.originalAmount || e.estimatedMinor || e.transferId)
+    book.schema = 4;
   const saved = {
     ...e,
     description: e.description.trim(),
@@ -217,13 +269,15 @@ export function upsertEntry(book: Book, e: Entry) {
 export function changePosted(book: Book, id: string) {
   const e = book.entries.find((t) => t.id === id && !t.deletedAt);
   if (!e) throw Error("交易不存在");
+  if (!e.posted && needsSettlement(book, e))
+    throw Error("请先确认实际入账金额");
   e.posted = !e.posted;
   e.revision++;
   e.updatedAt = new Date().toISOString();
 }
 export function removeEntry(book: Book, id: string, withRefunds = false) {
   const entries = book.entries.filter(
-    (e) => e.id === id || (withRefunds && e.originalId === id),
+    (e) => e.id === id || (withRefunds && refundOriginalId(e) === id),
   );
   for (const e of entries) {
     e.deletedAt = new Date().toISOString();
@@ -328,6 +382,7 @@ export function categoryStats(
   to: string,
   accountIds: string[],
   categoryIds: string[],
+  getRate = (id: string, at: string) => rateFor(book, id, at),
 ) {
   const selected = new Set(categoryIds);
   const matches = (id: string) =>
@@ -353,17 +408,17 @@ export function categoryStats(
       !accountIds.includes(e.accountId)
     )
       continue;
-    const rate = rateFor(book, e.accountId, e.occurredAt);
+    const rate = getRate(e.accountId, e.occurredAt);
     const matching = e.splits.filter((s) => matches(s.categoryId));
     if (!matching.length) continue;
     let matched = 0n,
       native = 0n;
+    const converted = rate ? convertedSplits(e, rate.n, rate.d) : [];
     for (const s of matching) {
       native += BigInt(s.amountMinor);
       if (!rate) continue;
       const amount =
-        roundedRatio(BigInt(s.amountMinor), rate.n, rate.d) *
-        (e.kind === "refund" ? -1n : 1n);
+        converted[e.splits.indexOf(s)] * (e.kind === "refund" ? -1n : 1n);
       matched += amount;
       values.set(s.categoryId, (values.get(s.categoryId) || 0n) + amount);
       if (e.kind === "refund") refund -= amount;

@@ -1,8 +1,13 @@
+import { encodeBackup } from "../storage/archive.ts";
+import { syncMessage } from "../sync/engine.ts";
+import { ServicePanel, serviceTitles } from "./ServicePanel.tsx";
+import { readServiceView } from "../sync/service-cache.ts";
 import { timeZones, deviceTimeZone } from "../domain/dates.ts";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
   Header,
+  SettingRow,
   BrandMark,
   Button,
   IconButton,
@@ -14,25 +19,27 @@ import {
 } from "../ui/components.tsx";
 import { Icon, icons } from "../ui/icons.tsx";
 import { uid, type Category, type Book } from "../domain/types.ts";
+import { sortedProjects } from "../domain/organization.ts";
 import { currencies } from "../domain/money.ts";
 import { exportBook } from "../storage/repository.ts";
 export function Settings() {
   const app = useApp(),
     { book } = app,
     [info, setInfo] = useState(false);
+  const { status: syncStatus, pending } = app.localSync;
   const locked =
     book.entries.length > 0 ||
     book.accounts.some((a) => BigInt(a.openingMinor) !== 0n);
   async function backup() {
     try {
       const data = await exportBook(app.mode),
-        blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: "application/json",
+        blob = new Blob([new Uint8Array(await encodeBackup(data))], {
+          type: "application/zip",
         }),
         url = URL.createObjectURL(blob),
         link = document.createElement("a");
       link.href = url;
-      link.download = `厘序-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `厘序-${new Date().toISOString().slice(0, 10)}.zip`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       app.toast("备份已准备好");
@@ -158,9 +165,20 @@ export function Settings() {
           <div className="settings-surface">
             <SettingRow
               icon="Cloud"
-              label="云端同步"
-              value="未连接"
+              label="远端账本与设备"
+              value={
+                syncStatus?.phase === "idle" && pending
+                  ? `${pending} 条待同步`
+                  : syncStatus
+                    ? syncMessage(syncStatus.phase)
+                    : "未连接"
+              }
               onClick={() => app.go({ page: "sync" })}
+            />
+            <SettingRow
+              icon="Download"
+              label="从备份文件恢复"
+              onClick={() => app.go({ page: "local-backup" })}
             />
             <SettingRow
               icon="Download"
@@ -216,26 +234,6 @@ export function Settings() {
         </Dialog>
       )}
     </>
-  );
-}
-function SettingRow({
-  icon,
-  label,
-  value,
-  onClick,
-}: {
-  icon: string;
-  label: string;
-  value?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button className="setting-row" onClick={onClick}>
-      <Icon name={icon} />
-      <span>{label}</span>
-      {value && <small>{value}</small>}
-      <Icon name="ChevronRight" size={16} />
-    </button>
   );
 }
 function NameEditor({
@@ -308,27 +306,52 @@ export function Projects() {
             action={<Button onClick={() => edit()}>新增项目</Button>}
           />
         )}
-        <div className="settings-surface">
-          {app.book.projects.map((p) => (
-            <div key={p.id} className="setting-row">
-              <Icon name="Folder" />
-              <button className="grow text-left" onClick={() => edit(p.id)}>
-                {p.name}
-                {p.archived && <small>已归档</small>}
-              </button>
-              <IconButton
-                name={p.archived ? "ArchiveRestore" : "Archive"}
-                label={p.archived ? "取消归档项目" : "归档项目"}
-                onClick={() =>
-                  void app.save("归档项目", (b) => {
-                    b.projects.find((x) => x.id === p.id)!.archived =
-                      !p.archived;
-                  })
-                }
-              />
-            </div>
-          ))}
-        </div>
+        {app.book.projects.length > 0 && (
+          <p className="section-note">按名称排序</p>
+        )}
+        {[false, true].map((archived) => {
+          const projects = sortedProjects(app.book.projects).filter(
+            (p) => p.archived === archived,
+          );
+          if (!projects.length) return null;
+          return (
+            <section
+              className="settings-section"
+              key={String(archived)}
+              aria-label={archived ? "已归档项目" : "未归档项目"}
+            >
+              <h2>{archived ? "已归档" : "未归档"}</h2>
+              <div className="settings-surface">
+                {projects.map((p) => (
+                  <div key={p.id} className="setting-row">
+                    <Icon name="Folder" />
+                    <button
+                      className="grow text-left"
+                      onClick={() => edit(p.id)}
+                    >
+                      {p.name}
+                    </button>
+                    <IconButton
+                      name={p.archived ? "ArchiveRestore" : "Archive"}
+                      label={`${p.archived ? "取消归档项目" : "归档项目"} ${p.name}`}
+                      onClick={() =>
+                        void app.save(
+                          p.archived ? "取消归档项目" : "归档项目",
+                          (b) => {
+                            const project = b.projects.find(
+                              (x) => x.id === p.id,
+                            )!;
+                            project.archived = !project.archived;
+                          },
+                        )
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </main>
     </>
   );
@@ -496,10 +519,11 @@ export function CategoryEditor({
                   key={c}
                   aria-label={`颜色 ${c}`}
                   className={color === c ? "selected" : ""}
-                  style={{ background: c }}
                   onClick={() => setColor(c)}
                 >
-                  {c === color && <Icon name="Check" size={16} />}
+                  <span className="color-swatch" style={{ background: c }}>
+                    {c === color && <Icon name="Check" size={16} />}
+                  </span>
                 </button>
               ))}
           </span>
@@ -513,73 +537,59 @@ export function CategoryEditor({
   );
 }
 export function Sync() {
-  const [address, setAddress] = useState(location.origin),
-    [status, setStatus] = useState(""),
-    [busy, setBusy] = useState(false);
+  const app = useApp(),
+    [refreshKey, setRefreshKey] = useState(0),
+    [busy, setBusy] = useState(false),
+    [backupsEditable, setBackupsEditable] = useState(
+      () => !!readServiceView(location.origin)?.backups.length,
+    ),
+    [editingBackups, setEditingBackups] = useState(false);
+  useEffect(() => {
+    if (!backupsEditable) setEditingBackups(false);
+  }, [backupsEditable]);
+  const page = app.route.servicePage || "overview";
+  useEffect(
+    () => (busy ? app.registerLayer(() => {}) : undefined),
+    [busy, app.registerLayer],
+  );
   return (
     <>
-      <Header title="云端同步" back />
-      <main className="page-content sync-page">
-        <div className="sync-status">
-          <Icon name="CloudOff" size={34} />
-          <h2>尚未连接云端账本</h2>
-          <p>交易已保存在本机。连接同步服务后，可在多个设备间使用同一账本。</p>
-        </div>
-        <form
-          className="form-surface"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            setStatus("");
-            try {
-              const url = new URL(address);
-              if (url.protocol !== "https:")
-                throw Error("请使用 HTTPS 服务地址");
-              const response = await fetch(
-                new URL("api/sync/capabilities", url.href.replace(/\/?$/, "/")),
-                { signal: AbortSignal.timeout(8000), credentials: "omit" },
-              );
-              if (!response.ok)
-                throw Error("该地址尚未提供兼容的同步服务。本机记账不受影响。");
-              const data = await response.json();
-              if (data.protocol !== "fine-ledger-sync-v1")
-                throw Error("该地址不是兼容的账本同步服务");
-              setStatus(
-                "已发现服务。当前版本尚未启用设备授权，请保留本机备份。",
-              );
-            } catch (e) {
-              setStatus(
-                (e as Error).name === "TypeError"
-                  ? "无法访问服务，请检查地址与网络。"
-                  : (e as Error).message,
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Field label="服务地址">
-            <input
-              type="url"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              autoCapitalize="off"
-              autoCorrect="off"
-            />
-          </Field>
-          <Button variant="soft" disabled={busy}>
-            {busy ? "检查中…" : "检查服务"}
-          </Button>
-          {status && (
-            <p className="compact-note" role="status">
-              {status}
-            </p>
-          )}
-        </form>
-        <p className="compact-note muted">
-          当前部署未启用云端同步服务。导出备份可在设置中使用。
-        </p>
+      <Header title={serviceTitles[page]} back>
+        {page === "backups" && backupsEditable && (
+          <IconButton
+            name={editingBackups ? "Check" : "Pencil"}
+            label={editingBackups ? "完成备份编辑" : "编辑备份"}
+            disabled={busy}
+            aria-pressed={editingBackups}
+            onClick={() => setEditingBackups((value) => !value)}
+          />
+        )}
+        <IconButton
+          name="RotateCcw"
+          label="刷新连接状态"
+          disabled={busy}
+          onClick={() => app.leave(() => setRefreshKey((n) => n + 1))}
+        />
+      </Header>
+      <main className="page-content settings-page service-page">
+        <ServicePanel
+          localSync={app.localSync}
+          previewOnly={app.preview}
+          editingBackups={editingBackups}
+          onBackupAvailabilityChange={setBackupsEditable}
+          page={page}
+          deviceId={app.route.id}
+          refreshKey={refreshKey}
+          onNavigate={(servicePage, id) =>
+            app.go({ page: "sync", servicePage, id })
+          }
+          onRestored={app.restored}
+          onDeviceRevoked={app.backAfterSave}
+          onSyncReviewed={app.backAfterSave}
+          onBusyChange={setBusy}
+          onDirtyChange={app.setDirty}
+          confirm={app.confirm}
+        />
       </main>
     </>
   );

@@ -11,6 +11,7 @@ export interface Account {
   groupId: string;
   currency: Currency;
   type: "bank" | "cash" | "wallet" | "credit" | "investment";
+  creditLimitMinor?: string;
   openingMinor: string;
   openingAt: string;
   icon: string;
@@ -46,6 +47,11 @@ export interface Entry {
   accountId: string;
   toAccountId?: string;
   amountMinor: string;
+  // Entered currency may differ from the account only while unposted.
+  amountCurrency?: Currency;
+  originalAmount?: { currency: Currency; amountMinor: string };
+  estimatedMinor?: string;
+  transferId?: string;
   receivedMinor?: string;
   description: string;
   occurredAt: string;
@@ -53,6 +59,11 @@ export interface Entry {
   posted: boolean;
   splits: Split[];
   originalId?: string;
+  refundReference?: {
+    source: "moneywiz";
+    originalId: string;
+    reason: "over-limit" | "cross-currency";
+  };
   note?: string;
   createdAt: string;
   updatedAt: string;
@@ -60,7 +71,7 @@ export interface Entry {
   revision: number;
 }
 export interface Book {
-  schema: 3;
+  schema: 3 | 4;
   id: string;
   name: string;
   currency: Currency;
@@ -78,15 +89,30 @@ export interface Book {
     savedReports: SavedReport[];
   };
 }
+export type ReportType =
+  | "net"
+  | "expense"
+  | "income"
+  | "project"
+  | "expense-trend"
+  | "income-trend"
+  | "cashflow"
+  | "balance";
+export type ReportGrain = "day" | "week" | "month" | "quarter" | "year";
+export type ReportMetric = "expense" | "net" | "refund";
 export interface SavedReport {
   id: string;
   name: string;
-  type: "net" | "expense";
+  type: ReportType;
   days: string;
   from: string;
   to: string;
   accountIds: string[];
   categoryIds: string[];
+  projectIds?: string[];
+  grain?: ReportGrain;
+  metric?: ReportMetric;
+  chart?: "bar" | "line";
 }
 export interface Change {
   collection: string;

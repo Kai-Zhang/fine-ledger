@@ -1,22 +1,29 @@
 import { captureEdges } from "./edge-capture.ts";
 import { resistedOffset, completesSwipe } from "./motion.ts";
 import { useEffect, useRef, useState } from "react";
-import { currentFrame, type Navigation, type Frame } from "./stack.ts";
-type Motion = {
+type HistoryFrame = { key: number };
+type SwipeHistory<T extends HistoryFrame> = {
+  tab: string;
+  stacks: Record<string, { past: T[]; future: T[] }>;
+};
+function currentFrame<T extends HistoryFrame>(n: SwipeHistory<T>): T {
+  return n.stacks[n.tab].past.at(-1)!;
+}
+type Motion<T> = {
   offset: number;
-  target?: Frame;
+  target?: T;
   boundary?: boolean;
   duration?: number;
 };
-export function useSwipe(
-  navigation: Navigation,
+export function useSwipe<T extends HistoryFrame>(
+  navigation: SwipeHistory<T>,
   blocked: () => boolean,
   layerOpen: () => boolean,
   request: (d: "back" | "forward") => void,
   needsConfirmation: () => boolean,
   authorize: () => Promise<boolean>,
 ) {
-  const [motion, setMotion] = useState<Motion>({ offset: 0 });
+  const [motion, setMotion] = useState<Motion<T>>({ offset: 0 });
   const latest = useRef({
     navigation,
     blocked,
@@ -41,7 +48,7 @@ export function useSwipe(
     previousAt: number;
     lastAt: number;
     direction: "back" | "forward";
-    target?: Frame;
+    target?: T;
     key: number;
     boundary: boolean;
     rejected?: boolean;
@@ -71,6 +78,7 @@ export function useSwipe(
       boundary,
     };
     setMotion({ offset: 0, target, boundary });
+    return true;
   }
   function move(x: number, y: number) {
     const s = start.current;
@@ -180,8 +188,8 @@ export function useSwipe(
     pointer: {
       onPointerDown: (e: React.PointerEvent) => {
         if (e.pointerType === "touch") return;
-        begin(e.clientX, e.clientY);
-        e.currentTarget.setPointerCapture(e.pointerId);
+        if (begin(e.clientX, e.clientY))
+          e.currentTarget.setPointerCapture(e.pointerId);
       },
       onPointerMove: (e: React.PointerEvent) => {
         if (e.pointerType !== "touch") move(e.clientX, e.clientY);

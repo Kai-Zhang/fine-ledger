@@ -94,3 +94,35 @@ test("edge capture cancels native history previews on roots too, while allowing 
   cleanup();
   assert.equal(fire("touchstart", 3).defaultPrevented, false);
 });
+
+// First-run pages share the edge-gesture engine but keep their own history.
+import {
+  initialStartNavigation,
+  startNavigate,
+} from "../src/navigation/onboarding.ts";
+test("first-run navigation returns to choices and can move forward to the same step", () => {
+  const home = initialStartNavigation();
+  const create = startNavigate(home, { type: "open", page: "create" });
+  const back = startNavigate(create, { type: "back" });
+  assert.equal(back.stacks.start.past.at(-1).page, "choose");
+  const forward = startNavigate(back, { type: "forward" });
+  assert.deepEqual(forward.stacks.start.past, create.stacks.start.past);
+  assert.equal(forward.stacks.start.future.length, 0);
+});
+test("choosing another first-run branch invalidates forward history instead of opening a stale form", () => {
+  let n = startNavigate(initialStartNavigation(), {
+    type: "open",
+    page: "create",
+  });
+  n = startNavigate(n, { type: "back" });
+  n = startNavigate(n, { type: "open", page: "connect" });
+  assert.equal(n.stacks.start.past.at(-1).page, "connect");
+  assert.equal(n.stacks.start.future.length, 0);
+  assert.equal(startNavigate(n, { type: "forward" }), n);
+  assert.equal(startNavigate(n, { type: "open", page: "connect" }), n);
+});
+test("first-run history boundaries never remove the choice page or manufacture a forward page", () => {
+  const home = initialStartNavigation();
+  assert.equal(startNavigate(home, { type: "back" }), home);
+  assert.equal(startNavigate(home, { type: "forward" }), home);
+});

@@ -1,4 +1,33 @@
 import type { Book } from "./types.ts";
+import { removeEmptyGroup } from "./ledger.ts";
+
+export function removeGroup(book: Book, id: string, destination: string) {
+  if (
+    !book.groups.some((group) => group.id === id) ||
+    destination === id ||
+    (destination !== "" &&
+      !book.groups.some((group) => group.id === destination))
+  )
+    throw Error("分组或账户目标分组不存在");
+  const members = book.accounts
+    .filter((account) => account.groupId === id)
+    .sort((a, b) => a.order - b.order);
+  for (const account of members) moveAccount(book, account.id, destination);
+  removeEmptyGroup(book, id);
+}
+
+const projectNames = new Intl.Collator("zh-CN", {
+  numeric: true,
+  sensitivity: "base",
+});
+export function sortedProjects(projects: Book["projects"]) {
+  return [...projects].sort(
+    (a, b) =>
+      Number(a.archived) - Number(b.archived) ||
+      projectNames.compare(a.name, b.name) ||
+      a.id.localeCompare(b.id),
+  );
+}
 export function moveAccount(
   book: Book,
   id: string,

@@ -1,6 +1,6 @@
 {
   "name": "fine-ledger",
-  "version": "0.8.0",
+  "version": "0.14.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,13 +10,22 @@
     "iphone:start": "node scripts/iphone-review.mjs start",
     "iphone:status": "node scripts/iphone-review.mjs status",
     "iphone:stop": "node scripts/iphone-review.mjs stop",
-    "check": "tsc --noEmit && node --check server.mjs && node --check scripts/build-preview.mjs && node --check scripts/iphone-review.mjs",
+    "check": "tsc --noEmit && tsc -p tsconfig.server.json && node --check server.mjs && node --check scripts/build-preview.mjs && node --check scripts/iphone-review.mjs && node --check scripts/service-review.mjs",
     "test": "node --test test/*.test.mjs",
     "dev:vite": "vite --host 127.0.0.1",
-    "format": "prettier --write src index.html vite.config.ts tsconfig.json scripts/build-preview.mjs test/domain.test.mjs test/storage.test.mjs"
+    "format": "prettier --write src index.html vite.config.ts tsconfig.json scripts/build-preview.mjs test/domain.test.mjs test/storage.test.mjs",
+    "service:start": "node server/main.ts",
+    "service:reset-password": "node server/main.ts reset-password",
+    "service:restore": "node server/main.ts restore",
+    "service:review:start": "node scripts/service-review.mjs start",
+    "service:review:status": "node scripts/service-review.mjs status",
+    "service:review:stop": "node scripts/service-review.mjs stop",
+    "container": "node scripts/container.mjs",
+    "container:test": "node scripts/test-service-container.mjs",
+    "container:test:tls": "node scripts/test-service-container-tls.mjs"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.13.0"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",
@@ -25,6 +34,8 @@
     "@js-temporal/polyfill": "0.5.1",
     "dexie": "4.4.7",
     "dexie-react-hooks": "4.4.0",
+    "fastify": "5.12.7",
+    "fflate": "0.8.3",
     "lucide-react": "1.63.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"

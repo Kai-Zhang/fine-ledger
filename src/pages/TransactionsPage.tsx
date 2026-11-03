@@ -369,7 +369,7 @@ export function Detail() {
       e.kind === "expense" &&
       !e.deletedAt &&
       !a?.archived &&
-      remainingRefund(book, e.id) > 0n;
+      (remainingRefund(book, e.id) ?? 0n) > 0n;
   function deleteDialog() {
     setDeleting(true);
     app.open(
