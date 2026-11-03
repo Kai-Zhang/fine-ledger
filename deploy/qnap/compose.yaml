@@ -1,6 +1,6 @@
 services:
   fine-ledger:
-    image: fine-ledger:0.14.5-nas-21003bd
+    image: fine-ledger:0.14.5-nas-ios-edge-d613d5b9
     pull_policy: never
     restart: unless-stopped
     init: true

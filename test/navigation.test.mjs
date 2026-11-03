@@ -60,39 +60,72 @@ test("account shortcut report and nested drilldown return to their actual source
   assert.equal(back(n), n);
 });
 
-test("edge capture cancels native history previews on roots too, while allowing text selection in the page", async () => {
+test("edge capture leaves vertical scroll alone and cancels only claimed moves", async () => {
   const { captureEdges } = await import("../src/navigation/edge-capture.ts");
   const doc = new EventTarget();
   let started = 0,
-    moved = 0,
-    ended = 0;
+    ends = [];
   const cleanup = captureEdges(doc, () => 390, {
-    start: () => started++,
-    move: () => moved++,
-    end: () => ended++,
+    start: () => ++started !== 3,
+    move: (x, y) => x > 25 && y === 150,
+    end: (cancel) => ends.push(cancel),
   });
-  const fire = (type, x, touches = 1) => {
-    const event = new Event(type, { cancelable: true });
+  const fire = (type, x, y = 150, touches = 1, cancelable = true) => {
+    const event = new Event(type, { cancelable });
     Object.defineProperty(event, "touches", {
       value: Array.from({ length: touches }, () => ({
         clientX: x,
-        clientY: 150,
+        clientY: y,
       })),
     });
     doc.dispatchEvent(event);
-    return event;
+    return event.defaultPrevented;
   };
-  assert.equal(fire("touchstart", 5).defaultPrevented, true);
-  assert.equal(started, 1);
-  assert.equal(fire("touchmove", 160).defaultPrevented, true);
+  assert.equal(fire("touchstart", 200), false);
+  assert.equal(fire("touchstart", 3, 150, 2), false);
+  assert.equal(started, 0);
+  assert.equal(fire("touchstart", 5), false);
+  assert.equal(fire("touchmove", 5, 220), false);
+  assert.equal(fire("touchmove", 5, 245, 1, false), false);
+  assert.deepEqual(ends, [true]);
+  assert.equal(fire("touchstart", 5), false);
+  assert.equal(fire("touchmove", 8), false);
+  assert.equal(fire("touchmove", 160), true);
   fire("touchend", 160);
-  assert.equal(moved, 1);
-  assert.equal(ended, 1);
-  assert.equal(fire("touchstart", 200).defaultPrevented, false);
-  assert.equal(fire("touchstart", 3, 2).defaultPrevented, false);
-  assert.equal(fire("touchstart", 385).defaultPrevented, true);
+  assert.deepEqual(ends, [true, false]);
+  fire("touchstart", 5); // blocked by app
+  assert.equal(fire("touchmove", 160), false);
+  fire("touchend", 160);
+  assert.deepEqual(ends, [true, false]);
+  fire("touchstart", 385);
+  fire("touchstart", 385, 150, 2);
+  assert.deepEqual(ends, [true, false, true]);
   cleanup();
-  assert.equal(fire("touchstart", 3).defaultPrevented, false);
+  fire("touchstart", 3);
+  assert.equal(started, 4);
+});
+
+test("iOS reserves edge touchstart before the system history gesture", async () => {
+  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+  const doc = new EventTarget();
+  const cleanup = captureEdges(
+    doc,
+    () => 390,
+    { start: () => true, move: () => true, end: () => {} },
+    true,
+  );
+  for (const [x, reserved] of [
+    [195, false],
+    [5, true],
+    [385, true],
+  ]) {
+    const event = new Event("touchstart", { cancelable: true });
+    Object.defineProperty(event, "touches", { value: [{ clientX: x }] });
+    doc.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, reserved);
+    doc.dispatchEvent(new Event("touchend"));
+  }
+  cleanup();
 });
 
 // First-run pages share the edge-gesture engine but keep their own history.

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   blankBook,
   balance,
+  accountBalances,
   upsertEntry,
   changePosted,
   remainingRefund,
@@ -60,6 +61,26 @@ function transfer(id, day, cny, jpy) {
     splits: [],
   });
 }
+test("batched balances preserve posting and independent transfer dates", () => {
+  const b = fixture();
+  b.accounts[2].openingAt = time(4);
+  b.accounts[2].openingMinor = "123";
+  b.entries = [
+    { ...transfer("fx", 2, "125", "70"), receivedAt: time(4) },
+    entry("pending", { posted: false }),
+    entry("removed", { deletedAt: time(3) }),
+    entry("refund", { kind: "refund", amountMinor: "25" }),
+  ];
+  const before = accountBalances(b, time(3));
+  assert.deepEqual([...before.values()], [99900n, 0n, 0n]);
+  const after = accountBalances(b, time(4));
+  assert.deepEqual([...after.values()], [99900n, 70n, 123n]);
+  assert.deepEqual(
+    netWorth(b, time(4), undefined, after),
+    netWorth(b, time(4)),
+  );
+});
+
 test("money uses exact integers beyond Number safe range and respects currency decimals", () => {
   assert.equal(minor("90071992547409.93", "CNY"), "9007199254740993");
   assert.equal(money("9007199254740993", "CNY"), "90,071,992,547,409.93");

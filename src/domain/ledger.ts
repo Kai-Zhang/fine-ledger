@@ -111,6 +111,39 @@ export function balance(
   }
   return result;
 }
+// Compute all balances at the same instant with one pass over the ledger.
+export function accountBalances(book: Book, at: string) {
+  const result = new Map(
+    book.accounts.map((a) => [
+      a.id,
+      compareTime(a.openingAt, at) <= 0 ? BigInt(a.openingMinor) : 0n,
+    ]),
+  );
+  for (const e of book.entries) {
+    if (!e.posted || e.deletedAt) continue;
+    const source = result.get(e.accountId);
+    if (source !== undefined && compareTime(e.occurredAt, at) <= 0) {
+      const amount = BigInt(e.amountMinor);
+      result.set(
+        e.accountId,
+        source +
+          (e.kind === "expense" || e.kind === "transfer" ? -amount : amount),
+      );
+    }
+    if (e.kind === "transfer" && e.toAccountId) {
+      const destination = result.get(e.toAccountId);
+      if (
+        destination !== undefined &&
+        compareTime(e.receivedAt || e.occurredAt, at) <= 0
+      )
+        result.set(
+          e.toAccountId,
+          destination + BigInt(e.receivedMinor || e.amountMinor),
+        );
+    }
+  }
+  return result;
+}
 export function remainingRefund(book: Book, id: string) {
   const e = book.entries.find((e) => e.id === id);
   if (!e) return 0n;
@@ -360,6 +393,7 @@ export function netWorth(
   book: Book,
   at: string,
   ids = book.accounts.filter((a) => a.netWorth).map((a) => a.id),
+  balances?: ReadonlyMap<string, bigint>,
 ) {
   let total = 0n,
     provisional = false;
@@ -367,7 +401,7 @@ export function netWorth(
   for (const id of ids) {
     const a = book.accounts.find((a) => a.id === id);
     if (!a) continue;
-    const amount = balance(book, id, at),
+    const amount = balances?.get(id) ?? balance(book, id, at),
       rate = rateFor(book, id, at);
     if (rate) {
       total += roundedRatio(amount, rate.n, rate.d);

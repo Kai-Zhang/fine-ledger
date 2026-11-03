@@ -1,7 +1,7 @@
 import { PostingDialog } from "./PostingDialog.tsx";
 import { categoryColor } from "../ui/category-color.ts";
 import { incomingEndpoint } from "../domain/filters.ts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
@@ -12,6 +12,17 @@ import {
   changePosted,
 } from "../domain/ledger.ts";
 import type { Entry } from "../domain/types.ts";
+const dayFormat = new Intl.DateTimeFormat("zh-CN", {
+  month: "long",
+  day: "numeric",
+  weekday: "short",
+});
+const dayWithYearFormat = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  weekday: "short",
+});
 export const kindLabel = {
   expense: "支出",
   income: "收入",
@@ -70,14 +81,29 @@ export function Transactions({
   useEffect(() => {
     app.views.set(limitKey, limit);
   }, [limitKey, limit]);
-  const sorted = sortEntries(
-    entries.map((e) =>
-      incomingEndpoint(book, e, scope, [], currency) && e.receivedAt
-        ? { ...e, occurredAt: e.receivedAt }
-        : e,
-    ),
+  const sorted = useMemo(
+    () =>
+      sortEntries(
+        entries.map((e) =>
+          e.receivedAt && incomingEndpoint(book, e, scope, [], currency)
+            ? { ...e, occurredAt: e.receivedAt }
+            : e,
+        ),
+      ),
+    [book, entries, scope, currency],
+  );
+  const timeFormat = useMemo(
+    () =>
+      new Intl.DateTimeFormat("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: book.timeZone,
+      }),
+    [book.timeZone],
   );
   if (!entries.length) return <Empty title="还没有交易" icon="List" />;
+  const currentYear = new Date().getFullYear();
   let last = "";
   return (
     <div className="transaction-list">
@@ -99,15 +125,10 @@ export function Transactions({
           <section key={e.id}>
             {heading && (
               <div className="date-divider">
-                {new Date(day + "T12:00").toLocaleDateString("zh-CN", {
-                  year:
-                    new Date(day).getFullYear() !== new Date().getFullYear()
-                      ? "numeric"
-                      : undefined,
-                  month: "long",
-                  day: "numeric",
-                  weekday: "short",
-                })}
+                {(new Date(day).getFullYear() === currentYear
+                  ? dayFormat
+                  : dayWithYearFormat
+                ).format(new Date(day + "T12:00"))}
               </div>
             )}
             <div className="transaction-row">
@@ -143,12 +164,7 @@ export function Transactions({
                       )}
                     </small>
                     <span className="transaction-meta">
-                      {new Date(e.occurredAt).toLocaleTimeString("zh-CN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                        timeZone: book.timeZone,
-                      })}
+                      {timeFormat.format(new Date(e.occurredAt))}
                       {!e.posted && <em>未入账</em>}
                       {e.splits.length > 1 && (
                         <span>{e.splits.length} 个类目</span>

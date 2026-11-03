@@ -34,7 +34,7 @@ import {
   GroupEditor,
   GroupRemoval,
 } from "../components/AccountEditor.tsx";
-import { balance, netWorth } from "../domain/ledger.ts";
+import { accountBalances, netWorth } from "../domain/ledger.ts";
 import { moveAccount } from "../domain/organization.ts";
 import type { Account, Group, Book } from "../domain/types.ts";
 function AccountRow({
@@ -44,7 +44,7 @@ function AccountRow({
   archive,
   drop,
   after,
-  book,
+  value,
 }: {
   account: Account;
   manage: boolean;
@@ -52,7 +52,7 @@ function AccountRow({
   archive: () => void;
   drop: boolean;
   after: boolean;
-  book: Book;
+  value: bigint;
 }) {
   const app = useApp(),
     sort = useSortable({
@@ -60,7 +60,6 @@ function AccountRow({
       data: { type: "account", id: account.id, groupId: account.groupId },
       disabled: !manage,
     });
-  const value = balance(book, account.id);
   return (
     <div
       ref={sort.setNodeRef}
@@ -123,6 +122,7 @@ function GroupSection({
   group,
   manage,
   book,
+  balances,
   edit,
   archive,
   editGroup,
@@ -133,6 +133,7 @@ function GroupSection({
   group: Group;
   manage: boolean;
   book: Book;
+  balances: ReadonlyMap<string, bigint>;
   edit: (a: Account) => void;
   archive: (a: Account) => void;
   editGroup: () => void;
@@ -164,7 +165,7 @@ function GroupSection({
   accounts.forEach((a) =>
     totals.set(
       a.currency,
-      (totals.get(a.currency) || 0n) + balance(book, a.id),
+      (totals.get(a.currency) || 0n) + (balances.get(a.id) ?? 0n),
     ),
   );
   return (
@@ -229,7 +230,7 @@ function GroupSection({
               archive={() => archive(a)}
               drop={drop === dragId("account", a.id)}
               after={after}
-              book={book}
+              value={balances.get(a.id) ?? 0n}
             />
           ))}
         </SortableContext>
@@ -290,7 +291,9 @@ export function Accounts() {
   const sensors = useDragSensors();
   useDragSelection(!!drag);
   const groups = book.groups.slice().sort((a, b) => a.order - b.order),
-    net = netWorth(book, new Date().toISOString()),
+    at = new Date().toISOString(),
+    balances = accountBalances(book, at),
+    net = netWorth(book, at, undefined, balances),
     activeAccount =
       drag?.type === "account"
         ? book.accounts.find((a) => a.id === drag.id)
@@ -483,6 +486,7 @@ export function Accounts() {
                   group={g}
                   manage={manage}
                   book={book}
+                  balances={balances}
                   edit={editAccount}
                   archive={(a) => void archive(a)}
                   editGroup={() => editGroup(g.id)}
@@ -500,7 +504,7 @@ export function Accounts() {
                     <Icon name={activeAccount.icon} />
                     <strong>{activeAccount.name}</strong>
                     <Amount
-                      value={balance(book, activeAccount.id)}
+                      value={balances.get(activeAccount.id) ?? 0n}
                       currency={activeAccount.currency}
                     />
                   </>
@@ -570,6 +574,7 @@ export function Accounts() {
 }
 export function ArchiveAccounts() {
   const app = useApp();
+  const balances = accountBalances(app.book, new Date().toISOString());
   return (
     <>
       <Header title="已归档账户" back />
@@ -582,7 +587,7 @@ export function ArchiveAccounts() {
                 <Icon name={a.icon} />
                 <strong>{a.name}</strong>
                 <Amount
-                  value={balance(app.book, a.id)}
+                  value={balances.get(a.id) ?? 0n}
                   currency={a.currency}
                   code
                 />

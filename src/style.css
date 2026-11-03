@@ -16,11 +16,14 @@ body,
   background: var(--bg);
   color: var(--text);
 }
+html,
+body {
+  overscroll-behavior: none;
+}
 body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
 }
 button,
 input,
@@ -3572,8 +3575,20 @@ body {
 .preview-bottom-nav {
   display: none;
 }
-.edge-swipe-zone {
-  touch-action: none;
+/* Touches must reach the scroll container below the mouse hit zones. */
+@media (pointer: coarse) {
+  .edge-swipe-zone {
+    pointer-events: none;
+  }
+}
+.start-flow,
+.app-shell {
+  overscroll-behavior-x: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .start-frame {
+    transition: none !important;
+  }
 }
 @media (max-width: 760px) {
   .navigation-underlay {

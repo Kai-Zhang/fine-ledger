@@ -351,7 +351,11 @@ export function App() {
   }
   const branch = navigation.stacks[navigation.tab];
   const isRoot = branch.past.length === 1;
-  const { motion, pointer } = useSwipe(
+  const {
+    target: swipeTarget,
+    pointer,
+    attachSurface,
+  } = useSwipe(
     navigation,
     () => !book || pendingLeave.current || !!confirmState,
     () => !!layers.current.length,
@@ -516,17 +520,17 @@ export function App() {
             </span>
           </div>
         </aside>
-        {motion.target && (
+        {swipeTarget && (
           <AppContext.Provider
             value={{
               preview: true,
-              frameKey: motion.target.key,
+              frameKey: swipeTarget.key,
               localSync,
               restored: () => {},
               views,
               book,
               mode,
-              route: motion.target.route,
+              route: swipeTarget.route,
               go: () => {},
               back: () => {},
               backAfterSave: () => {},
@@ -543,7 +547,7 @@ export function App() {
             }}
           >
             <section
-              className={`workspace navigation-underlay ${motion.target.key === branch.past[0].key ? "preview-root" : ""}`}
+              className={`workspace navigation-underlay ${swipeTarget.key === branch.past[0].key ? "preview-root" : ""}`}
               inert
               aria-hidden="true"
               ref={(el) => {
@@ -551,12 +555,12 @@ export function App() {
                   const scroll = el.querySelector(".page-content");
                   if (scroll)
                     scroll.scrollTop =
-                      scrolls.current.get(String(motion.target!.key)) || 0;
+                      scrolls.current.get(String(swipeTarget!.key)) || 0;
                 }
               }}
             >
-              {pages[motion.target.route.page]}
-              {motion.target.key === branch.past[0].key && (
+              {pages[swipeTarget.route.page]}
+              {swipeTarget.key === branch.past[0].key && (
                 <nav className="preview-bottom-nav">
                   {navItems.map(([p, icon, label]) => (
                     <span
@@ -574,15 +578,8 @@ export function App() {
         )}
         <section
           data-active="true"
-          className={`workspace ${motion.boundary ? "boundary-motion" : ""} ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
-          style={{
-            transform: motion.offset
-              ? `translateX(${motion.offset}px)`
-              : undefined,
-            transition: motion.duration
-              ? `transform ${motion.duration}ms cubic-bezier(.2,.7,.2,1)`
-              : "none",
-          }}
+          className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
+          ref={attachSurface}
           key={frame.key}
         >
           {pages[route.page]}
@@ -686,7 +683,11 @@ function Welcome({
     if (!busy && !serviceBusy)
       setNavigation((n) => startNavigate(n, { type: direction }));
   }
-  const { motion, pointer } = useSwipe(
+  const {
+    target: swipeTarget,
+    pointer,
+    attachSurface,
+  } = useSwipe(
     navigation,
     () => busy || serviceBusy,
     () => false,
@@ -718,7 +719,7 @@ function Welcome({
         .filter((page) => seen.current.has(page))
         .map((page) => {
           const active = current.page === page,
-            underlay = motion.target?.page === page;
+            underlay = swipeTarget?.page === page;
           return (
             <section
               key={page}
@@ -726,18 +727,7 @@ function Welcome({
               hidden={!active && !underlay}
               inert={!active}
               aria-hidden={!active}
-              style={
-                active
-                  ? {
-                      transform: motion.offset
-                        ? `translateX(${motion.offset}px)`
-                        : undefined,
-                      transition: motion.duration
-                        ? `transform ${motion.duration}ms cubic-bezier(.2,.7,.2,1)`
-                        : "none",
-                    }
-                  : undefined
-              }
+              ref={active ? attachSurface : undefined}
             >
               <header
                 className={`page-header ${page !== "choose" ? "has-back" : ""}`}

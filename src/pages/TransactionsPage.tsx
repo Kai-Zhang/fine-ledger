@@ -71,10 +71,14 @@ export function TransactionsPage() {
     () => (route.reportIssue ? reportIndex(book) : undefined),
     [book, route.reportIssue],
   );
+  const selectedEntryIds = useMemo(
+    () => route.entryIds && new Set(route.entryIds),
+    [route.entryIds],
+  );
   const base = useMemo(
     () =>
       liveEntries(book).filter((e) => {
-        if (route.entryIds && !route.entryIds.includes(e.id)) return false;
+        if (selectedEntryIds && !selectedEntryIds.has(e.id)) return false;
         if (route.reportKinds && !route.reportKinds.includes(e.kind))
           return false;
         if (
@@ -125,7 +129,7 @@ export function TransactionsPage() {
             }).length > 0)
         );
       }),
-    [book, route, account],
+    [book, route, account, pricingIndex, selectedEntryIds],
   );
   const select = (f: TransactionFilter) =>
     filterEntries(book, base, f, query, account?.id).filter(
@@ -344,6 +348,7 @@ export function TransactionsPage() {
       </Dialog>,
     );
   }
+  const postedBalance = account ? balance(book, account.id) : 0n;
   return (
     <>
       <Header
@@ -382,18 +387,14 @@ export function TransactionsPage() {
             <span>
               已入账余额 <small>{account.currency}</small>
             </span>
-            <Amount
-              value={balance(book, account.id)}
-              currency={account.currency}
-            />
+            <Amount value={postedBalance} currency={account.currency} />
             {account.type === "credit" &&
               account.creditLimitMinor !== undefined && (
                 <p className="muted compact-note">
                   信用额度 {money(account.creditLimitMinor, account.currency)} ·
                   可用{" "}
                   {money(
-                    BigInt(account.creditLimitMinor) +
-                      balance(book, account.id),
+                    BigInt(account.creditLimitMinor) + postedBalance,
                     account.currency,
                   )}{" "}
                   {account.currency}
