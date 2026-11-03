@@ -1,0 +1,91 @@
+services:
+  fine-ledger:
+    image: fine-ledger:0.12.13-nas-20261102
+    pull_policy: never
+    restart: unless-stopped
+    init: true
+    environment:
+      FINE_LEDGER_HOST: 0.0.0.0
+      FINE_LEDGER_PORT: "4181"
+      FINE_LEDGER_PUBLIC_ORIGIN: https://nas590daa.local:62187
+      FINE_LEDGER_DATA_DIR: /data
+      FINE_LEDGER_BACKUP_DIR: /data/backups
+      FINE_LEDGER_PASSWORD_FILE: /run/secrets/access-password
+      FINE_LEDGER_SERVICE_NAME: 厘序家庭服务
+      FINE_LEDGER_AUTO_BACKUP: "false"
+      FINE_LEDGER_TRUSTED_PROXIES: 172.30.62.2
+    volumes:
+      - type: bind
+        source: /share/Container/fine-ledger/data
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /share/Container/fine-ledger/secrets/access-password
+        target: /run/secrets/access-password
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      default:
+        ipv4_address: 172.30.62.3
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: fine-ledger-caddy:2.11.7-nas-20261102
+    pull_policy: never
+    user: "1000:1000"
+    restart: unless-stopped
+    depends_on:
+      fine-ledger:
+        condition: service_healthy
+    ports:
+      - "192.168.0.230:62187:62187/tcp"
+    volumes:
+      - type: bind
+        source: /share/Container/fine-ledger/caddy/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /share/Container/fine-ledger/caddy-data
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /share/Container/fine-ledger/caddy-config
+        target: /config
+        bind:
+          create_host_path: false
+    networks:
+      default:
+        ipv4_address: 172.30.62.2
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.62.0/29

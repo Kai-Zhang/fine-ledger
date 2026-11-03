@@ -1,0 +1,15 @@
+.git
+.local
+data
+archive
+node_modules
+public/assets
+public/__update-test
+artifacts
+coverage
+*.log
+.env
+.env.*
+*.password
+*.key
+*.pem

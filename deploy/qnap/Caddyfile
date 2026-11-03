@@ -1,0 +1,9 @@
+{
+    auto_https disable_redirects
+    skip_install_trust
+}
+
+https://nas590daa.local:62187 {
+    tls internal
+    reverse_proxy fine-ledger:4181
+}

@@ -1,0 +1,31 @@
+services:
+  fine-ledger:
+    build: .
+    image: ${FINE_LEDGER_IMAGE:?Use npm run container -- or set FINE_LEDGER_IMAGE}
+    restart: unless-stopped
+    init: true
+    environment:
+      FINE_LEDGER_HOST: 0.0.0.0
+      FINE_LEDGER_PORT: 4181
+      FINE_LEDGER_PUBLIC_ORIGIN: ${FINE_LEDGER_PUBLIC_ORIGIN:?Set the public HTTPS origin}
+      FINE_LEDGER_DATA_DIR: /data
+      FINE_LEDGER_BACKUP_DIR: /data/backups
+      FINE_LEDGER_PASSWORD_FILE: /run/secrets/access_password
+      FINE_LEDGER_SERVICE_NAME: ${FINE_LEDGER_SERVICE_NAME:-厘序同步服务}
+      FINE_LEDGER_AUTO_BACKUP: "false"
+    ports:
+      - "${FINE_LEDGER_BIND_ADDRESS:-127.0.0.1}:${FINE_LEDGER_PUBLISHED_PORT:-4181}:4181"
+    volumes:
+      - ledger-data:/data
+    secrets:
+      - access_password
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+secrets:
+  access_password:
+    file: ${FINE_LEDGER_PASSWORD_SOURCE:?Set a local access password file}
+volumes:
+  ledger-data:
