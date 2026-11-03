@@ -1,4 +1,8 @@
 import { useId, useState, useRef, useEffect } from "react";
+
+const validPart = (index: number, text: string) =>
+  /^\d{0,2}$/.test(text) && Number(text) <= (index === 0 ? 23 : 59);
+
 export function DateTimeField({
   label,
   value,
@@ -18,6 +22,7 @@ export function DateTimeField({
     v.slice(17, 19),
   ];
   const [parts, setParts] = useState(() => read(value));
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
   useEffect(() => {
     if (value !== lastEmitted.current) {
       setParts(read(value));
@@ -29,13 +34,22 @@ export function DateTimeField({
     lastEmitted.current = result;
     onChange(result);
   }
-  function update(index: number, raw: string) {
-    if (!/^\d{0,2}$/.test(raw) || Number(raw) > (index === 0 ? 23 : 59)) return;
-    if (index === 2) onSecondsEdit?.();
+  function update(index: number, incoming: string[]) {
+    if (
+      index + incoming.length > parts.length ||
+      incoming.some((text, offset) => !validPart(index + offset, text))
+    )
+      return;
+    if (index + incoming.length === 3) onSecondsEdit?.();
     const next = parts.slice();
-    next[index] = raw;
+    next.splice(index, incoming.length, ...incoming);
     setParts(next);
     emit(value.slice(0, 10), next);
+    if (incoming.at(-1)?.length === 2) {
+      const following = inputs.current[index + incoming.length];
+      // The next segment is on the same row. Keep it at the current scroll position.
+      following?.focus({ preventScroll: true });
+    }
   }
   return (
     <div className="field datetime-field">
@@ -62,6 +76,9 @@ export function DateTimeField({
             <span key={i}>
               {i > 0 && <b>:</b>}
               <input
+                ref={(input) => {
+                  inputs.current[i] = input;
+                }}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]{1,2}"
@@ -69,9 +86,24 @@ export function DateTimeField({
                 required
                 aria-label={`${label}的${["时", "分", "秒"][i]}`}
                 value={part}
-                onChange={(e) => update(i, e.target.value)}
+                onFocus={(e) => e.currentTarget.select()}
+                onClick={(e) => e.currentTarget.select()}
+                onChange={(e) => update(i, [e.target.value])}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const text = e.clipboardData.getData("text").trim();
+                  if (/^\d{2}(?::?\d{2}){0,2}$/.test(text)) {
+                    update(i, text.match(/\d{2}/g)!);
+                  }
+                }}
                 onBlur={() => {
-                  if (part.length < 2) update(i, part.padStart(2, "0"));
+                  setParts((previous) =>
+                    previous[i].length === 2
+                      ? previous
+                      : previous.map((text, index) =>
+                          index === i ? text.padStart(2, "0") : text,
+                        ),
+                  );
                 }}
               />
             </span>

@@ -1,10 +1,11 @@
 {
-  "release": "0.8.0-b28e2bf10a6a6e5c",
+  "release": "0.14.5-6bf572caf4acac39",
   "assets": [
-    "/assets/0.8.0-b28e2bf10a6a6e5c/bootstrap.js",
-    "/assets/0.8.0-b28e2bf10a6a6e5c/index-D5tOF1tD.js",
-    "/assets/0.8.0-b28e2bf10a6a6e5c/index-D5yz3kRT.css",
-    "/assets/0.8.0-b28e2bf10a6a6e5c/index.html",
+    "/assets/0.14.5-6bf572caf4acac39/bootstrap.js",
+    "/assets/0.14.5-6bf572caf4acac39/calculate.worker-DmPfA3Zr.js",
+    "/assets/0.14.5-6bf572caf4acac39/index-CPyynhhr.css",
+    "/assets/0.14.5-6bf572caf4acac39/index-vHjqhnDQ.js",
+    "/assets/0.14.5-6bf572caf4acac39/index.html",
     "/manifest.webmanifest",
     "/icon.svg",
     "/icon-192.png",
