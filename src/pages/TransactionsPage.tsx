@@ -35,6 +35,7 @@ import {
 } from "../domain/ledger.ts";
 import { localDate, displayTime, compareTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
+import { reportIndex, reportRows } from "../domain/reporting.ts";
 export function TransactionsPage() {
   const app = useApp(),
     { book, route } = app;
@@ -62,16 +63,50 @@ export function TransactionsPage() {
     route.from ||
     route.to ||
     route.accountIds ||
-    route.reportKind
+    route.reportKind ||
+    route.reportKinds ||
+    route.reportIssue
+  );
+  const pricingIndex = useMemo(
+    () => (route.reportIssue ? reportIndex(book) : undefined),
+    [book, route.reportIssue],
   );
   const base = useMemo(
     () =>
       liveEntries(book).filter((e) => {
+        if (route.entryIds && !route.entryIds.includes(e.id)) return false;
+        if (route.reportKinds && !route.reportKinds.includes(e.kind))
+          return false;
+        if (
+          route.reportIssue === "unpriced" &&
+          (e.kind === "transfer" ||
+            e.kind === "adjustment" ||
+            pricingIndex?.rate(e.accountId, e.occurredAt))
+        )
+          return false;
         const at =
           (account?.id || route.accountId) === e.toAccountId &&
           e.kind === "transfer"
             ? e.receivedAt || e.occurredAt
             : e.occurredAt;
+        const inRange = (value: string) =>
+          (!route.from || compareTime(value, route.from) >= 0) &&
+          (!route.to || compareTime(value, route.to) <= 0);
+        const endpointDates =
+          route.reportKind === "net" &&
+          route.accountIds &&
+          !route.accountId &&
+          !account
+            ? [
+                ...(route.accountIds.includes(e.accountId)
+                  ? [e.occurredAt]
+                  : []),
+                ...(e.kind === "transfer" &&
+                route.accountIds.includes(e.toAccountId || "")
+                  ? [e.receivedAt || e.occurredAt]
+                  : []),
+              ]
+            : [at];
         return (
           (!route.postedOnly || e.posted) &&
           (route.reportKind !== "expense" ||
@@ -82,12 +117,11 @@ export function TransactionsPage() {
             (route.reportKind !== "expense" &&
               !!e.toAccountId &&
               route.accountIds.includes(e.toAccountId))) &&
-          (!route.from || compareTime(at, route.from) >= 0) &&
-          (!route.to || compareTime(at, route.to) <= 0) &&
-          (!route.categoryIds?.length ||
+          endpointDates.some(inRange) &&
+          ((!route.categoryIds?.length && !route.projectIds?.length) ||
             matchingSplits(book, e, {
-              categories: route.categoryIds,
-              projects: [],
+              categories: route.categoryIds || [],
+              projects: route.projectIds || [],
             }).length > 0)
         );
       }),
@@ -96,9 +130,12 @@ export function TransactionsPage() {
   const select = (f: TransactionFilter) =>
     filterEntries(book, base, f, query, account?.id).filter(
       (e) =>
-        !route.categoryIds?.length ||
-        matchingSplits(book, e, f).some((s) =>
-          categoryMatches(book, s, route.categoryIds!),
+        (!route.categoryIds?.length && !route.projectIds?.length) ||
+        matchingSplits(book, e, f).some(
+          (s) =>
+            categoryMatches(book, s, route.categoryIds || []) &&
+            (!route.projectIds?.length ||
+              route.projectIds.includes(s.projectId || "none")),
         ),
     );
   const entries = useMemo(
@@ -112,7 +149,8 @@ export function TransactionsPage() {
     if (
       !filters.categories.length &&
       !filters.projects.length &&
-      !route.categoryIds?.length
+      !route.categoryIds?.length &&
+      !route.projectIds?.length
     )
       return undefined;
     return new Map(
@@ -121,17 +159,69 @@ export function TransactionsPage() {
         .map((e) => {
           const splits = matchingSplits(book, e, filters).filter(
             (s) =>
-              !route.categoryIds?.length ||
+              (!route.categoryIds?.length && !route.projectIds?.length) ||
               matchingSplits(
                 book,
                 { ...e, splits: [s] },
-                { categories: route.categoryIds, projects: [] },
+                {
+                  categories: route.categoryIds || [],
+                  projects: route.projectIds || [],
+                },
               ).length,
           );
           const sum = splits.reduce((n, s) => n + BigInt(s.amountMinor), 0n);
           return [e.id, money(sum, entryCurrency(book, e))];
         }),
     );
+  }, [book, entries, filters, route]);
+  const priced = useMemo(() => {
+    if (!route.reportCurrency) return;
+    const visible = new Set(entries.map((e) => e.id));
+    const rows = reportRows({
+      book,
+      type: "cashflow",
+      from: localDate(route.from!, book.timeZone),
+      to: localDate(route.to!, book.timeZone),
+      ids: route.accountIds || [],
+      categoryIds: route.categoryIds || [],
+      projectIds: route.projectIds || [],
+      now: new Date().toISOString(),
+    });
+    const labels = new Map<string, string>();
+    let total = 0n,
+      missing = 0;
+    for (const row of rows) {
+      if (!visible.has(row.entry.id)) continue;
+      if (row.missing) {
+        missing++;
+        labels.set(row.entry.id, "未计入汇总");
+        continue;
+      }
+      const splits = row.splits.filter(
+        (s) =>
+          categoryMatches(
+            book,
+            { ...s, id: "", amountMinor: s.native.toString() },
+            filters.categories,
+          ) &&
+          (!filters.projects.length ||
+            filters.projects.includes(s.projectId || "none")),
+      );
+      let amount = row.splits.length
+        ? splits.reduce((n, s) => n + s.amount, 0n)
+        : row.amount;
+      if (route.reportMeasure === "surplus" && row.entry.kind === "expense")
+        amount = -amount;
+      else if (
+        row.entry.kind === "refund" &&
+        route.reportMeasure !== "refund" &&
+        route.reportMeasure !== "surplus"
+      )
+        amount = -amount;
+      total += amount;
+      labels.set(row.entry.id, money(amount, route.reportCurrency, true));
+    }
+    return { total, missing, labels };
   }, [book, entries, filters, route]);
   const chips: { label: string; clear: () => void }[] = [];
   const clear = (key: keyof TransactionFilter) =>
@@ -199,6 +289,19 @@ export function TransactionsPage() {
             <Icon name="Pencil" />
             编辑账户
           </button>
+          <button
+            onClick={() => {
+              app.close();
+              app.go({
+                page: "report",
+                report: "balance",
+                accountId: account.id,
+              });
+            }}
+          >
+            <Icon name="ChartNoAxesCombined" />
+            余额历史
+          </button>
           {!account.archived && (
             <button
               onClick={() => {
@@ -257,6 +360,23 @@ export function TransactionsPage() {
         />
       </Header>
       <main className="page-content transactions-page">
+        {priced && (
+          <div className="report-drill-summary">
+            <span>
+              报表
+              {route.reportMeasure === "surplus"
+                ? "结余"
+                : route.reportMeasure === "net"
+                  ? "净支出"
+                  : "合计"}{" "}
+              <small>{route.reportCurrency}</small>
+            </span>
+            <Amount value={priced.total} currency={route.reportCurrency!} />
+            {priced.missing > 0 && (
+              <small>{priced.missing} 笔缺少折算依据，未计入</small>
+            )}
+          </div>
+        )}
         {account && (
           <div className="account-balance">
             <span>
@@ -323,6 +443,7 @@ export function TransactionsPage() {
         <Transactions
           entries={entries}
           scope={scope}
+          reportMatched={priced?.labels}
           currency={filters.currency}
           matched={matched}
         />

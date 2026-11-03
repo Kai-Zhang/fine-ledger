@@ -1,3 +1,4 @@
+import { sortedProjects } from "../domain/organization.ts";
 import { useState } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Dialog, Field, Button, ErrorMessage } from "../ui/components.tsx";
@@ -192,7 +193,7 @@ export function TransactionFilters({
             项目 <small>{draft.projects.length || "全部"}</small>
           </summary>
           {checkbox("projects", "none", "无项目")}
-          {book.projects.map((p) =>
+          {sortedProjects(book.projects).map((p) =>
             checkbox(
               "projects",
               p.id,

@@ -1,4 +1,13 @@
-import { useState } from "react";
+import {
+  reportRangeLabel,
+  reportTypes,
+  reportGroups,
+  isTimeSeriesReport,
+  reportGrains,
+  reportRange,
+  reportRows,
+} from "../domain/reporting.ts";
+import { useState, useMemo } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -22,6 +31,7 @@ import {
   IconButton,
   Dialog,
   Field,
+  SettingRow,
 } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
 import type { SavedReport } from "../domain/types.ts";
@@ -65,27 +75,29 @@ function SavedRow({
             ? edit()
             : app.go({
                 page: "report",
-                report: report.type === "expense" ? "expense" : "net",
+                report: report.type,
                 savedReportId: report.id,
               })
         }
       >
         <span className="report-type-icon">
           <Icon
-            name={report.type === "net" ? "ChartNoAxesCombined" : "ChartPie"}
+            name={
+              reportTypes.find((r) => r.type === report.type)?.icon ||
+              "ChartPie"
+            }
           />
         </span>
         <span>
           <strong>{report.name}</strong>
           <small>
-            {report.type === "net" ? "净值走势" : "支出分类"} ·{" "}
+            {reportTypes.find((r) => r.type === report.type)?.name} ·{" "}
             {report.days === "custom"
               ? `${report.from} — ${report.to}`
-              : report.days === "month"
-                ? "本月"
-                : report.days === "year"
-                  ? "今年"
-                  : `近 ${report.days} 天`}
+              : reportRangeLabel(report.days)}
+            {isTimeSeriesReport(report.type) &&
+              report.grain &&
+              ` · 按${reportGrains.find((g) => g.value === report.grain)?.name}`}
           </small>
         </span>
         {!manage && <Icon name="ChevronRight" size={17} />}
@@ -113,6 +125,21 @@ export function ReportCatalog() {
     [manage, setManage] = useState(false),
     [editing, setEditing] = useState<SavedReport | null>(null),
     [name, setName] = useState("");
+  const pendingCount = app.book.entries.filter(
+    (e) => !e.deletedAt && !e.posted,
+  ).length;
+  const unpricedCount = useMemo(() => {
+    const now = new Date().toISOString(),
+      range = reportRange(app.book, "all", now);
+    return reportRows({
+      book: app.book,
+      type: "cashflow",
+      ...range,
+      ids: app.book.accounts.map((a) => a.id),
+      categoryIds: [],
+      now,
+    }).filter((r) => r.missing).length;
+  }, [app.book]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -199,30 +226,75 @@ export function ReportCatalog() {
             </DndContext>
           </>
         )}
-        <div className="section-title">
-          <h2>报表类型</h2>
-        </div>
-        <div className="report-catalog-surface">
-          {(
-            [
-              ["net", "净值走势", "ChartNoAxesCombined"],
-              ["expense", "支出分类", "ChartPie"],
-            ] as const
-          ).map(([type, label, icon]) => (
-            <div className="report-catalog-row" key={type}>
-              <button
-                className="report-catalog-main"
-                onClick={() => app.go({ page: "report", report: type })}
-              >
-                <span className="report-type-icon">
-                  <Icon name={icon} />
-                </span>
-                <strong>{label}</strong>
-                <Icon name="ChevronRight" size={17} />
-              </button>
+        {reportGroups.map((group) => (
+          <section key={group.name} aria-label={group.name}>
+            <div className="section-title">
+              <h2>{group.name}</h2>
             </div>
-          ))}
-        </div>
+            <div className="report-catalog-surface">
+              {group.types.map((type) => {
+                const report = reportTypes.find((r) => r.type === type)!;
+                return (
+                  <div className="report-catalog-row" key={type}>
+                    <button
+                      className="report-catalog-main"
+                      onClick={() => app.go({ page: "report", report: type })}
+                    >
+                      <span className="report-type-icon">
+                        <Icon name={type === "net" ? "Wallet" : report.icon} />
+                      </span>
+                      <strong>
+                        {type === "net" ? "余额与净值" : report.name}
+                      </strong>
+                      <Icon name="ChevronRight" size={17} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+        {(pendingCount > 0 || unpricedCount > 0 || app.localSync.issue) && (
+          <section className="report-tasks">
+            <div className="section-title">
+              <h2>待处理</h2>
+            </div>
+            <div className="setting-group">
+              {pendingCount > 0 && (
+                <SettingRow
+                  icon="Clock3"
+                  label="未入账"
+                  value={`${pendingCount} 笔`}
+                  onClick={() =>
+                    app.go({ page: "transactions", filter: "pending" })
+                  }
+                />
+              )}
+              {unpricedCount > 0 && (
+                <SettingRow
+                  icon="CircleHelp"
+                  label="缺少折算依据"
+                  value={`${unpricedCount} 笔`}
+                  onClick={() =>
+                    app.go({
+                      page: "transactions",
+                      reportIssue: "unpriced",
+                      postedOnly: true,
+                    })
+                  }
+                />
+              )}
+              {app.localSync.issue && (
+                <SettingRow
+                  icon="AlertCircle"
+                  label="同步待核对"
+                  value={`${app.localSync.issue.items.length} 项`}
+                  onClick={() => app.go({ page: "sync" })}
+                />
+              )}
+            </div>
+          </section>
+        )}
       </main>
       {editing && (
         <Dialog

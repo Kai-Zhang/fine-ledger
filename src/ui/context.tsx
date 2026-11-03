@@ -1,6 +1,6 @@
 import type { ServicePage } from "../sync/service.ts";
 import { createContext, useContext } from "react";
-import type { Book, Entry, ReportGrain } from "../domain/types.ts";
+import type { Book, Entry, ReportType, ReportGrain } from "../domain/types.ts";
 import type { Mode } from "../storage/repository.ts";
 import type { LocalSyncView } from "../sync/local-view.ts";
 export type Route = {
@@ -40,7 +40,7 @@ export type Route = {
   from?: string;
   to?: string;
   categoryIds?: string[];
-  report?: "net" | "expense";
+  report?: ReportType;
 };
 export interface AppContextValue {
   preview?: boolean;
