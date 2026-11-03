@@ -1,3 +1,4 @@
+import { PostingDialog } from "../components/PostingDialog.tsx";
 import { TransactionFilters } from "../components/TransactionFilters.tsx";
 import {
   emptyFilter,
@@ -24,11 +25,13 @@ import {
 } from "../components/Transactions.tsx";
 import { AccountEditor } from "../components/AccountEditor.tsx";
 import {
+  entryCurrency,
+  needsSettlement,
   balance,
   liveEntries,
-  remainingRefund,
   removeEntry,
   restoreEntry,
+  refundOriginalId,
 } from "../domain/ledger.ts";
 import { localDate, displayTime, compareTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
@@ -126,13 +129,7 @@ export function TransactionsPage() {
               ).length,
           );
           const sum = splits.reduce((n, s) => n + BigInt(s.amountMinor), 0n);
-          return [
-            e.id,
-            money(
-              sum,
-              book.accounts.find((a) => a.id === e.accountId)!.currency,
-            ),
-          ];
+          return [e.id, money(sum, entryCurrency(book, e))];
         }),
     );
   }, [book, entries, filters, route]);
@@ -269,6 +266,19 @@ export function TransactionsPage() {
               value={balance(book, account.id)}
               currency={account.currency}
             />
+            {account.type === "credit" &&
+              account.creditLimitMinor !== undefined && (
+                <p className="muted compact-note">
+                  信用额度 {money(account.creditLimitMinor, account.currency)} ·
+                  可用{" "}
+                  {money(
+                    BigInt(account.creditLimitMinor) +
+                      balance(book, account.id),
+                    account.currency,
+                  )}{" "}
+                  {account.currency}
+                </p>
+              )}
             {account.archived && <span className="status-badge">已归档</span>}
           </div>
         )}
@@ -363,13 +373,12 @@ export function Detail() {
     );
   const a = book.accounts.find((a) => a.id === e.accountId),
     to = book.accounts.find((a) => a.id === e.toAccountId),
-    refunds = book.entries.filter((r) => r.originalId === e.id && !r.deletedAt),
-    original = book.entries.find((r) => r.id === e.originalId),
+    refunds = book.entries.filter(
+      (r) => refundOriginalId(r) === e.id && !r.deletedAt,
+    ),
+    original = book.entries.find((r) => r.id === refundOriginalId(e)),
     refundable =
-      e.kind === "expense" &&
-      !e.deletedAt &&
-      !a?.archived &&
-      (remainingRefund(book, e.id) ?? 0n) > 0n;
+      e.kind === "expense" && e.posted && !e.deletedAt && !a?.archived;
   function deleteDialog() {
     setDeleting(true);
     app.open(
@@ -384,7 +393,9 @@ export function Detail() {
           <p>
             {refunds.length
               ? `这笔消费关联 ${refunds.length} 笔退款，可选择是否一并删除。`
-              : "删除后可在最近删除中恢复。"}
+              : book.entries.some((f) => f.transferId === e!.id && !f.deletedAt)
+                ? "删除转账会保留独立的手续费支出，可从关联记录单独处理。"
+                : "删除后可在最近删除中恢复。"}
           </p>
           <div className="stacked-actions">
             <Button
@@ -448,7 +459,7 @@ export function Detail() {
           <h2>{e.description}</h2>
           <Amount
             value={e.amountMinor}
-            currency={a?.currency || book.currency}
+            currency={entryCurrency(book, e)}
             code
           />
           <span className={`status-badge ${e.posted ? "" : "pending"}`}>
@@ -456,6 +467,50 @@ export function Detail() {
           </span>
         </div>
         <div className="detail-surface">
+          {e.originalAmount && !needsSettlement(book, e) && (
+            <div className="detail-line">
+              <span>原始金额</span>
+              <Amount
+                value={e.originalAmount.amountMinor}
+                currency={e.originalAmount.currency}
+                code
+              />
+            </div>
+          )}
+          {needsSettlement(book, e) && (
+            <div className="detail-line">
+              <span>{a?.currency} 入账金额</span>
+              <span>待确认</span>
+            </div>
+          )}
+          {e.transferId && (
+            <button
+              className="linked-entry"
+              onClick={() => app.go({ page: "detail", id: e.transferId })}
+            >
+              关联转账 ·{" "}
+              {book.entries.find((t) => t.id === e.transferId)?.description}
+              <Icon name="ChevronRight" size={16} />
+            </button>
+          )}
+          {book.entries
+            .filter((t) => t.transferId === e.id && !t.deletedAt)
+            .map((f) => (
+              <button
+                className="linked-entry"
+                key={f.id}
+                onClick={() => app.go({ page: "detail", id: f.id })}
+              >
+                <span>手续费</span>
+                <Amount
+                  value={f.amountMinor}
+                  currency={entryCurrency(book, f)}
+                  code
+                />
+                <Icon name="ChevronRight" size={16} />
+              </button>
+            ))}
+
           <div className="detail-line">
             <span>{e.kind === "transfer" ? "转出账户" : "账户"}</span>
             <button onClick={() => app.go({ page: "account", id: a?.id })}>
@@ -518,7 +573,7 @@ export function Detail() {
                     </span>
                     <Amount
                       value={s.amountMinor}
-                      currency={a?.currency || book.currency}
+                      currency={entryCurrency(book, e)}
                     />
                   </div>
                 );
@@ -539,7 +594,7 @@ export function Detail() {
           >
             <Icon name="RotateCcw" />
             <span>
-              原消费 · {original.description}
+              原记录 · {original.description}
               {original.deletedAt && <small>原消费已删除</small>}
             </span>
             <Icon name="ChevronRight" size={16} />
@@ -548,22 +603,39 @@ export function Detail() {
         {refunds.length > 0 && (
           <div className="linked-refunds">
             <h3>关联退款</h3>
-            {refunds.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => app.go({ page: "detail", id: r.id })}
-              >
-                <span>{r.description}</span>
-                <Amount
-                  value={r.amountMinor}
-                  currency={a?.currency || book.currency}
-                />
-                <Icon name="ChevronRight" size={16} />
-              </button>
-            ))}
+            {refunds.map((r) => {
+              const refundCurrency =
+                book.accounts.find((account) => account.id === r.accountId)
+                  ?.currency || book.currency;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => app.go({ page: "detail", id: r.id })}
+                >
+                  <span>{r.description}</span>
+                  <Amount
+                    value={r.amountMinor}
+                    currency={refundCurrency}
+                    code={refundCurrency !== a?.currency}
+                  />
+                  <Icon name="ChevronRight" size={16} />
+                </button>
+              );
+            })}
           </div>
         )}
         <div className="detail-actions">
+          {!e.posted &&
+            !e.deletedAt &&
+            ["expense", "income"].includes(e.kind) && (
+              <Button
+                icon="Check"
+                onClick={() => app.open(<PostingDialog entry={e} />)}
+              >
+                确认入账
+              </Button>
+            )}
+
           {refundable && (
             <Button
               variant="soft"

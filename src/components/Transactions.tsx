@@ -1,3 +1,4 @@
+import { PostingDialog } from "./PostingDialog.tsx";
 import { categoryColor } from "../ui/category-color.ts";
 import { incomingEndpoint } from "../domain/filters.ts";
 import { useState, useEffect } from "react";
@@ -5,7 +6,11 @@ import { useApp } from "../ui/context.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
 import { sortEntries, localDate } from "../domain/dates.ts";
-import { changePosted } from "../domain/ledger.ts";
+import {
+  entryCurrency,
+  needsSettlement,
+  changePosted,
+} from "../domain/ledger.ts";
 import type { Entry } from "../domain/types.ts";
 export const kindLabel = {
   expense: "支出",
@@ -50,11 +55,13 @@ export function Transactions({
   scope,
   matched,
   currency,
+  reportMatched,
 }: {
   entries: Entry[];
   scope?: string;
   currency?: string;
   matched?: Map<string, string>;
+  reportMatched?: Map<string, string>;
 }) {
   const app = useApp(),
     { book } = app;
@@ -111,7 +118,11 @@ export function Transactions({
                   e.posted ? "已入账，点击标记为未入账" : "未入账，点击入账"
                 }
                 onClick={() =>
-                  void app.save("切换入账状态", (b) => changePosted(b, e.id))
+                  !e.posted && (needsSettlement(book, e) || e.originalAmount)
+                    ? app.open(<PostingDialog entry={e} />)
+                    : void app.save("切换入账状态", (b) =>
+                        changePosted(b, e.id),
+                      )
                 }
               >
                 <EntryIcon entry={e} />
@@ -158,15 +169,36 @@ export function Transactions({
                     <Amount
                       value={value}
                       currency={
-                        (incoming ? to : account)?.currency || book.currency
+                        incoming ? to!.currency : entryCurrency(book, e)
                       }
                     />
                   </span>
-                  {(incoming ? to : account)?.currency !== book.currency && (
-                    <small>{(incoming ? to : account)?.currency}</small>
+                  {(incoming ? to?.currency : entryCurrency(book, e)) !==
+                    book.currency && (
+                    <small>
+                      {incoming ? to?.currency : entryCurrency(book, e)}
+                    </small>
+                  )}
+                  {e.originalAmount && !needsSettlement(book, e) && (
+                    <small>
+                      原始{" "}
+                      {e.originalAmount.amountMinor && (
+                        <Amount
+                          value={e.originalAmount.amountMinor}
+                          currency={e.originalAmount.currency}
+                          code
+                        />
+                      )}
+                    </small>
+                  )}
+                  {needsSettlement(book, e) && (
+                    <small>{account?.currency} 待确认</small>
                   )}
                   {matched?.has(e.id) && (
                     <small>其中匹配 {matched.get(e.id)}</small>
+                  )}
+                  {reportMatched?.has(e.id) && (
+                    <small>报表 {reportMatched.get(e.id)}</small>
                   )}
                 </div>
               </button>

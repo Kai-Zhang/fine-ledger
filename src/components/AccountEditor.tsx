@@ -11,6 +11,7 @@ import { Icon } from "../ui/icons.tsx";
 import { uid, type Account } from "../domain/types.ts";
 import { currencies, minor, decimal } from "../domain/money.ts";
 import { localInput, dateToISO } from "../domain/dates.ts";
+import { removeGroup } from "../domain/organization.ts";
 const types = [
   ["bank", "储蓄卡", "Landmark"],
   ["credit", "信用卡", "CreditCard"],
@@ -38,6 +39,11 @@ export function AccountEditor({
       account ? decimal(account.openingMinor, account.currency) : "0",
     ),
     [at, setAt] = useState(localInput(account?.openingAt, editorZone)),
+    [creditLimit, setCreditLimit] = useState(
+      account?.creditLimitMinor !== undefined
+        ? decimal(account.creditLimitMinor, account.currency)
+        : "",
+    ),
     [net, setNet] = useState(account?.netWorth !== false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -47,6 +53,7 @@ export function AccountEditor({
       currency,
       group,
       opening,
+      creditLimit,
       at,
       net,
     }),
@@ -63,6 +70,12 @@ export function AccountEditor({
     try {
       if (!name.trim()) throw Error("请填写账户名称");
       const amount = minor(opening, currency);
+      const limit =
+        type === "credit" && creditLimit.trim()
+          ? minor(creditLimit, currency)
+          : undefined;
+      if (limit !== undefined && BigInt(limit) < 0n)
+        throw Error("信用额度不能为负数");
       setBusy(true);
       const ok = await save(account ? "编辑账户" : "新增账户", (b) => {
         if (group && !b.groups.some((g) => g.id === group))
@@ -73,6 +86,7 @@ export function AccountEditor({
           type,
           currency,
           groupId: group,
+          creditLimitMinor: limit,
           openingMinor: amount,
           openingAt: dateToISO(at, account?.openingAt, editorZone),
           icon: types.find((t) => t[0] === type)![2],
@@ -85,6 +99,7 @@ export function AccountEditor({
           archived: account?.archived || false,
           netWorth: net,
         };
+        if (limit !== undefined) b.schema = 4;
         if (account) {
           const index = b.accounts.findIndex((a) => a.id === account.id);
           if (
@@ -154,6 +169,7 @@ export function AccountEditor({
               onChange={(e) => {
                 setCurrency(e.target.value);
                 setOpening("0");
+                setCreditLimit("");
               }}
             >
               {currencies.map((c) => (
@@ -164,6 +180,16 @@ export function AccountEditor({
         </div>
         {hasHistory && (
           <p className="muted compact-note">已有交易，账户币种已固定。</p>
+        )}
+        {type === "credit" && (
+          <Field label={`信用额度 · ${currency}`} optional>
+            <input
+              inputMode="decimal"
+              value={creditLimit}
+              onChange={(e) => setCreditLimit(e.target.value)}
+              placeholder="可留空，不计入净值"
+            />
+          </Field>
         )}
         <Field label="期初余额">
           <input
@@ -264,6 +290,77 @@ export function GroupEditor({
             取消
           </Button>
           <Button disabled={busy}>保存分组</Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+export function GroupRemoval({
+  id,
+  onClose,
+}: {
+  id: string;
+  onClose: () => void;
+}) {
+  const app = useApp();
+  const [destination, setDestination] = useState("");
+  const [busy, setBusy] = useState(false);
+  const group = app.book.groups.find((g) => g.id === id);
+  const members = app.book.accounts.filter((a) => a.groupId === id);
+  return (
+    <Dialog title="删除分组" onClose={onClose} guard={false}>
+      <form
+        className="dialog-body"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          if (
+            await app.save("删除分组", (book) =>
+              removeGroup(book, id, destination),
+            )
+          )
+            onClose();
+          setBusy(false);
+        }}
+      >
+        <p>删除“{group?.name}”。账户、交易和余额会保留。</p>
+        {members.length > 0 && (
+          <>
+            <p className="section-note">
+              组内 {members.length} 个账户（包括已归档账户）将移入所选分组。
+            </p>
+            <Field label="账户移至">
+              <select
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                disabled={busy}
+              >
+                <option value="">未分组</option>
+                {app.book.groups
+                  .filter((g) => g.id !== id)
+                  .sort((a, b) => a.order - b.order)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          </>
+        )}
+        <div className="dialog-footer">
+          <Button
+            type="button"
+            variant="plain"
+            disabled={busy}
+            onClick={onClose}
+          >
+            取消
+          </Button>
+          <Button variant="danger" disabled={busy || !group}>
+            {busy ? "正在删除…" : "删除分组"}
+          </Button>
         </div>
       </form>
     </Dialog>

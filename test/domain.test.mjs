@@ -137,7 +137,7 @@ test("archived accounts cannot receive new records but old records remain editab
   assert.throws(() => upsertEntry(b, old), /其他页面/);
   assert.equal(netWorth(b, time(3)).total, 99900n);
 });
-test("refund caps, independent original deletion/restoration and historical links", () => {
+test("refunds may exceed the original and keep independent deletion/restoration and links", () => {
   const b = fixture();
   upsertEntry(b, entry("purchase"));
   upsertEntry(
@@ -150,24 +150,21 @@ test("refund caps, independent original deletion/restoration and historical link
     }),
   );
   assert.equal(remainingRefund(b, "purchase"), 60n);
-  assert.throws(
-    () =>
-      upsertEntry(
-        b,
-        entry("too-much", {
-          kind: "refund",
-          originalId: "purchase",
-          amountMinor: "70",
-          splits: [{ id: "r", categoryId: "food-0", amountMinor: "70" }],
-        }),
-      ),
-    /可退金额/,
+  upsertEntry(
+    b,
+    entry("too-much", {
+      kind: "refund",
+      originalId: "purchase",
+      amountMinor: "70",
+      splits: [{ id: "r", categoryId: "food-0", amountMinor: "70" }],
+    }),
   );
+  assert.equal(remainingRefund(b, "purchase"), -10n);
   removeEntry(b, "purchase");
-  assert.equal(balance(b, "cny"), 100040n);
+  assert.equal(balance(b, "cny"), 100110n);
   assert.equal(b.entries[1].originalId, "purchase");
   restoreEntry(b, "purchase");
-  assert.equal(balance(b, "cny"), 99940n);
+  assert.equal(balance(b, "cny"), 100010n);
 });
 test("category aggregation counts only selected split amounts, pending excluded, refunds net negative", () => {
   const b = fixture();
@@ -388,4 +385,48 @@ test("legacy category icons have meaningful mappings and preserve explicitly edi
   assert.equal(b.categories[0].icon, "Utensils");
   assert.equal(b.categories[1].icon, "Coffee");
   assert.equal(b.categories[2].icon, "Tag");
+});
+
+test('deleting a nonempty group moves active and archived accounts to the chosen destination without changing money or history', async () => {
+  const {removeGroup} = await import('../src/domain/organization.ts');
+  const b=fixture();
+  b.accounts[1].archived=true;
+  b.accounts.push({...b.accounts[0],id:'target',groupId:'credit',order:0});
+  b.entries.push(entry('original'));
+  const amounts=new Map(b.accounts.map(a=>[a.id,balance(b,a.id)]));
+  const rows=structuredClone(b.entries);
+  removeGroup(b,'daily','credit');
+  assert(!b.groups.some(g=>g.id==='daily'));
+  assert.deepEqual(b.accounts.slice().sort((a,b)=>a.order-b.order).map(a=>a.id),['target','cny','jpy','usd']);
+  assert(b.accounts.every(a=>a.groupId==='credit'));
+  assert(b.accounts.find(a=>a.id==='jpy').archived);
+  assert.deepEqual(b.entries,rows);
+  for(const a of b.accounts)assert.equal(balance(b,a.id),amounts.get(a.id));
+  removeGroup(b,'credit','');
+  assert(b.accounts.every(a=>a.groupId===''));
+});
+
+test('invalid group deletion destinations fail before changing any account or group', async () => {
+  const {removeGroup} = await import('../src/domain/organization.ts');
+  const b=fixture(),before=structuredClone(b);
+  for(const [source,destination] of [['daily','daily'],['daily','missing'],['missing','']]){
+    assert.throws(()=>removeGroup(b,source,destination),/分组/);
+    assert.deepEqual(b,before);
+  }
+});
+
+test('project lists put active names first with Chinese and numeric ordering without mutating the book', async () => {
+  const {sortedProjects} = await import('../src/domain/organization.ts');
+  const projects=[
+    {id:'old',name:'北京',archived:true},
+    {id:'z',name:'上海',archived:false},
+    {id:'10',name:'旅行10',archived:false},
+    {id:'2',name:'旅行2',archived:false},
+    {id:'b',name:'北京',archived:false},
+    {id:'a',name:'北京',archived:false},
+  ];
+  const before=structuredClone(projects);
+  assert.deepEqual(sortedProjects(projects).map(p=>p.id),['a','b','2','10','z','old']);
+  assert.deepEqual(projects,before);
+  assert.deepEqual(sortedProjects([]),[]);
 });

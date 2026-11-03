@@ -1,3 +1,4 @@
+import { sortedProjects } from "../domain/organization.ts";
 import { categoryColor } from "../ui/category-color.ts";
 import {
   allocateSplits,
@@ -19,13 +20,23 @@ import { Icon } from "../ui/icons.tsx";
 import { CategoryPicker } from "../components/CategoryPicker.tsx";
 import { newEntry } from "../storage/repository.ts";
 import {
+  entryCurrency,
   balance,
   descriptions,
   remainingRefund,
+  refundOriginalId,
+  refundTotals,
   upsertEntry,
 } from "../domain/ledger.ts";
 import { uid, type Split, type Entry } from "../domain/types.ts";
-import { minor, decimal, money, rateText } from "../domain/money.ts";
+import {
+  currencies,
+  digits,
+  minor,
+  decimal,
+  money,
+  rateText,
+} from "../domain/money.ts";
 import { localInput, dateToISO } from "../domain/dates.ts";
 import { kindLabel } from "../components/Transactions.tsx";
 type FormSplit = {
@@ -40,8 +51,14 @@ export function EntryForm() {
   const app = useApp(),
     { book, route } = app;
   const editorZone = useRef(book.timeZone).current;
-  const original = book.entries.find((e) => e.id === route.originalId),
-    existing = book.entries.find((e) => e.id === route.id);
+  const existing = book.entries.find((e) => e.id === route.id),
+    original = book.entries.find(
+      (e) =>
+        e.id === (route.originalId || (existing && refundOriginalId(existing))),
+    );
+  const difference = original ? remainingRefund(book, original.id) : null;
+  const suggestedRefund =
+    difference !== null && difference > 0n ? difference : null;
   const initial = useRef<Entry>(
     existing
       ? structuredClone(existing)
@@ -55,6 +72,18 @@ export function EntryForm() {
   ).current;
   const [kind, setKind] = useState(initial.kind),
     [accountId, setAccount] = useState(initial.accountId),
+    [inputCurrency, setInputCurrency] = useState(entryCurrency(book, initial)),
+    [originCurrency, setOriginCurrency] = useState(
+      initial.originalAmount?.currency || "JPY",
+    ),
+    [originValue, setOriginValue] = useState(
+      initial.originalAmount
+        ? decimal(
+            initial.originalAmount.amountMinor,
+            initial.originalAmount.currency,
+          )
+        : "",
+    ),
     [toId, setTo] = useState(initial.toAccountId || ""),
     [amount, setAmount] = useState(
       existing
@@ -62,11 +91,11 @@ export function EntryForm() {
             initial.kind === "adjustment"
               ? balance(book, initial.accountId, initial.occurredAt).toString()
               : initial.amountMinor,
-            book.accounts.find((a) => a.id === initial.accountId)!.currency,
+            entryCurrency(book, initial),
           )
-        : original
+        : original && suggestedRefund !== null
           ? decimal(
-              (remainingRefund(book, original.id) ?? 0n).toString(),
+              suggestedRefund.toString(),
               book.accounts.find((a) => a.id === initial.accountId)!.currency,
             )
           : "",
@@ -91,7 +120,8 @@ export function EntryForm() {
     ),
     [note, setNote] = useState(initial.note || ""),
     [extras, setExtras] = useState(
-      !!initial.note ||
+      !!book.entries.find((e) => e.transferId === initial.id && !e.deletedAt) ||
+        !!initial.note ||
         initial.splits.some((s) => !!s.projectId) ||
         !!original?.splits.some((s) => !!s.projectId),
     ),
@@ -104,27 +134,49 @@ export function EntryForm() {
       initial.splits.length > 1 || (!!original && original.splits.length > 1),
     );
   const account = book.accounts.find((a) => a.id === accountId),
-    currency = account?.currency || book.currency,
+    accountCurrency = account?.currency || book.currency,
+    currency = ["expense", "income"].includes(kind)
+      ? inputCurrency
+      : accountCurrency,
+    foreign = currency !== accountCurrency,
     to = book.accounts.find((a) => a.id === toId),
     catManual = useRef(!!existing),
     amountRef = useRef<HTMLInputElement>(null),
     descriptionRef = useRef<HTMLInputElement>(null),
     secondsEdited = useRef(false),
     receivedSecondsEdited = useRef(false);
-  const [splits, setSplits] = useState<FormSplit[]>(() =>
-    initial.splits.length
-      ? initial.splits.map((s) => ({
-          ...s,
-          amount: decimal(s.amountMinor, currency),
-        }))
-      : original
-        ? original.splits.map((s) => ({
-            ...s,
-            id: uid(),
-            amount: decimal(s.amountMinor, currency),
-          }))
-        : [{ id: uid(), categoryId: "", amount: "" }],
-  );
+  const currencySelection = useRef(inputCurrency);
+  currencySelection.current = inputCurrency;
+  function changeInputCurrency(next: string) {
+    // Native iOS pickers can emit input before change. Handle the first event,
+    // and never reset a typed amount again when the trailing change arrives.
+    if (next === currencySelection.current) return;
+    currencySelection.current = next;
+    setInputCurrency(next);
+    setAmount("");
+    setSplits((rows) =>
+      rows.map((row) => ({ ...row, amount: "", locked: false })),
+    );
+  }
+  const [splits, setSplits] = useState<FormSplit[]>(() => {
+    if (initial.splits.length)
+      return initial.splits.map((s) => ({
+        ...s,
+        amount: decimal(s.amountMinor, currency),
+      }));
+    if (original) {
+      const amounts = allocateSplits(
+        suggestedRefund || 0n,
+        original.splits.map((s) => ({ id: s.id, amountMinor: "0" })),
+      );
+      return original.splits.map((s, i) => ({
+        ...s,
+        id: uid(),
+        amount: suggestedRefund === null ? "" : decimal(amounts[i], currency),
+      }));
+    }
+    return [{ id: uid(), categoryId: "", amount: "" }];
+  });
   const initialProjects = [
     ...new Set(initial.splits.map((s) => s.projectId || "")),
   ];
@@ -137,6 +189,17 @@ export function EntryForm() {
         ? "__legacy_mixed__"
         : initial.splits[0]?.projectId || "",
   );
+  const [initialFee] = useState(() =>
+    book.entries.find((e) => e.transferId === initial.id && !e.deletedAt),
+  );
+  const [feeId] = useState(() => initialFee?.id || uid());
+  const [fee, setFee] = useState(
+    initialFee ? decimal(initialFee.amountMinor, accountCurrency) : "",
+  );
+  const [feeCategory, setFeeCategory] = useState(
+    initialFee?.splits[0]?.categoryId || "",
+  );
+  const [feePicker, setFeePicker] = useState(false);
   const [allocationError, setAllocationError] = useState("");
   function distribute(rows: FormSplit[], rawTotal = amount, editedId?: string) {
     try {
@@ -165,6 +228,11 @@ export function EntryForm() {
   }
   const initialJSON = useRef<string | undefined>(undefined),
     formJSON = JSON.stringify({
+      inputCurrency,
+      originCurrency,
+      originValue,
+      fee,
+      feeCategory,
       kind,
       accountId,
       toId,
@@ -224,6 +292,8 @@ export function EntryForm() {
   function switchKind(value: Entry["kind"]) {
     if (value === kind) return;
     setKind(value);
+    setInputCurrency(accountCurrency);
+    setAmount("");
     catManual.current = false;
     setSplitMode(false);
     setSplits([{ id: uid(), categoryId: "", amount: "" }]);
@@ -267,6 +337,20 @@ export function EntryForm() {
         accountId,
         toAccountId: kind === "transfer" ? toId : undefined,
         amountMinor,
+        amountCurrency: foreign
+          ? currency
+          : initial.amountCurrency
+            ? accountCurrency
+            : undefined,
+        originalAmount: foreign
+          ? { currency, amountMinor }
+          : originValue && ["expense", "income"].includes(kind)
+            ? {
+                currency: originCurrency,
+                amountMinor: minor(originValue, originCurrency),
+              }
+            : undefined,
+        posted: foreign ? false : initial.posted,
         receivedMinor:
           kind === "transfer"
             ? to?.currency === currency
@@ -289,15 +373,48 @@ export function EntryForm() {
             : undefined,
         note: note.trim(),
         splits: parts,
-        originalId: original?.id || initial.originalId,
+        originalId:
+          kind === "refund"
+            ? original?.id || refundOriginalId(initial)
+            : undefined,
+        refundReference: undefined,
       };
       setBusy(true);
       if (
-        await app.save(existing ? "编辑交易" : kindLabel[kind], (b) =>
-          upsertEntry(b, value),
-        )
+        await app.save(existing ? "编辑交易" : kindLabel[kind], (b) => {
+          upsertEntry(b, value);
+          if (kind === "transfer" && fee.trim()) {
+            const feeMinor = minor(fee, accountCurrency);
+            const feeEntry: Entry = {
+              ...(initialFee || newEntry(accountId, "expense")),
+              id: feeId,
+              accountId,
+              amountMinor: feeMinor,
+              description:
+                initialFee?.description || `${value.description}手续费`,
+              occurredAt: at,
+              posted: initialFee?.posted ?? value.posted,
+              transferId: value.id,
+              splits: [
+                {
+                  id: initialFee?.splits[0]?.id || uid(),
+                  categoryId: feeCategory,
+                  amountMinor: feeMinor,
+                },
+              ],
+            };
+            upsertEntry(b, feeEntry);
+          } else if (kind === "transfer" && initialFee) {
+            const currentFee = b.entries.find((e) => e.id === initialFee.id);
+            if (!currentFee || currentFee.revision !== initialFee.revision)
+              throw Error("关联手续费已更新，请重新打开");
+            currentFee.deletedAt = new Date().toISOString();
+            currentFee.revision++;
+          }
+        })
       ) {
         app.setDirty(false);
+        app.toast("已保存到本机");
         app.back();
       }
     } catch (e) {
@@ -347,23 +464,41 @@ export function EntryForm() {
           </div>
         )}
         <div className="entry-amount-block">
-          <label htmlFor="entry-amount">
-            {kind === "adjustment"
-              ? "实际余额"
-              : kind === "transfer"
-                ? "转出金额"
-                : kind === "refund"
-                  ? "退款金额"
-                  : kindLabel[kind] + "金额"}
-            <span>{currency}</span>
-          </label>
+          <div className="entry-amount-heading">
+            <label htmlFor="entry-amount">
+              {kind === "adjustment"
+                ? "实际余额"
+                : kind === "transfer"
+                  ? "转出金额"
+                  : kind === "refund"
+                    ? "退款金额"
+                    : kindLabel[kind] + "金额"}
+            </label>
+            {["expense", "income"].includes(kind) ? (
+              <select
+                className="entry-currency"
+                aria-label="金额币种"
+                value={currency}
+                onInput={(e) => changeInputCurrency(e.currentTarget.value)}
+                onChange={(e) => changeInputCurrency(e.currentTarget.value)}
+              >
+                {[
+                  ...new Set([accountCurrency, ...currencies, inputCurrency]),
+                ].map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="entry-currency-code">{currency}</span>
+            )}
+          </div>
           <input
             id="entry-amount"
             ref={amountRef}
             inputMode={kind === "adjustment" ? "text" : "decimal"}
             value={amount}
             onChange={(e) => updateTotal(e.target.value)}
-            placeholder="0.00"
+            placeholder={digits(currency) === 0 ? "0" : "0.00"}
             autoComplete="off"
             aria-label="金额"
             onFocus={() => {
@@ -372,17 +507,67 @@ export function EntryForm() {
             }}
             onBlur={() => setFocused(false)}
           />
+          {foreign && (
+            <p className="entry-settlement-note" role="status">
+              {accountCurrency} 入账金额待确认
+            </p>
+          )}
         </div>
+        {!foreign &&
+          existing?.originalAmount &&
+          ["expense", "income"].includes(kind) && (
+            <details
+              className="original-amount-fields"
+              open={initial.originalAmount ? true : undefined}
+            >
+              <summary>原始消费金额（选填）</summary>
+              <div className="form-grid">
+                <Field label="原始币种">
+                  <select
+                    value={originCurrency}
+                    onChange={(e) => {
+                      setOriginCurrency(e.target.value);
+                      setOriginValue("");
+                    }}
+                  >
+                    {[...new Set([originCurrency, ...currencies])].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="原始金额">
+                  <input
+                    inputMode="decimal"
+                    value={originValue}
+                    onChange={(e) => setOriginValue(e.target.value)}
+                    placeholder="可留空"
+                  />
+                </Field>
+              </div>
+            </details>
+          )}
         {original && (
           <div className="inline-reference">
             <Icon name="RotateCcw" size={17} />
-            <span>原消费 · {original.description}</span>
+            <span>原记录 · {original.description}</span>
             <Amount
-              value={remainingRefund(book, original.id) ?? 0n}
-              currency={currency}
+              value={original.amountMinor}
+              currency={
+                book.accounts.find((a) => a.id === original.accountId)
+                  ?.currency || book.currency
+              }
+              code
             />
-            <small>可退</small>
+            <small>原金额</small>
           </div>
+        )}
+        {original && refundTotals(book, original.id).length > 0 && (
+          <p className="section-note">
+            已关联退款：
+            {refundTotals(book, original.id)
+              .map((total) => money(total.amountMinor, total.currency, true))
+              .join(" · ")}
+          </p>
         )}
         <div className="form-surface">
           <Field
@@ -400,7 +585,9 @@ export function EntryForm() {
                 const next = book.accounts.find(
                   (a) => a.id === e.target.value,
                 )!;
-                if (next.currency !== currency) {
+                if (next.currency !== accountCurrency) {
+                  setInputCurrency(next.currency);
+                  setFee("");
                   setAmount("");
                   setSplits(
                     splits.map((s) => ({ ...s, amount: "", locked: false })),
@@ -412,14 +599,12 @@ export function EntryForm() {
               <option value="" disabled>
                 选择账户
               </option>
-              {choices
-                .filter((a) => !original || a.currency === currency)
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} · {a.currency}
-                    {a.archived ? "（已归档）" : ""}
-                  </option>
-                ))}
+              {choices.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} · {a.currency}
+                  {a.archived ? "（已归档）" : ""}
+                </option>
+              ))}
             </select>
           </Field>
           {kind === "transfer" && (
@@ -700,11 +885,40 @@ export function EntryForm() {
             onClick={() => setExtras(!extras)}
           >
             <Icon name="MoreHorizontal" size={18} />
-            <span>项目与备注</span>
+            <span>{kind === "transfer" ? "手续费与备注" : "项目与备注"}</span>
             <Icon name={extras ? "ChevronDown" : "ChevronRight"} size={17} />
           </button>
           {extras && (
             <div className="optional-fields">
+              {kind === "transfer" && (
+                <>
+                  <Field label={`独立手续费 · ${accountCurrency}`} optional>
+                    <input
+                      inputMode="decimal"
+                      value={fee}
+                      onChange={(e) => setFee(e.target.value)}
+                      placeholder="本金之外的费用，可留空"
+                    />
+                  </Field>
+                  {(fee || initialFee) && (
+                    <Field label="手续费类目">
+                      <button
+                        type="button"
+                        className="disclosure-row"
+                        onClick={() => setFeePicker(true)}
+                      >
+                        {book.categories.find((c) => c.id === feeCategory)
+                          ?.name || "选择费用类目"}
+                        <Icon name="ChevronRight" size={16} />
+                      </button>
+                    </Field>
+                  )}
+                  <p className="muted compact-note">
+                    转出金额只填本金；手续费另计支出，与本次转账关联。清空已有手续费会删除对应费用记录。
+                  </p>
+                </>
+              )}
+
               {["expense", "income", "refund"].includes(kind) && (
                 <Field label="项目" optional>
                   <select
@@ -717,7 +931,7 @@ export function EntryForm() {
                         保留历史多项目分配
                       </option>
                     )}
-                    {book.projects
+                    {sortedProjects(book.projects)
                       .filter((p) => !p.archived || p.id === project)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
@@ -741,10 +955,24 @@ export function EntryForm() {
         <ErrorMessage message={error} />
         <div className="entry-submit">
           <Button type="submit" disabled={busy}>
-            {busy ? "正在保存…" : existing ? "保存修改" : "保存"}
+            {busy
+              ? "正在保存…"
+              : foreign && !existing
+                ? "保存为未入账"
+                : existing
+                  ? "保存修改"
+                  : "保存"}
           </Button>
         </div>
       </form>
+      {feePicker && (
+        <CategoryPicker
+          kind="expense"
+          selected={feeCategory}
+          onSelect={setFeeCategory}
+          onClose={() => setFeePicker(false)}
+        />
+      )}
       {picker !== null && (
         <CategoryPicker
           kind={kind === "income" ? "income" : "expense"}

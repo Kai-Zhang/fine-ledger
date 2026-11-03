@@ -29,8 +29,12 @@ import {
   Empty,
 } from "../ui/components.tsx";
 import { Icon } from "../ui/icons.tsx";
-import { AccountEditor, GroupEditor } from "../components/AccountEditor.tsx";
-import { balance, netWorth, removeEmptyGroup } from "../domain/ledger.ts";
+import {
+  AccountEditor,
+  GroupEditor,
+  GroupRemoval,
+} from "../components/AccountEditor.tsx";
+import { balance, netWorth } from "../domain/ledger.ts";
 import { moveAccount } from "../domain/organization.ts";
 import type { Account, Group, Book } from "../domain/types.ts";
 function AccountRow({
@@ -201,16 +205,14 @@ function GroupSection({
               </span>
             ))}
           </div>
-          {manage &&
-            !!group.id &&
-            !book.accounts.some((a) => a.groupId === group.id) && (
-              <IconButton
-                className="subtle-action"
-                name="Trash2"
-                label={`删除空分组 ${group.name}`}
-                onClick={deleteGroup}
-              />
-            )}
+          {manage && !!group.id && (
+            <IconButton
+              className="subtle-action"
+              name="Trash2"
+              label={`删除分组 ${group.name}`}
+              onClick={deleteGroup}
+            />
+          )}
         </div>
       )}
       <div className="account-surface">
@@ -309,16 +311,8 @@ export function Accounts() {
         b.accounts.find((x) => x.id === a.id)!.archived = true;
       });
   }
-  async function deleteGroup(g: Group) {
-    if (
-      await app.confirm({
-        title: "删除空分组？",
-        message: `将删除“${g.name}”，交易不会改变。`,
-        label: "删除",
-        danger: true,
-      })
-    )
-      await app.save("删除空分组", (b) => removeEmptyGroup(b, g.id));
+  function deleteGroup(g: Group) {
+    app.open(<GroupRemoval id={g.id} onClose={app.close} />);
   }
   function end(e: DragEndEvent) {
     const active = e.active.data.current,
