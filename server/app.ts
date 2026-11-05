@@ -7,6 +7,7 @@ import { Backups } from "./backup.ts";
 import { cookie, login, session, setPassword } from "./auth.ts";
 import { loadConfig, integer, type ServiceConfig } from "./config.ts";
 import { ApiError, ensure, id, PROTOCOL, text } from "./protocol.ts";
+import { reportFailure } from "./diagnostics.ts";
 
 export function acquireLock(config: ServiceConfig) {
   const lock = new DatabaseSync(
@@ -105,7 +106,7 @@ export async function createService(
     store.close();
     unlock();
   });
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     const e = error as Error & { statusCode?: number; code?: string };
     const status =
       e.statusCode && e.statusCode >= 400 && e.statusCode < 500
@@ -113,7 +114,13 @@ export async function createService(
         : 500;
     if (e instanceof ApiError && e.code === "LOGIN_RATE_LIMIT")
       reply.header("Retry-After", "900");
-    // Do not leak paths, SQL, payloads or framework error messages into responses/logs.
+    if (status === 500)
+      reportFailure(error, {
+        operation: "request",
+        requestId: request.id,
+        route: request.routeOptions.url,
+      });
+    // Do not leak paths, SQL, payloads or framework error messages into responses.
     reply.code(status).send({
       code:
         e instanceof ApiError

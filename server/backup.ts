@@ -15,6 +15,7 @@ import path from "node:path";
 import { ApiError, ensure, PROTOCOL } from "./protocol.ts";
 import { Store } from "./store.ts";
 import type { ServiceConfig } from "./config.ts";
+import { reportFailure } from "./diagnostics.ts";
 
 const fileHash = async (p: string) =>
   createHash("sha256")
@@ -118,6 +119,7 @@ export class Backups {
       await this.pruneFiles();
       return manifest;
     } catch (e) {
+      reportFailure(e, { operation: "backup-create" });
       this.store.setMeta("backupStatus", {
         ...this.store.getMeta<any>("backupStatus"),
         lastFailure: new Date().toISOString(),
@@ -256,6 +258,7 @@ export class Backups {
     try {
       await this.exclusive(() => this.purgeDeleted());
     } catch (e) {
+      reportFailure(e, { operation: "backup-cleanup" });
       this.store.setMeta("backupStatus", {
         ...this.store.getMeta<any>("backupStatus"),
         lastFailure: new Date().toISOString(),
