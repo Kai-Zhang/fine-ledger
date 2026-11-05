@@ -8,6 +8,7 @@ import type { Book } from "../domain/types.ts";
 import {
   canonical,
   PROTOCOL,
+  portableBook,
   validateBook,
   type Collection,
   type Command,
@@ -558,17 +559,42 @@ export class SyncEngine {
       throw Object.assign(Error("服务已恢复，需要核对初始化内容"), {
         code: "EPOCH_CHANGED",
       });
-    await this.api("ledger/initialize", "POST", init);
-    const current = await this.session(),
-      snapshot = await this.snapshot(current);
+    const receipt = await this.api("ledger/initialize", "POST", init);
+    if (
+      receipt.operationId !== init.operationId ||
+      receipt.status !== "committed" ||
+      !Number.isSafeInteger(receipt.cursor) ||
+      receipt.cursor < 1 ||
+      !Array.isArray(receipt.changes) ||
+      receipt.changes.length !== allEntities(init.book).length ||
+      receipt.changes.some((ch: VersionedChange) => ch.version !== 1)
+    )
+      throw Error("初始化回执不完整，请重新同步");
+    // The baseline must describe our exact commit, not a later snapshot that
+    // may already include another device's edits. Normal pull/rebase handles
+    // everything committed after this cursor, including after a lost response.
+    const committed = applyChanges(portableBook(init.book), receipt.changes);
+    committed.revision = receipt.cursor;
+    validateBook(committed);
+    const baseline: RemoteBaseline = {
+      origin: this.origin,
+      ledgerId: committed.id,
+      serverEpoch: init.serverEpoch,
+      cursor: receipt.cursor,
+      versions: receipt.changes.map((ch: VersionedChange) => ({
+        collection: ch.collection,
+        id: ch.id,
+        version: ch.version,
+      })),
+      checksum: "",
+      book: committed,
+      restoredAt: nowISO(),
+    };
     await this.write(async () => {
       const local = (await this.db.state.get("book")) as Book;
-      if (local.id !== snapshot.book.id)
+      if (local.id !== committed.id)
         throw new LeaseLost("本机账本在初始化期间发生变化");
-      await this.db.state.put(
-        baselineFrom(snapshot, this.origin),
-        "remote-baseline",
-      );
+      await this.db.state.put(baseline, "remote-baseline");
       await this.db.state.delete("sync-init");
       await this.db.state.delete("sync-import-review");
       await this.db.state.put(true, "sync-enabled");

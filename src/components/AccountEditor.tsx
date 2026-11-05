@@ -12,6 +12,7 @@ import { uid, type Account } from "../domain/types.ts";
 import { currencies, minor, decimal } from "../domain/money.ts";
 import { localInput, dateToISO } from "../domain/dates.ts";
 import { removeGroup } from "../domain/organization.ts";
+import { canChangeAccountCurrency } from "../domain/account-policy.ts";
 const types = [
   ["bank", "储蓄卡", "Landmark"],
   ["credit", "信用卡", "CreditCard"],
@@ -64,6 +65,7 @@ export function AccountEditor({
     book.entries.some(
       (e) => e.accountId === account.id || e.toAccountId === account.id,
     );
+  const currencyLocked = !canChangeAccountCurrency(account, hasHistory);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -103,12 +105,16 @@ export function AccountEditor({
         if (account) {
           const index = b.accounts.findIndex((a) => a.id === account.id);
           if (
-            b.entries.some(
-              (t) => t.accountId === account.id || t.toAccountId === account.id,
+            !canChangeAccountCurrency(
+              b.accounts[index],
+              b.entries.some(
+                (t) =>
+                  t.accountId === account.id || t.toAccountId === account.id,
+              ),
             ) &&
             currency !== account.currency
           )
-            throw Error("已有交易的账户不能更改币种");
+            throw Error("已有金额记录的账户不能更改币种");
           b.accounts[index] = value;
         } else b.accounts.push(value);
       });
@@ -165,7 +171,7 @@ export function AccountEditor({
           <Field label="币种">
             <select
               value={currency}
-              disabled={hasHistory}
+              disabled={currencyLocked}
               onChange={(e) => {
                 setCurrency(e.target.value);
                 setOpening("0");
@@ -178,8 +184,10 @@ export function AccountEditor({
             </select>
           </Field>
         </div>
-        {hasHistory && (
-          <p className="muted compact-note">已有交易，账户币种已固定。</p>
+        {currencyLocked && (
+          <p className="muted compact-note">
+            已有交易或期初余额，账户币种已固定。
+          </p>
         )}
         {type === "credit" && (
           <Field label={`信用额度 · ${currency}`} optional>

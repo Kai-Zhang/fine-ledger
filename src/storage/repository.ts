@@ -13,7 +13,8 @@ import {
   type Change,
 } from "../domain/types.ts";
 import { exampleBook } from "../domain/example.ts";
-import { canonical } from "../sync/protocol.ts";
+import { canonical, validateBook } from "../sync/protocol.ts";
+import { checkEditDependencies } from "../sync/edit-dependencies.ts";
 import { verifySnapshot, type Snapshot } from "../sync/snapshot.ts";
 import { changesBetween, applyChanges, entity, same } from "../sync/model.ts";
 import { syncKeys, type SyncLease, type SyncIssue } from "../sync/state.ts";
@@ -309,7 +310,9 @@ export async function mutate(
         )
           throw Error("这条记录在编辑期间发生变化，输入仍保留，请先核对");
       }
+    if (editBase) checkEditDependencies(editBase, original, delta);
     const next = applyChanges(original, delta);
+    validateBook(next, original);
     if (intent.settings.theme !== (editBase || original).settings.theme)
       next.settings.theme = intent.settings.theme;
     next.revision = original.revision + 1;

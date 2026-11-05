@@ -1,4 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
+import { canChangeAccountCurrency } from "../domain/account-policy.ts";
 import { validateEntry } from "../domain/ledger.ts";
 import type { Book, Entry } from "../domain/types.ts";
 
@@ -231,7 +232,7 @@ export function validateBook(
     const old = previousAccounts.get(a.id);
     if (old && old.currency !== a.currency)
       ensure(
-        !usedAccounts.has(a.id) && BigInt(old.openingMinor) === 0n,
+        canChangeAccountCurrency(old, usedAccounts.has(a.id)),
         "已有金额记录的账户不能修改币种",
       );
   }

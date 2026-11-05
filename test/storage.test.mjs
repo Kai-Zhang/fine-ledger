@@ -9,6 +9,7 @@ import {
   mutate,
   readBook,
   exportBook,
+  newEntry,
 } from "../src/storage/repository.ts";
 import { blankBook, upsertEntry } from "../src/domain/ledger.ts";
 test("upgrades legacy IndexedDB without discarding records, precise timestamps, or raw backup", async () => {
@@ -213,4 +214,39 @@ test("existing v3 legacy icons repair once without modifying money, source backu
     "Tag",
   );
   await db.delete();
+});
+
+
+test('stale forms recheck account denomination, new history and archived references atomically', async t => {
+  const db = databases.personal; await db.delete(); await db.open();
+  t.after(()=>db.delete());
+  const b = blankBook();
+  b.accounts.push({id:'a',name:'账户',currency:'CNY',type:'bank',groupId:'',openingMinor:'0',openingAt:b.createdAt,icon:'Wallet',order:0,archived:false,netWorth:true});
+  await initialize('personal',b);
+  const entry = {...newEntry('a'),description:'消费',amountMinor:'10000',splits:[{id:'s',categoryId:'food',amountMinor:'10000'}]};
+  const initial = await readBook('personal');
+  await mutate('personal','另一页面改币种',book=>{book.accounts[0].currency='JPY'});
+  const checkpoint = await exportBook('personal');
+  await assert.rejects(mutate('personal','旧输入',book=>upsertEntry(book,entry),initial),/编辑期间/);
+  assert.deepEqual(await db.state.get('book'),checkpoint.book);
+  assert.deepEqual(await db.outbox.toArray(),checkpoint.operations);
+  assert.deepEqual(await db.revisions.toArray(),checkpoint.revisions);
+  await mutate('personal','改回',book=>{book.accounts[0].currency='CNY'});
+  const beforeEntry = await readBook('personal');
+  await mutate('personal','另一页面消费',book=>upsertEntry(book,entry));
+  await assert.rejects(mutate('personal','旧账户编辑',book=>{book.accounts[0].currency='JPY'},beforeEntry),/不能修改币种/);
+  assert.equal((await readBook('personal')).accounts[0].currency,'CNY');
+  const beforeArchive=await readBook('personal');
+  await mutate('personal','归档类目',book=>{book.categories.find(c=>c.id==='food').archived=true});
+  await assert.rejects(mutate('personal','旧类目输入',book=>upsertEntry(book,{...entry,id:'second'}),beforeArchive),/编辑期间/);
+  assert.equal((await readBook('personal')).entries.length,1);
+});
+
+test('funded accounts cannot change currency even without transactions', async t => {
+ const db=databases.personal;await db.delete();await db.open();t.after(()=>db.delete());
+ const b=blankBook();b.accounts.push({id:'funded',name:'账户',currency:'CNY',type:'bank',groupId:'',openingMinor:'10000',openingAt:b.createdAt,icon:'Wallet',order:0,archived:false,netWorth:true});
+ await initialize('personal',b);
+ await assert.rejects(mutate('personal','改币种',book=>{book.accounts[0].currency='USD';book.accounts[0].openingMinor='0'}),/不能修改币种/);
+ assert.equal((await readBook('personal')).accounts[0].openingMinor,'10000');
+ assert.equal(await db.outbox.count(),0);
 });

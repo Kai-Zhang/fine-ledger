@@ -11,7 +11,7 @@ import {LedgerDB,databases,mutate} from '../src/storage/repository.ts';
 import {exampleBook} from '../src/domain/example.ts';
 import {balance,blankBook} from '../src/domain/ledger.ts';
 import {SyncEngine} from '../src/sync/engine.ts';
-import {changesBetween,keyOf} from '../src/sync/model.ts';
+import {changesBetween,keyOf,commandFor} from '../src/sync/model.ts';
 const origin='https://ledger.example';
 const password='Synthetic-sync-password-123';
 async function setup(t,{empty=false}={}){
@@ -347,4 +347,51 @@ test('new report types retain all calendar grains, project scopes, metrics and c
  await a.engine.run(true);await b.engine.run(true);
  assert.deepEqual((await b.book()).settings.savedReports,(await a.book()).settings.savedReports);
  const r=(await b.book()).settings.savedReports.at(-1);assert.equal(r.grain,'quarter');assert.equal(r.chart,'line');assert.equal(r.type,'income-trend');assert.equal(await a.db.outbox.count(),0);
+});
+
+
+test('initialization keeps its own cursor and rebases concurrent remote edits, including a lost response', async t => {
+  for (const loseResponse of [false, true]) {
+    const s = await setup(t, {empty:true}), a = await s.client('publisher');
+    const book = blankBook(); await a.db.state.put(book, 'book');
+    const transport = a.engine.options.request; let first = true;
+    a.engine.options.request = async (route, options) => {
+      const result = await transport(route, options);
+      if (route === 'ledger/initialize' && first) {
+        first = false;
+        const snapshot = s.store.snapshot(), next = structuredClone(snapshot.book);
+        next.name = '另一设备已保存';
+        s.store.push(commandFor(snapshot.book,next,snapshot.versions,snapshot.serverEpoch),'other');
+        await a.edit('初始化期间本机独立修改', b => b.projects.push({id:'local-project',name:'本机项目',archived:false}));
+        if (loseResponse) throw Error('lost initialization response');
+      }
+      return result;
+    };
+    if (loseResponse) await assert.rejects(a.engine.publish(), /lost/);
+    else await a.engine.publish();
+    await a.engine.run(true);
+    assert.equal((await a.book()).name, '另一设备已保存');
+    assert.equal(s.store.book().name, '另一设备已保存');
+    assert(s.store.book().projects.some(p => p.id === 'local-project'));
+    assert.equal((await a.status()).phase, 'idle');
+  }
+});
+
+test('competing names during initialization require review instead of silently overwriting', async t => {
+  const s = await setup(t,{empty:true}), a = await s.client('publisher');
+  await a.db.state.put(blankBook(),'book');
+  const transport = a.engine.options.request;
+  a.engine.options.request = async (route, options) => {
+    const result = await transport(route,options);
+    if(route === 'ledger/initialize') {
+      const snap=s.store.snapshot(), next=structuredClone(snap.book);next.name='远端修改';
+      s.store.push(commandFor(snap.book,next,snap.versions,snap.serverEpoch),'other');
+      await a.edit('本机修改',b=>{b.name='本机修改'});
+    }
+    return result;
+  };
+  await a.engine.publish();await a.engine.run(true);
+  assert.equal((await a.status()).phase,'conflict');
+  assert.equal(s.store.book().name,'远端修改');
+  assert.equal((await a.book()).name,'本机修改');
 });
