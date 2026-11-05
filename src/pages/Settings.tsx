@@ -22,6 +22,7 @@ import { uid, type Category, type Book } from "../domain/types.ts";
 import { sortedProjects } from "../domain/organization.ts";
 import { currencies } from "../domain/money.ts";
 import { exportBook } from "../storage/repository.ts";
+import { LocalStorageSettings } from "../components/LocalStorageSettings.tsx";
 export function Settings() {
   const app = useApp(),
     { book } = app,
@@ -30,21 +31,21 @@ export function Settings() {
   const locked =
     book.entries.length > 0 ||
     book.accounts.some((a) => BigInt(a.openingMinor) !== 0n);
-  async function backup() {
+  async function backup(history = true) {
     try {
-      const data = await exportBook(app.mode),
+      const data = await exportBook(app.mode, history),
         blob = new Blob([new Uint8Array(await encodeBackup(data))], {
           type: "application/zip",
         }),
         url = URL.createObjectURL(blob),
         link = document.createElement("a");
       link.href = url;
-      link.download = `厘序-${new Date().toISOString().slice(0, 10)}.zip`;
+      link.download = `厘序-${history ? "完整" : "当前账本"}-${new Date().toISOString().slice(0, 10)}.zip`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       app.toast("备份已准备好");
-    } catch {
-      app.toast("导出失败，请重试");
+    } catch (error) {
+      app.toast((error as Error).message || "导出失败，请重试");
     }
   }
   return (
@@ -185,6 +186,13 @@ export function Settings() {
               label="导出完整备份"
               onClick={() => void backup()}
             />
+            <SettingRow
+              icon="Download"
+              label="导出当前账本备份"
+              detail="保留当前记录、待同步内容和草稿，不含旧恢复副本与修改历史"
+              onClick={() => void backup(false)}
+            />
+            <LocalStorageSettings />
           </div>
         </div>
         <div className="settings-section">

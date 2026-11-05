@@ -360,7 +360,7 @@ export async function mutate(
     return next;
   });
 }
-export async function exportBook(mode: Mode) {
+export async function exportBook(mode: Mode, history = true) {
   const db = databases[mode];
   return db.transaction(
     "r",
@@ -374,10 +374,12 @@ export async function exportBook(mode: Mode) {
       exportedAt: new Date().toISOString(),
       book: await db.state.get("book"),
       operations: await db.outbox.toArray(),
-      revisions: await db.revisions.toArray(),
+      revisions: history ? await db.revisions.toArray() : [],
       remoteBaseline: await db.state.get("remote-baseline"),
-      beforeRemoteRestore: await db.state.get("before-remote-restore"),
-      syncArchive: await db.state.get("sync-archive"),
+      beforeRemoteRestore: history
+        ? await db.state.get("before-remote-restore")
+        : undefined,
+      syncArchive: history ? await db.state.get("sync-archive") : undefined,
       syncIssue: await db.state.get("sync-issue"),
       syncFlight: await db.state.get("sync-flight"),
       syncInitialization: await db.state.get("sync-init"),
@@ -388,9 +390,11 @@ export async function exportBook(mode: Mode) {
           value: await db.drafts.get(key),
         })),
       ),
-      beforeFileRestore: await db.state.get("before-file-restore"),
+      beforeFileRestore: history
+        ? await db.state.get("before-file-restore")
+        : undefined,
       legacy: {
-        book: await db.state.get("legacy-book-v2"),
+        book: history ? await db.state.get("legacy-book-v2") : undefined,
         drafts: await db.drafts.toArray(),
       },
     }),

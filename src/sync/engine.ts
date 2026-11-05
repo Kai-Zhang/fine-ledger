@@ -29,6 +29,7 @@ import {
 import { serviceRequest, type ServiceSession } from "./service.ts";
 import { verifySnapshot, type Snapshot } from "./snapshot.ts";
 import type { SyncFlight, SyncIssue, SyncLease, SyncStatus } from "./state.ts";
+import { pruneConfirmedRevisions } from "../storage/retention.ts";
 
 type Transport = typeof serviceRequest;
 class LeaseLost extends Error {}
@@ -318,10 +319,11 @@ export class SyncEngine {
       book &&
       !changesBetween(baseline.book, book).length &&
       !(await this.db.state.get("sync-flight")) &&
-      !(await this.db.state.get("sync-issue")) &&
-      (await this.db.outbox.count()) > 0
-    )
-      await this.db.outbox.clear();
+      !(await this.db.state.get("sync-issue"))
+    ) {
+      if ((await this.db.outbox.count()) > 0) await this.db.outbox.clear();
+      await pruneConfirmedRevisions(this.db);
+    }
   }
   private async applyBatch(
     batch: { cursor: number; operationId: string; changes: VersionedChange[] },
