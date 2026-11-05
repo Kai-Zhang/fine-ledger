@@ -1,0 +1,24 @@
+[
+  {
+    "n": 16000,
+    "jsonMB": 4.6,
+    "initialize_ms": 589.9,
+    "validate_ms": 66.4,
+    "diff_ms": 21.6,
+    "command_ms": 27.9,
+    "push_ms": 26.2,
+    "book_ms": 13.6,
+    "idle_pull_ms": 0.2
+  },
+  {
+    "n": 32000,
+    "jsonMB": 9.3,
+    "initialize_ms": 1150.5,
+    "validate_ms": 104.8,
+    "diff_ms": 37.5,
+    "command_ms": 47.9,
+    "push_ms": 37.9,
+    "book_ms": 27.5,
+    "idle_pull_ms": 0.1
+  }
+]

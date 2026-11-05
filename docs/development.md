@@ -36,3 +36,9 @@ MoneyWiz 转换工具独立维护，迁移流程和格式见[迁移记录](money
 - [离线同步与备份](sync-review-v0.12.0.md)、[原币记录与入账](p3-review-v0.13.2.md)、[报表实现](report-review-v0.14.0.md)
 - [分期付款提案](installment-design.md)
 - [早期实现归档](../archive/README.md)
+
+## 当前维护规则与性能回归
+
+旧设计与已交付代码出现差异时，先查[当前实现规则](current-implementation.md)，尤其是参考汇率优先级、不可变快照、修改历史保留与 PWA 更新握手。新增关系字段需要同时检查本机编辑依赖和增量校验条件。
+
+仓库增加 `.github/workflows/verify.yml`，对 push/PR 执行类型检查、全套测试和构建。性能基准入口为 `node scripts/review/benchmark.mjs`；Chrome 业务及页面切换脚本、隔离合成数据和执行方式见[2026-11-06 验证记录](evidence/2026-11-06-reliability-performance/README.md)。浏览器回归会替换测试源下的 IndexedDB，必须使用独立 Chrome 临时配置和合成静态服务。
