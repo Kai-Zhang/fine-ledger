@@ -46,10 +46,24 @@ async function activateShell() {
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   await Promise.all(clients.filter(client => isAppPage(client.url)).map(async client => {
     const state = await prepareClient(client);
-    if (state?.build === CONFIG.release || state?.safe === false) return;
+    if (state?.build === CONFIG.release || state?.safe !== true) return;
     void client.navigate(appURL).catch(() => {});
   }));
-  // Old clients may still edit. Keep their pinned caches until a separate safe cleanup.
+  await cleanupCaches();
+}
+let cleanup;
+function cleanupCaches() {
+  if (cleanup) return cleanup;
+  cleanup = (async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const states = await Promise.all(clients.filter(client => isAppPage(client.url)).map(prepareClient));
+    // A suspended or legacy client may still use any old release. Fail closed.
+    if (states.some(state => typeof state?.build !== 'string' || !/^[\w.-]+$/.test(state.build))) return;
+    const keep = new Set([CACHE, ...states.map(state => CONFIG.cachePrefix + state.build)]);
+    for (const name of await caches.keys())
+      if (name.startsWith(CONFIG.cachePrefix) && !keep.has(name)) await caches.delete(name);
+  })().catch(() => {}).finally(() => { cleanup = undefined; });
+  return cleanup;
 }
 async function boundedFetch(request) {
   const controller = new AbortController();
@@ -86,12 +100,18 @@ async function navigation(event) {
   return unavailable();
 }
 async function resource(event) {
+  const path = new URL(event.request.url).pathname;
   try {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(event.request);
     if (cached) return cached;
+    const release = path.match(/^\/assets\/([\w.-]+)\//)?.[1];
+    const pinned = release && CONFIG.cachePrefix + release;
+    if (pinned && pinned !== CACHE && (await caches.keys()).includes(pinned)) {
+      const old = await (await caches.open(pinned)).match(event.request);
+      if (old) return old;
+    }
   } catch {}
-  const path = new URL(event.request.url).pathname;
   try { return await boundedFetch(event.request); }
   catch (error) {
     trace(event, 'resource-unavailable', { path, error: String(error).slice(0, 180) });
@@ -102,7 +122,10 @@ self.addEventListener('install', event => event.waitUntil(installShell()));
 self.addEventListener('activate', event => event.waitUntil(activateShell()));
 self.addEventListener('message', event => {
   if (event.data === 'APPLY_UPDATE') event.waitUntil(self.skipWaiting());
-  if (event.data?.type === 'GET_RELEASE') event.ports[0]?.postMessage({ release: CONFIG.release });
+  if (event.data?.type === 'GET_RELEASE') {
+    event.ports[0]?.postMessage({ release: CONFIG.release });
+    event.waitUntil(cleanupCaches());
+  }
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);

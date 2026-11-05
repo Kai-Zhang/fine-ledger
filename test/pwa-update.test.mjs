@@ -6,6 +6,8 @@ import { renderWorker, buildPreview } from "../scripts/build-preview.mjs";
 
 async function workerHarness({
   clientState,
+  replyDelay = 0,
+  oldCaches = new Map(),
   failure = false,
   online = true,
   diagnosticsFail = false,
@@ -56,7 +58,10 @@ async function workerHarness({
   const client = {
     url: root,
     postMessage(message, ports) {
-      if (clientState !== undefined) ports[0].postMessage(clientState);
+      if (clientState !== undefined) {
+        if (replyDelay) setTimeout(() => ports[0].postMessage(clientState), replyDelay);
+        else ports[0].postMessage(clientState);
+      }
     },
     async navigate(url) {
       assert.equal(url, root);
@@ -81,9 +86,14 @@ async function workerHarness({
           if (diagnosticsFail) throw Error("diagnostic cache unavailable");
           return diagnosticCache;
         }
+        if (oldCaches.has(name)) return {
+          match: async request => oldCaches.get(name).get(typeof request === 'string' ? request : request.url)?.clone(),
+        };
         return cache;
       },
-      delete: async () => {
+      keys: async () => ['test-new-release', ...oldCaches.keys()],
+      delete: async (name) => {
+        if (oldCaches.has(name)) {oldCaches.delete(name);return true;}
         deleted = true;
         entries.clear();
       },
@@ -141,6 +151,12 @@ async function workerHarness({
   }
   return {
     lifecycle,
+    oldCaches,
+    async resource(url) {
+      let response;
+      handlers.get('fetch')({request:{url,method:'GET',mode:'same-origin'},waitUntil(p){background.push(p)},respondWith(p){response=p}});
+      return await response;
+    },
     navigate,
     state: () => ({ skipped, claimed, navigated, deleted, networkCalls }),
     entries,
@@ -152,7 +168,7 @@ async function workerHarness({
   };
 }
 test("a complete release activates automatically and refreshes a legacy root without query parameters", async () => {
-  const worker = await workerHarness();
+  const worker = await workerHarness({clientState:{build:"old-release",safe:true}});
   await worker.lifecycle("install");
   await worker.lifecycle("activate");
   assert.equal(worker.state().skipped, 1);
@@ -243,4 +259,28 @@ test("worker diagnostics are bounded technical metadata and storage failure cann
   const broken = await workerHarness({ online: "hang", diagnosticsFail: true });
   await broken.lifecycle("install");
   assert.equal(await broken.navigate(), "release-coherent-html");
+});
+
+
+test('unknown and delayed dirty clients are never forced to navigate', async () => {
+ for (const options of [{}, {clientState:{build:'old-release',safe:false},replyDelay:600}]) {
+  const worker=await workerHarness(options);
+  await worker.lifecycle('install');await worker.lifecycle('activate');
+  assert.equal(worker.state().navigated,0);
+ }
+});
+
+test('retained release assets work offline, cleanup preserves active and unknown clients',async()=>{
+ const url='https://ledger.test/assets/old-release/calculate.worker.js';
+ const oldCaches=new Map([['test-old-release',new Map([[url,new Response('old worker')]])],['test-unused',new Map()],['other-app-cache',new Map()]]);
+ const worker=await workerHarness({clientState:{build:'old-release',safe:false},online:false,oldCaches});
+ await worker.lifecycle('install');await worker.lifecycle('activate');
+ assert.equal(await (await worker.resource(url)).text(),'old worker');
+ assert(oldCaches.has('test-old-release'));assert(!oldCaches.has('test-unused'));assert(oldCaches.has('other-app-cache'));
+ const unknown=new Map([['test-unknown',new Map()]]);
+ const silent=await workerHarness({oldCaches:unknown});
+ await silent.lifecycle('install');await silent.lifecycle('activate');
+ assert(unknown.has('test-unknown'));
+ // API paths never fall back to an old release's cache.
+ assert.equal((await worker.resource('https://ledger.test/api/v1/session')).status,503);
 });
