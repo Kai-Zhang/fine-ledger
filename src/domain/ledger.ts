@@ -114,24 +114,30 @@ export function balance(
   return result;
 }
 // Compute all balances at the same instant with one pass over the ledger.
-export function accountBalances(book: Book, at: string) {
+export function accountBalances(
+  book: Book,
+  at: string,
+  future?: (at: string) => void,
+) {
+  const included = (date: string) => {
+    if (compareTime(date, at) <= 0) return true;
+    future?.(date);
+    return false;
+  };
   const result = new Map(
     book.accounts.map((a) => [
       a.id,
-      compareTime(a.openingAt, at) <= 0 ? BigInt(a.openingMinor) : 0n,
+      included(a.openingAt) ? BigInt(a.openingMinor) : 0n,
     ]),
   );
   for (const e of book.entries) {
     if (!e.posted || e.deletedAt) continue;
     const source = result.get(e.accountId);
-    if (source !== undefined && compareTime(e.occurredAt, at) <= 0)
+    if (source !== undefined && included(e.occurredAt))
       result.set(e.accountId, source + sourceDelta(e));
     if (e.kind === "transfer" && e.toAccountId) {
       const destination = result.get(e.toAccountId);
-      if (
-        destination !== undefined &&
-        compareTime(e.receivedAt || e.occurredAt, at) <= 0
-      )
+      if (destination !== undefined && included(e.receivedAt || e.occurredAt))
         result.set(
           e.toAccountId,
           destination + BigInt(e.receivedMinor || e.amountMinor),

@@ -117,6 +117,28 @@ export class Store {
     }
     return b;
   }
+  ledgerId(): string | null {
+    return (
+      (this.db.prepare("SELECT id FROM ledger LIMIT 1").get()?.id as string) ||
+      null
+    );
+  }
+  summary() {
+    const row = this.db.prepare("SELECT payload FROM ledger LIMIT 1").get();
+    if (!row) return null;
+    const { id, name, currency } = JSON.parse(row.payload as string);
+    return {
+      id,
+      name,
+      currency,
+      accounts: Number(
+        this.db.prepare("SELECT COUNT(*) AS n FROM accounts").get()!.n,
+      ),
+      entries: Number(
+        this.db.prepare("SELECT COUNT(*) AS n FROM entries").get()!.n,
+      ),
+    };
+  }
   version(collection: Collection, id: string) {
     return Number(
       this.db
@@ -400,7 +422,18 @@ export class Store {
             value: this.entity(book, e.collection, e.id),
           })),
         });
-      const next = structuredClone(book);
+      const next = {
+        ...book,
+        settings: {
+          ...book.settings,
+          savedReports: [...book.settings.savedReports],
+        },
+        groups: [...book.groups],
+        accounts: [...book.accounts],
+        categories: [...book.categories],
+        projects: [...book.projects],
+        entries: [...book.entries],
+      };
       try {
         for (const ch of command.changes) {
           if (ch.collection === "book") {
@@ -469,7 +502,7 @@ export class Store {
   pull(epoch: string, ledger: string, after: number, limit: number) {
     if (epoch !== this.epoch)
       throw new ApiError(409, "EPOCH_CHANGED", "服务已恢复，请先核对本机副本");
-    if (this.book()?.id !== ledger)
+    if (this.ledgerId() !== ledger)
       throw new ApiError(409, "LEDGER_CHANGED", "账本身份不一致");
     ensure(after <= this.cursor, "游标超出服务水位");
     const rows = this.db

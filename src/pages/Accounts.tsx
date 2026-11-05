@@ -1,4 +1,5 @@
 import { referenceRateLookup } from "../domain/reference-rates.ts";
+import { currentAccountBalances } from "../domain/account-view.ts";
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   DndContext,
@@ -35,7 +36,7 @@ import {
   GroupEditor,
   GroupRemoval,
 } from "../components/AccountEditor.tsx";
-import { accountBalances, netWorth, rateFor } from "../domain/ledger.ts";
+import { netWorth, rateFor } from "../domain/ledger.ts";
 import { moveAccount } from "../domain/organization.ts";
 import type { Account, Group, Book } from "../domain/types.ts";
 function AccountRow({
@@ -299,7 +300,7 @@ export function Accounts() {
   );
   const groups = book.groups.slice().sort((a, b) => a.order - b.order),
     at = new Date().toISOString(),
-    balances = accountBalances(book, at),
+    balances = currentAccountBalances(book, at),
     net = netWorth(book, at, undefined, balances, (id, date) => {
       const account = netAccounts.find((candidate) => candidate.id === id);
       return (
@@ -590,7 +591,7 @@ export function Accounts() {
 }
 export function ArchiveAccounts() {
   const app = useApp();
-  const balances = accountBalances(app.book, new Date().toISOString());
+  const balances = currentAccountBalances(app.book, new Date().toISOString());
   return (
     <>
       <Header title="已归档账户" back />

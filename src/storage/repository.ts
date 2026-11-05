@@ -325,13 +325,19 @@ export async function mutate(
     const id = uid(),
       at = new Date().toISOString();
     const changes: Change[] = [];
-    for (const ch of changesBetween(original, next))
-      changes.push({
-        collection: ch.collection,
-        id: ch.id,
-        before: entity(original, ch.collection, ch.id) || undefined,
-        after: ch.value || undefined,
-      });
+    for (const ch of delta)
+      if (
+        !same(
+          entity(original, ch.collection, ch.id),
+          entity(next, ch.collection, ch.id),
+        )
+      )
+        changes.push({
+          collection: ch.collection,
+          id: ch.id,
+          before: entity(original, ch.collection, ch.id) || undefined,
+          after: entity(next, ch.collection, ch.id) || undefined,
+        });
     await db.revisions.put({ id, at, changes });
     await db.state.put(next, "book");
     const issue = (await db.state.get("sync-issue")) as SyncIssue | undefined;

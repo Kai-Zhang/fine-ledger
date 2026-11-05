@@ -131,6 +131,7 @@ export function App() {
             ?.route.servicePage || "",
         )
       ),
+    storedBook?.revision,
   );
   useEffect(() => {
     const update = () => setSystemZone(deviceTimeZone());

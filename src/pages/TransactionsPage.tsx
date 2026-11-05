@@ -1,9 +1,9 @@
+import { transactionSelection } from "../domain/transaction-view.ts";
 import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { PostingDialog } from "../components/PostingDialog.tsx";
 import { TransactionFilters } from "../components/TransactionFilters.tsx";
 import {
   emptyFilter,
-  filterEntries,
   matchingSplits,
   categoryMatches,
   type TransactionFilter,
@@ -34,7 +34,7 @@ import {
   restoreEntry,
   refundOriginalId,
 } from "../domain/ledger.ts";
-import { localDate, displayTime, compareTime } from "../domain/dates.ts";
+import { localDate, displayTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
 import { reportRows } from "../domain/reporting.ts";
 export function TransactionsPage() {
@@ -68,74 +68,9 @@ export function TransactionsPage() {
     route.reportKinds ||
     route.entryIds
   );
-  const selectedEntryIds = useMemo(
-    () => route.entryIds && new Set(route.entryIds),
-    [route.entryIds],
-  );
-  const base = useMemo(
-    () =>
-      liveEntries(book).filter((e) => {
-        if (selectedEntryIds && !selectedEntryIds.has(e.id)) return false;
-        if (route.reportKinds && !route.reportKinds.includes(e.kind))
-          return false;
-        const at =
-          (account?.id || route.accountId) === e.toAccountId &&
-          e.kind === "transfer"
-            ? e.receivedAt || e.occurredAt
-            : e.occurredAt;
-        const inRange = (value: string) =>
-          (!route.from || compareTime(value, route.from) >= 0) &&
-          (!route.to || compareTime(value, route.to) <= 0);
-        const endpointDates =
-          route.reportKind === "net" &&
-          route.accountIds &&
-          !route.accountId &&
-          !account
-            ? [
-                ...(route.accountIds.includes(e.accountId)
-                  ? [e.occurredAt]
-                  : []),
-                ...(e.kind === "transfer" &&
-                route.accountIds.includes(e.toAccountId || "")
-                  ? [e.receivedAt || e.occurredAt]
-                  : []),
-              ]
-            : [at];
-        return (
-          (!route.postedOnly || e.posted) &&
-          (route.reportKind !== "expense" ||
-            e.kind === "expense" ||
-            e.kind === "refund") &&
-          (!route.accountIds ||
-            route.accountIds.includes(e.accountId) ||
-            (route.reportKind !== "expense" &&
-              !!e.toAccountId &&
-              route.accountIds.includes(e.toAccountId))) &&
-          endpointDates.some(inRange) &&
-          ((!route.categoryIds?.length && !route.projectIds?.length) ||
-            matchingSplits(book, e, {
-              categories: route.categoryIds || [],
-              projects: route.projectIds || [],
-            }).length > 0)
-        );
-      }),
-    [book, route, account, selectedEntryIds],
-  );
   const select = (f: TransactionFilter) =>
-    filterEntries(book, base, f, query, account?.id).filter(
-      (e) =>
-        (!route.categoryIds?.length && !route.projectIds?.length) ||
-        matchingSplits(book, e, f).some(
-          (s) =>
-            categoryMatches(book, s, route.categoryIds || []) &&
-            (!route.projectIds?.length ||
-              route.projectIds.includes(s.projectId || "none")),
-        ),
-    );
-  const entries = useMemo(
-    () => select(filters),
-    [book, base, filters, query, account, route],
-  );
+    transactionSelection(book, route, f, query);
+  const entries = useMemo(() => select(filters), [book, route, filters, query]);
   const scope =
     account?.id ||
     (filters.accounts.length === 1 ? filters.accounts[0] : undefined);

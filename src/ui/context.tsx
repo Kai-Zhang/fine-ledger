@@ -1,47 +1,10 @@
 import type { ReferenceQuote } from "../domain/reference-rates.ts";
-import type { ServicePage } from "../sync/service.ts";
 import { createContext, useContext } from "react";
-import type { Book, Entry, ReportType, ReportGrain } from "../domain/types.ts";
+import type { Book } from "../domain/types.ts";
 import type { Mode } from "../storage/repository.ts";
 import type { LocalSyncView } from "../sync/local-view.ts";
-export type Route = {
-  page:
-    | "accounts"
-    | "transactions"
-    | "reports"
-    | "report"
-    | "settings"
-    | "account"
-    | "detail"
-    | "entry"
-    | "archive"
-    | "categories"
-    | "projects"
-    | "trash"
-    | "sync"
-    | "local-backup";
-  id?: string;
-  servicePage?: ServicePage;
-  kind?: Entry["kind"];
-  originalId?: string;
-  savedReportId?: string;
-  filter?: "pending";
-  accountId?: string;
-  accountIds?: string[];
-  postedOnly?: boolean;
-  reportKind?: "net" | "expense";
-  reportKinds?: Entry["kind"][];
-  projectIds?: string[];
-  reportCurrency?: string;
-  reportMeasure?: "income" | "expense" | "refund" | "net" | "surplus";
-  grain?: ReportGrain;
-  reportDays?: string;
-  entryIds?: string[];
-  from?: string;
-  to?: string;
-  categoryIds?: string[];
-  report?: ReportType;
-};
+import type { Route } from "../navigation/routes.ts";
+export type { Route } from "../navigation/routes.ts";
 export interface AppContextValue {
   preview?: boolean;
   frameKey?: number;

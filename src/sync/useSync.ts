@@ -3,7 +3,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { databases } from "../storage/repository.ts";
 import { onSyncRequested, SyncEngine } from "./engine.ts";
 
-export function useSyncCoordinator(active: boolean, canApply: () => boolean) {
+export function useSyncCoordinator(
+  active: boolean,
+  canApply: () => boolean,
+  bookRevision?: number,
+) {
   const latest = useRef(canApply);
   latest.current = canApply;
   const engine = useMemo(
@@ -12,12 +16,7 @@ export function useSyncCoordinator(active: boolean, canApply: () => boolean) {
   );
   const revision = useLiveQuery(
     async () => ({
-      revision: (
-        (await databases.personal.state.get("book")) as
-          { revision?: number } | undefined
-      )?.revision,
       enabled: await databases.personal.state.get("sync-enabled"),
-      baseline: await databases.personal.state.get("remote-baseline"),
       count: await databases.personal.outbox.count(),
     }),
     [],
@@ -64,5 +63,5 @@ export function useSyncCoordinator(active: boolean, canApply: () => boolean) {
   }, [active, engine]);
   useEffect(() => {
     if (active) schedule.current();
-  }, [active, revision]);
+  }, [active, revision, bookRevision]);
 }

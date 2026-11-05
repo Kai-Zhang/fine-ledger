@@ -12,13 +12,19 @@ export const currencies = [
   "KRW",
   "CHF",
 ];
+const currencyDigits = new Map<string, number>();
 export function digits(currency: string) {
-  return (
+  const cached = currencyDigits.get(currency);
+  if (cached !== undefined) return cached;
+  const value =
     new Intl.NumberFormat("zh-CN", {
       style: "currency",
       currency,
-    }).resolvedOptions().maximumFractionDigits ?? 2
-  );
+    }).resolvedOptions().maximumFractionDigits ?? 2;
+  if (currencyDigits.size >= 256)
+    currencyDigits.delete(currencyDigits.keys().next().value!);
+  currencyDigits.set(currency, value);
+  return value;
 }
 export function minor(value: string, currency: string): string {
   const text = value.trim().replaceAll(",", "");

@@ -108,8 +108,9 @@ export function filterEntries(
   f: TransactionFilter,
   query = "",
   scope?: string,
+  now = new Date(),
 ) {
-  const dates = filterDates(f, book.timeZone),
+  const dates = filterDates(f, book.timeZone, now),
     { min, max } = validateFilter(f, book.timeZone),
     q = query.normalize("NFKC").toLocaleLowerCase().trim();
   return entries.filter((e) => {
@@ -147,13 +148,11 @@ export function filterEntries(
       !matchingSplits(book, e, f).length
     )
       return false;
+    if (!f.currency && min === undefined && max === undefined) return true;
     const account = book.accounts.find(
       (a) => a.id === (incoming ? e.toAccountId : e.accountId),
     );
-    let amount = BigInt(
-        incoming ? e.receivedMinor || e.amountMinor : e.amountMinor,
-      ),
-      currency = incoming ? account?.currency : entryCurrency(book, e);
+    const currency = incoming ? account?.currency : entryCurrency(book, e);
     // Inside an account, the locked currency is the unit for an optional amount
     // range, not an implicit filter that hides foreign-only pending purchases.
     if (
@@ -162,6 +161,10 @@ export function filterEntries(
       (!scope || min !== undefined || max !== undefined)
     )
       return false;
+    if (min === undefined && max === undefined) return true;
+    let amount = BigInt(
+      incoming ? e.receivedMinor || e.amountMinor : e.amountMinor,
+    );
     if (amount < 0n) amount = -amount;
     return (
       (min === undefined || amount >= min) &&

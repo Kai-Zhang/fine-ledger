@@ -1,3 +1,4 @@
+import { descriptionSuggestions } from "../domain/description-view.ts";
 import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { referenceRateLookup } from "../domain/reference-rates.ts";
 import { sortedProjects } from "../domain/organization.ts";
@@ -24,7 +25,6 @@ import { newEntry } from "../storage/repository.ts";
 import {
   entryCurrency,
   balance,
-  descriptions,
   remainingRefund,
   refundOriginalId,
   refundTotals,
@@ -333,7 +333,7 @@ export function EntryForm() {
     if (!app.preview && !existing && !original) amountRef.current?.focus();
   }, []);
   const suggestions = useMemo(
-    () => descriptions(book, kind, description),
+    () => descriptionSuggestions(book, kind, description),
     [book, kind, description],
   );
   let total = 0n,

@@ -197,22 +197,14 @@ export async function createService(
   });
   app.get("/api/v1/session", async (request) => {
     const a = (request as any).auth;
-    const b = store.book();
+    const b = store.summary();
     return {
       csrf: a.csrf,
       deviceId: a.device_id,
       deviceName: a.name,
       expires: a.expires,
       ...meta(),
-      ledger: b
-        ? {
-            id: b.id,
-            name: b.name,
-            currency: b.currency,
-            accounts: b.accounts.length,
-            entries: b.entries.length,
-          }
-        : null,
+      ledger: b,
     };
   });
   app.delete("/api/v1/session", async (request, reply) => {

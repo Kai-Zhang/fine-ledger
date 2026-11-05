@@ -188,6 +188,12 @@ export function validateBook(
   }
   const categoryMap = new Map(b.categories.map((c) => [c.id, c]));
   const entryMap = new Map(b.entries.map((e) => [e.id, e]));
+  const accountMap = new Map(b.accounts.map((a) => [a.id, a]));
+  const projectMap = new Map(b.projects.map((p) => [p.id, p]));
+  const previousCategories = new Map(
+    previous?.categories.map((c) => [c.id, c]),
+  );
+  const previousProjects = new Map(previous?.projects.map((p) => [p.id, p]));
   const previousAccounts = new Map(previous?.accounts.map((a) => [a.id, a]));
   const previousEntries = new Map(previous?.entries.map((e) => [e.id, e]));
   const usedAccounts = new Set(
@@ -267,6 +273,34 @@ export function validateBook(
       "已有金额记录后主币锁定",
     );
   for (const e of b.entries) {
+    // previous is an already validated immutable baseline. With structural
+    // sharing we can skip unchanged records only if all their business
+    // references also remain identical. Untrusted snapshots still take the
+    // full path (no previous), as do newly supplied/edited records.
+    if (
+      previous &&
+      previous !== b &&
+      previousEntries.get(e.id) === e &&
+      previousAccounts.get(e.accountId) === accountMap.get(e.accountId) &&
+      (!e.toAccountId ||
+        previousAccounts.get(e.toAccountId) ===
+          accountMap.get(e.toAccountId)) &&
+      (!e.originalId ||
+        previousEntries.get(e.originalId) === entryMap.get(e.originalId)) &&
+      (!e.transferId ||
+        previousEntries.get(e.transferId) === entryMap.get(e.transferId)) &&
+      (!e.refundReference ||
+        previousEntries.get(e.refundReference.originalId) ===
+          entryMap.get(e.refundReference.originalId)) &&
+      e.splits.every(
+        (s) =>
+          previousCategories.get(s.categoryId) ===
+            categoryMap.get(s.categoryId) &&
+          (!s.projectId ||
+            previousProjects.get(s.projectId) === projectMap.get(s.projectId)),
+      )
+    )
+      continue;
     ensure(
       ["expense", "income", "transfer", "refund", "adjustment"].includes(
         e.kind,

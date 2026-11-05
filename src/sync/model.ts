@@ -1,6 +1,5 @@
 import type { Book } from "../domain/types.ts";
 import {
-  canonical,
   collections,
   validateBook,
   type Change,
@@ -39,8 +38,33 @@ export function business(value: unknown): unknown {
     delete clean.revision;
   return clean;
 }
-export const same = (a: unknown, b: unknown) =>
-  canonical(business(a)) === canonical(business(b));
+// Compare JSON business values directly: avoid allocating two JSON strings and
+// sorting every object's keys for each row on every save. Undefined object
+// fields and top-level revision metadata retain the original wire semantics.
+export function same(a: unknown, b: unknown): boolean {
+  return equalJSON(a, b, true);
+}
+function equalJSON(a: any, b: any, root = false): boolean {
+  if (a === b || (a == null && b == null)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+  if (Array.isArray(a) || Array.isArray(b))
+    return (
+      Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((value, i) => equalJSON(value, b[i]))
+    );
+  const keys = Object.keys(a).filter(
+    (k) => a[k] !== undefined && !(root && k === "revision"),
+  );
+  const other = Object.keys(b).filter(
+    (k) => b[k] !== undefined && !(root && k === "revision"),
+  );
+  return (
+    keys.length === other.length &&
+    keys.every((k) => Object.hasOwn(b, k) && equalJSON(a[k], b[k]))
+  );
+}
 export function allEntities(book: Book): Change[] {
   return [
     { collection: "book", id: book.id, value: entity(book, "book", book.id) },
@@ -69,7 +93,11 @@ export function changesBetween(before: Book, after: Book): Change[] {
   return result;
 }
 export function applyChanges(book: Book, changes: Change[]): Book {
-  const next = structuredClone(book);
+  // Snapshots are immutable. Copy only changed collections and values, so a
+  // single transaction does not clone every historical record. Input changes
+  // are still cloned before they enter the snapshot.
+  const next = { ...book, settings: { ...book.settings } };
+  const edited = new Map<Collection, Map<string, unknown | null>>();
   for (const ch of changes) {
     if (ch.collection === "book") {
       if (!ch.value || (ch.value as { id: string }).id !== book.id)
@@ -80,16 +108,29 @@ export function applyChanges(book: Book, changes: Change[]): Book {
         settings: { ...next.settings, ...metadata.settings },
       });
     } else {
-      const rows =
-        ch.collection === "reports"
-          ? next.settings.savedReports
-          : next[ch.collection];
-      const index = rows.findIndex((x) => x.id === ch.id);
-      if (ch.value === null) {
-        if (index >= 0) rows.splice(index, 1);
-      } else if (index < 0) rows.push(structuredClone(ch.value) as never);
-      else rows[index] = structuredClone(ch.value) as never;
+      let rows = edited.get(ch.collection);
+      if (!rows) edited.set(ch.collection, (rows = new Map()));
+      rows.set(ch.id, ch.value);
     }
+  }
+  for (const [collection, updates] of edited) {
+    if (collection === "book") continue;
+    const original =
+      collection === "reports" ? book.settings.savedReports : book[collection];
+    const rows = [];
+    for (const row of original) {
+      if (!updates.has(row.id)) rows.push(row);
+      else {
+        const value = updates.get(row.id);
+        if (value !== null) rows.push(structuredClone(value) as typeof row);
+        updates.delete(row.id);
+      }
+    }
+    for (const value of updates.values())
+      if (value !== null) rows.push(structuredClone(value) as never);
+    if (collection === "reports")
+      next.settings.savedReports = rows as Book["settings"]["savedReports"];
+    else (next[collection] as unknown[]) = rows;
   }
   return next;
 }

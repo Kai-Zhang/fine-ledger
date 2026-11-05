@@ -1,3 +1,4 @@
+import { transactionOrder } from "../domain/transaction-view.ts";
 import { PostingDialog } from "./PostingDialog.tsx";
 import { categoryColor } from "../ui/category-color.ts";
 import { incomingEndpoint } from "../domain/filters.ts";
@@ -5,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
-import { sortEntries, localDate } from "../domain/dates.ts";
+import { localDate } from "../domain/dates.ts";
 import {
   balancesAfterEntries,
   entryCurrency,
@@ -83,19 +84,14 @@ export function Transactions({
     [book.entries, ledgerAccount],
   );
   const limitKey = `transaction-limit:${JSON.stringify(app.route)}`;
-  const [limit, setLimit] = useState((app.views.get(limitKey) as number) || 80);
+  // Bound the initial row rendering; totals and filtering
+  // still use the complete result. Further pages remain explicitly available.
+  const [limit, setLimit] = useState((app.views.get(limitKey) as number) || 40);
   useEffect(() => {
     app.views.set(limitKey, limit);
   }, [limitKey, limit]);
   const sorted = useMemo(
-    () =>
-      sortEntries(
-        entries.map((e) =>
-          e.receivedAt && incomingEndpoint(book, e, scope, [], currency)
-            ? { ...e, occurredAt: e.receivedAt }
-            : e,
-        ),
-      ),
+    () => transactionOrder(book, entries, scope, currency),
     [book, entries, scope, currency],
   );
   const timeFormat = useMemo(
@@ -239,7 +235,7 @@ export function Transactions({
         );
       })}
       {sorted.length > limit && (
-        <button className="load-more" onClick={() => setLimit(limit + 80)}>
+        <button className="load-more" onClick={() => setLimit(limit + 40)}>
           加载更多 · 还有 {sorted.length - limit} 笔
         </button>
       )}
