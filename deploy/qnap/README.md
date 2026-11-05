@@ -4,9 +4,11 @@
 
 家庭 NAS 已接收实际账本。2026-11-03 用户确认厘序与 MoneyWiz 并跑试用。自动备份关闭，升级前单独创建 SQLite 一致性恢复点。
 
-2026-11-03 当前服务镜像为 `fine-ledger:0.14.5-nas-fx-5236d7f`，发布指纹为 `0.14.5-19e2dd64cdc1d793`。该版本包含参考汇率、历史估值和跨币种转账双向计算。上一版 `fine-ledger:0.14.5-nas-ios-edge-d613d5b9` 的资源保留用于平滑升级。用户已确认本次 NAS 版本验收通过。
+2026-11-05 当前服务镜像为 `fine-ledger:0.14.5-nas-running-balance-cd95256`，发布指纹为 `0.14.5-cd952560086e7f5b`。逐笔余额版沿用上一版服务并保留其前端资源。HTTPS、健康检查、API 元数据和发布资源均已核对，用户已在 iPhone 上确认逐笔余额显示正常。
 
-升级前的一次性 SQLite 恢复点和旧 Compose 配置位于 NAS 的 `/share/Container/fine-ledger/data/pre-upgrade-fx-5236d7f/`。恢复点通过 SQLite 完整性和外键检查，升级前后的提交水位均为 5。恢复数据库前先核对水位 5 之后的交易。
+本次升级前的 SQLite 恢复点和旧 Compose 配置位于 NAS 的 `/share/Container/fine-ledger/data/pre-upgrade-running-balance-cd95256/`。恢复点通过 SQLite 完整性和外键检查。升级前后水位均为 16，交易均为 16,277 笔。
+
+2026-11-04 部署类目图标版 `fine-ledger:0.14.5-nas-category-icons-bbc3d58`，发布指纹为 `0.14.5-bbc3d58ca1e181ec`。当时的恢复点在 `/share/Container/fine-ledger/data/pre-upgrade-category-icons-bbc3d58/`，水位为 7。升级后通过同步接口按 ID 更新了 97 个类目的图标，另有 8 个目标类目已经匹配。水位 8 的增量批次只包含类目图标变更，提交前后 16,273 笔交易逐项校验一致，SQLite 完整性和外键检查通过。
 
 以下创建步骤用于首次安装。现有实例升级沿用应用名和持久挂载。
 

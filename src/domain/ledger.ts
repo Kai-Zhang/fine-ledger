@@ -1,4 +1,4 @@
-import { compareTime, deviceTimeZone } from "./dates.ts";
+import { compareTime, deviceTimeZone, sortEntries } from "./dates.ts";
 import {
   uid,
   type Book,
@@ -87,6 +87,10 @@ export function defaultCategories(): Book["categories"] {
 export function liveEntries(book: Book) {
   return book.entries.filter((e) => !e.deletedAt);
 }
+function sourceDelta(e: Entry) {
+  const amount = BigInt(e.amountMinor);
+  return e.kind === "expense" || e.kind === "transfer" ? -amount : amount;
+}
 export function balance(
   book: Book,
   id: string,
@@ -98,10 +102,8 @@ export function balance(
   let result = compareTime(a.openingAt, at) <= 0 ? BigInt(a.openingMinor) : 0n;
   for (const e of liveEntries(book)) {
     if (!e.posted || e.id === excluding) continue;
-    if (e.accountId === id && compareTime(e.occurredAt, at) <= 0) {
-      const n = BigInt(e.amountMinor);
-      result += e.kind === "expense" || e.kind === "transfer" ? -n : n;
-    }
+    if (e.accountId === id && compareTime(e.occurredAt, at) <= 0)
+      result += sourceDelta(e);
     if (
       e.kind === "transfer" &&
       e.toAccountId === id &&
@@ -122,14 +124,8 @@ export function accountBalances(book: Book, at: string) {
   for (const e of book.entries) {
     if (!e.posted || e.deletedAt) continue;
     const source = result.get(e.accountId);
-    if (source !== undefined && compareTime(e.occurredAt, at) <= 0) {
-      const amount = BigInt(e.amountMinor);
-      result.set(
-        e.accountId,
-        source +
-          (e.kind === "expense" || e.kind === "transfer" ? -amount : amount),
-      );
-    }
+    if (source !== undefined && compareTime(e.occurredAt, at) <= 0)
+      result.set(e.accountId, source + sourceDelta(e));
     if (e.kind === "transfer" && e.toAccountId) {
       const destination = result.get(e.toAccountId);
       if (
@@ -141,6 +137,40 @@ export function accountBalances(book: Book, at: string) {
           destination + BigInt(e.receivedMinor || e.amountMinor),
         );
     }
+  }
+  return result;
+}
+export function balancesAfterEntries(
+  entries: readonly Entry[],
+  account: Account,
+) {
+  const movements: { id: string; occurredAt: string; delta: bigint }[] = [];
+  for (const e of entries) {
+    if (!e.posted || e.deletedAt) continue;
+    if (e.accountId === account.id) {
+      movements.push({
+        id: e.id,
+        occurredAt: e.occurredAt,
+        delta: sourceDelta(e),
+      });
+    } else if (e.kind === "transfer" && e.toAccountId === account.id) {
+      movements.push({
+        id: e.id,
+        occurredAt: e.receivedAt || e.occurredAt,
+        delta: BigInt(e.receivedMinor || e.amountMinor),
+      });
+    }
+  }
+  const result = new Map<string, bigint>();
+  const opening = BigInt(account.openingMinor);
+  let total = 0n;
+  // Walk oldest first, using the same tie order as the displayed ledger.
+  for (const { id, occurredAt, delta } of sortEntries(movements).reverse()) {
+    total += delta;
+    result.set(
+      id,
+      compareTime(account.openingAt, occurredAt) <= 0 ? total + opening : total,
+    );
   }
   return result;
 }

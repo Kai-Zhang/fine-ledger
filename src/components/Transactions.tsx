@@ -7,6 +7,7 @@ import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
 import { sortEntries, localDate } from "../domain/dates.ts";
 import {
+  balancesAfterEntries,
   entryCurrency,
   needsSettlement,
   changePosted,
@@ -76,6 +77,11 @@ export function Transactions({
 }) {
   const app = useApp(),
     { book } = app;
+  const ledgerAccount = book.accounts.find((a) => a.id === scope);
+  const balances = useMemo(
+    () => ledgerAccount && balancesAfterEntries(book.entries, ledgerAccount),
+    [book.entries, ledgerAccount],
+  );
   const limitKey = `transaction-limit:${JSON.stringify(app.route)}`;
   const [limit, setLimit] = useState((app.views.get(limitKey) as number) || 80);
   useEffect(() => {
@@ -121,6 +127,7 @@ export function Transactions({
         const value = incoming
           ? e.receivedMinor || e.amountMinor
           : e.amountMinor;
+        const balanceAfter = balances?.get(e.id);
         return (
           <section key={e.id}>
             {heading && (
@@ -193,6 +200,15 @@ export function Transactions({
                     book.currency && (
                     <small>
                       {incoming ? to?.currency : entryCurrency(book, e)}
+                    </small>
+                  )}
+                  {ledgerAccount && balanceAfter !== undefined && (
+                    <small>
+                      余额{" "}
+                      <Amount
+                        value={balanceAfter}
+                        currency={ledgerAccount.currency}
+                      />
                     </small>
                   )}
                   {e.originalAmount && !needsSettlement(book, e) && (

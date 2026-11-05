@@ -4,6 +4,7 @@ import {
   blankBook,
   balance,
   accountBalances,
+  balancesAfterEntries,
   upsertEntry,
   changePosted,
   remainingRefund,
@@ -78,6 +79,58 @@ test("batched balances preserve posting and independent transfer dates", () => {
   assert.deepEqual(
     netWorth(b, time(4), undefined, after),
     netWorth(b, time(4)),
+  );
+});
+
+test("running balances use ledger order and only include posted entries", () => {
+  const b = fixture();
+  const [cny] = b.accounts;
+  cny.openingMinor = "50000";
+  b.entries = [
+    entry("b", { amountMinor: "20000" }),
+    entry("pending", { posted: false, occurredAt: time(3) }),
+    entry("a", { amountMinor: "20000" }),
+    entry("removed", { deletedAt: time(4) }),
+  ];
+  const balances = balancesAfterEntries(b.entries, cny);
+  assert.deepEqual(
+    balances,
+    new Map([
+      ["a", 30000n],
+      ["b", 10000n],
+    ]),
+  );
+  assert.equal(balances.get("b"), balance(b, cny.id, time(3)));
+});
+
+test("running balances use each transfer endpoint's date and amount", () => {
+  const b = fixture();
+  const [cny, jpy] = b.accounts;
+  jpy.openingAt = time(3);
+  jpy.openingMinor = "100";
+  b.entries = [
+    { ...transfer("fx", 2, "125", "70"), receivedAt: time(4) },
+    entry("refund", {
+      kind: "refund",
+      accountId: jpy.id,
+      amountMinor: "25",
+      occurredAt: time(2),
+    }),
+    entry("adjustment", {
+      kind: "adjustment",
+      accountId: jpy.id,
+      amountMinor: "-125",
+      occurredAt: time(3),
+    }),
+  ];
+  assert.equal(balancesAfterEntries(b.entries, cny).get("fx"), 99875n);
+  assert.deepEqual(
+    balancesAfterEntries(b.entries, jpy),
+    new Map([
+      ["refund", 25n],
+      ["adjustment", 0n],
+      ["fx", 70n],
+    ]),
   );
 });
 
