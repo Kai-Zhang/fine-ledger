@@ -1,94 +1,14 @@
-import Dexie, { type Table } from "dexie";
+import {
+  cacheFresh,
+  createReferenceRateCache,
+} from "./reference-rate-cache.ts";
 import { useEffect, useState } from "react";
 import { dateOffset } from "../domain/dates.ts";
 import type { ReferenceQuote } from "../domain/reference-rates.ts";
 
-type CachedYear = { key: string; through: string; quotes: ReferenceQuote[] };
-const db = new Dexie("fine-ledger-reference-rates");
-db.version(1).stores({ years: "key" });
-const years = db.table<CachedYear>("years") as Table<CachedYear, string>;
-const pending = new Map<string, Promise<CachedYear>>();
-const failedAt = new Map<string, number>();
+const { years, update, coolingDown } = createReferenceRateCache();
 const empty: ReferenceQuote[] = [];
 const recentScopes = new Map<string, ReferenceQuote[]>();
-let retryAfter = 0;
-
-async function update(
-  base: string,
-  quote: string,
-  year: number,
-  through: string,
-) {
-  const key = `${base}:${quote}:${year}`;
-  const current = await years.get(key);
-  if (current && current.through >= through) return current;
-  const taskKey = key + through;
-  if (
-    Date.now() < retryAfter ||
-    Date.now() - (failedAt.get(taskKey) ?? 0) < 300_000
-  )
-    throw Error("报价服务暂不可用");
-  const running = pending.get(taskKey);
-  if (running) return running;
-  const task = (async () => {
-    const start = `${year}-01-01`;
-    const from = current
-      ? [start, dateOffset(current.through, -7)].sort().at(-1)!
-      : start;
-    const query = new URLSearchParams({
-      base,
-      quotes: quote,
-      from,
-      to: through,
-    });
-    const response = await fetch(
-      `https://api.frankfurter.dev/v2/rates?${query}`,
-      {
-        signal: AbortSignal.timeout(8000),
-        credentials: "omit",
-      },
-    );
-    if (response.status === 429) {
-      const delay = Number(response.headers.get("Retry-After"));
-      retryAfter = Date.now() + (delay > 0 ? delay * 1000 : 300_000);
-    }
-    if (!response.ok) throw Error(`报价服务返回 ${response.status}`);
-    const payload: unknown = await response.json();
-    if (!Array.isArray(payload)) throw Error("报价数据无效");
-    const merged = new Map(current?.quotes.map((row) => [row.date, row]));
-    for (const row of payload) {
-      if (
-        row?.base !== base ||
-        row.quote !== quote ||
-        typeof row.date !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(row.date) ||
-        row.date < from ||
-        row.date > through ||
-        typeof row.rate !== "number" ||
-        !Number.isFinite(row.rate) ||
-        row.rate <= 0
-      )
-        throw Error("报价数据无效");
-      merged.set(row.date, { date: row.date, base, quote, rate: row.rate });
-    }
-    return db.transaction("rw", years, async () => {
-      const latest = await years.get(key);
-      if (latest && latest.through >= through) return latest;
-      for (const row of latest?.quotes || [])
-        if (!merged.has(row.date)) merged.set(row.date, row);
-      const result = { key, through, quotes: [...merged.values()] };
-      await years.put(result);
-      return result;
-    });
-  })()
-    .catch((error) => {
-      failedAt.set(taskKey, Date.now());
-      throw error;
-    })
-    .finally(() => pending.delete(taskKey));
-  pending.set(taskKey, task);
-  return task;
-}
 
 export function useReferenceRates(
   base: string,
@@ -148,11 +68,11 @@ export function useReferenceRates(
         publish();
         if (!navigator.onLine) return;
         const missing = pairs.filter(
-          (pair) => (loaded.get(pair.key)?.through || "") < pair.through,
+          (pair) => !cacheFresh(loaded.get(pair.key), pair.through),
         );
         let changed = false;
         for (let i = 0; i < missing.length; i += 3) {
-          if (stopped || Date.now() < retryAfter) break;
+          if (stopped || coolingDown()) break;
           const results = await Promise.allSettled(
             missing
               .slice(i, i + 3)
