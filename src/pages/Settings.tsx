@@ -494,7 +494,10 @@ export function CategoryEditor({
         </Field>
         <Field label="图标">
           <span className="icon-picker">
-            {categoryIcons.map((i) => (
+            {(category?.icon && !categoryIcons.includes(category.icon)
+              ? [category.icon, ...categoryIcons]
+              : categoryIcons
+            ).map((i) => (
               <button
                 key={i}
                 aria-label={`选择 ${i} 图标`}
