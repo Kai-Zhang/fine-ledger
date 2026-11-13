@@ -111,6 +111,7 @@ export function NetChart({
   return (
     <div className="net-chart" onContextMenu={(e) => e.preventDefault()}>
       <svg
+        data-no-back
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={`${label}走势，点按或按住左右滑动查看期间`}

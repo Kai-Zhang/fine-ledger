@@ -1,0 +1,22 @@
+{
+  "accounts": 19,
+  "entries": 16313,
+  "cursor": 22,
+  "userVersion": 1,
+  "hashes": {
+    "ledger": "2b78adeeeebcdc19908cb5d8a28eddf98879918c468d18cbdf5990f100a11517",
+    "account_groups": "941dca3b82bfcb88fb5ec31f4dbe69c2f3ed71d839622e72ae46529830584e94",
+    "accounts": "547b11ef49b91c164ee70a982774d58f8688e1d46e15831dce0bef828ffc6b15",
+    "categories": "2790df90d78faf8a8b54f8a1ce3b821850344b0c25127e08b173783cabed633f",
+    "projects": "b83d08fdc9f3c6bc079870b3aa26bab532fa337694296eb3dc27d6fd20763d58",
+    "entries": "cb20b6faf606cda1de7590ec8ff09f6f8b72eb91b23511de38a449e71dcee680",
+    "splits": "0166f079a0462fe6cdfcc9036bcd4169bc904a4b2ad1c9d4e6138df05aefba6e",
+    "reports": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "versions": "0dedbac557bcd3c41b6ecf6259f107d05beeef5929b8a250afc1bd0bc5531f55",
+    "commits": "b447bc68b74f5353060314b4d7f4f5c21a17365f343ee25bf353888a7bae1115",
+    "revisions": "19976949a0a824af8dc8cbaf3b61d895d9325adaeca996ea7bbe14bc097189b4"
+  },
+  "integrity": "ok",
+  "foreignKeys": 0,
+  "autoBackup": false
+}

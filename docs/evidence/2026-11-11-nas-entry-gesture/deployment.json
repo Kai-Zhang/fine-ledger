@@ -1,0 +1,87 @@
+{
+  "oldImage": "fine-ledger:0.14.5-nas-running-balance-cd95256",
+  "newImage": "fine-ledger:0.14.5-nas-entry-gesture-760054d",
+  "release": "0.14.5-760054d8f5570596",
+  "strategy": "frontend overlay on current NAS image; existing server and older frontend assets retained",
+  "imageId": "sha256:978c7c85d7a636662b757fb9cc85a0f14296575d829101c3d9e5dd7a253f651e",
+  "origin": "https://nas590daa.local:62187",
+  "tlsVerified": true,
+  "health": {
+    "ok": true
+  },
+  "caddyUnchanged": true,
+  "businessHashesUnchanged": true,
+  "accounts": 19,
+  "entries": 16313,
+  "cursor": 22,
+  "oldShellAvailable": true,
+  "serverLayersRetained": true,
+  "assets": [
+    {
+      "path": "/",
+      "bytes": 1445,
+      "sha256": "114e8abaf5f1a157d77c482e18973b34dc3dcce774a35ebb5d53aa9272500a0c"
+    },
+    {
+      "path": "/sw.js",
+      "bytes": 7246,
+      "sha256": "e038ef8d175251caa0a9f400345a42766838a24a5c6f558ac9899e847739c0e8"
+    },
+    {
+      "path": "/release.json",
+      "bytes": 473,
+      "sha256": "3bcec3e838465a5ac47a5f3c6c99eff3850ab6cfd53296ac23767dfc472d55b7"
+    },
+    {
+      "path": "/assets/0.14.5-760054d8f5570596/bootstrap.js",
+      "bytes": 2347,
+      "sha256": "461d7da75f6e8924d17943a4f3cfc898ace042ef00cd416f4e9b46bb09216c89"
+    },
+    {
+      "path": "/assets/0.14.5-760054d8f5570596/calculate.worker-CQqDVp5K.js",
+      "bytes": 171553,
+      "sha256": "08c38bfee4b40f7e1fde538b33ca1b746348b6647fc4478af7d87b6a7e884e98"
+    },
+    {
+      "path": "/assets/0.14.5-760054d8f5570596/index-DAQUoyXe.css",
+      "bytes": 86163,
+      "sha256": "2cc3745ae4947d28b2f4778843ba01bd4d6a505a0f3f5f7f7797d1f6fd7d9d44"
+    },
+    {
+      "path": "/assets/0.14.5-760054d8f5570596/index-DJ-yu_5F.js",
+      "bytes": 859065,
+      "sha256": "e7cf86c7034473627fb8ba717b2dec1fa9df8e52c688687b74b2d6259a6a7904"
+    },
+    {
+      "path": "/assets/0.14.5-760054d8f5570596/index.html",
+      "bytes": 1445,
+      "sha256": "114e8abaf5f1a157d77c482e18973b34dc3dcce774a35ebb5d53aa9272500a0c"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "bytes": 469,
+      "sha256": "b5fadccb8eec6f81b77cba5dc8ffe2d67234c3a92232286a2eb6d928d18ec121"
+    },
+    {
+      "path": "/icon.svg",
+      "bytes": 1116,
+      "sha256": "c841c974720598902e2492c6cd4c8f2056d16b908aaae513827bd0806d2d6d47"
+    },
+    {
+      "path": "/icon-192.png",
+      "bytes": 4007,
+      "sha256": "ffab66d16f31d9badcf9ca35a048623dbe325d5197b85e7d12fc88ebff56c5b6"
+    },
+    {
+      "path": "/icon-512.png",
+      "bytes": 14029,
+      "sha256": "f24ab03c0b1c06cea99e51321bd3e37fef05069b91eab6daf26263b533266475"
+    },
+    {
+      "path": "/apple-touch-icon-ledger-v1.png",
+      "bytes": 4146,
+      "sha256": "d908ef8aefcb4e412c6f907776b978f757edd7525372f4b492d15331df7d6a3a"
+    }
+  ],
+  "restorePoint": "/share/Container/fine-ledger/data/pre-upgrade-entry-gesture-760054d8/"
+}

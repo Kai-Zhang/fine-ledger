@@ -1,4 +1,5 @@
 import { captureEdges } from "./edge-capture.ts";
+import { edgeDirection, edgeSwipeIntent } from "./edge-gesture.ts";
 import { resistedOffset, completesSwipe } from "./motion.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 type HistoryFrame = { key: number };
@@ -81,8 +82,7 @@ export function useSwipe<T extends HistoryFrame>(
   function begin(x: number, y: number) {
     const s = latest.current;
     if (s.blocked() || settling.current) return;
-    const direction =
-      x <= 24 ? "back" : x >= innerWidth - 24 ? "forward" : undefined;
+    const direction = edgeDirection(x, innerWidth);
     if (!direction) return;
     const b = s.navigation.stacks[s.navigation.tab],
       target = direction === "back" ? b.past.at(-2) : b.future[0],
@@ -108,11 +108,9 @@ export function useSwipe<T extends HistoryFrame>(
     const dx = x - s.x,
       dy = y - s.y;
     if (!s.intent) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) <= 8) return false;
-      if (
-        Math.abs(dy) >= Math.abs(dx) ||
-        (s.direction === "back" ? dx <= 0 : dx >= 0)
-      ) {
+      const intent = edgeSwipeIntent(dx, dy, s.direction);
+      if (intent === "pending") return false;
+      if (intent === "rejected") {
         s.intent = "rejected";
         return false;
       }

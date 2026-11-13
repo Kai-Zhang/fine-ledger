@@ -1,3 +1,5 @@
+import { edgeDirection } from "./edge-gesture.ts";
+
 export const rowActionWidth = 80;
 export function rowSwipeIntent(dx: number, dy: number) {
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return "pending";
@@ -10,5 +12,5 @@ export function rowSwipeOpen(offset: number) {
   return offset <= -rowActionWidth / 2;
 }
 export function rowSwipeStart(x: number, width: number) {
-  return x > 24 && x < width - 24;
+  return !edgeDirection(x, width);
 }

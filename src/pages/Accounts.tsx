@@ -1,4 +1,5 @@
 import { referenceRateLookup } from "../domain/reference-rates.ts";
+import { EntryAction } from "../components/EntryAction.tsx";
 import { currentAccountBalances } from "../domain/account-view.ts";
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
@@ -572,19 +573,14 @@ export function Accounts() {
         </div>
       )}
       {!manage && book.accounts.some((a) => !a.archived) && (
-        <div className="floating-entry">
-          <IconButton
-            className="entry-action"
-            name="SquarePen"
-            label="记一笔"
-            onClick={() =>
-              app.go({
-                page: "entry",
-                accountId: book.accounts.find((a) => !a.archived)?.id,
-              })
-            }
-          />
-        </div>
+        <EntryAction
+          onClick={() =>
+            app.go({
+              page: "entry",
+              accountId: book.accounts.find((a) => !a.archived)?.id,
+            })
+          }
+        />
       )}
     </>
   );

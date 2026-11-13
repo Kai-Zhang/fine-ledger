@@ -1,6 +1,6 @@
 services:
   fine-ledger:
-    image: fine-ledger:0.14.5-nas-running-balance-cd95256
+    image: fine-ledger:0.14.5-nas-entry-gesture-760054d
     pull_policy: never
     restart: unless-stopped
     init: true

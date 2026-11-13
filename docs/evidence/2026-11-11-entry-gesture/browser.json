@@ -1,0 +1,63 @@
+{
+  "positions": [
+    {
+      "width": 390,
+      "height": 844,
+      "root": {
+        "x": 319,
+        "y": 712,
+        "width": 52,
+        "height": 52
+      },
+      "detail": {
+        "x": 319,
+        "y": 712,
+        "width": 52,
+        "height": 52
+      }
+    },
+    {
+      "width": 320,
+      "height": 692,
+      "root": {
+        "x": 249,
+        "y": 560,
+        "width": 52,
+        "height": 52
+      },
+      "detail": {
+        "x": 249,
+        "y": 560,
+        "width": 52,
+        "height": 52
+      }
+    },
+    {
+      "width": 740,
+      "height": 390,
+      "root": {
+        "x": 669,
+        "y": 258,
+        "width": 52,
+        "height": 52
+      },
+      "detail": {
+        "x": 669,
+        "y": 258,
+        "width": 52,
+        "height": 52
+      }
+    }
+  ],
+  "checks": [
+    "320/390/740px: original right inset and 52px size, identical root/account coordinates; entry action opens the current account; near-miss protection",
+    "real Chrome touch input returns from 12/24/36/44px",
+    "24px right-edge forward remains available",
+    "small diagonal start can resolve into back navigation",
+    "outside-edge and short swipes stay; vertical touch scroll in the new strip scrolls the list without navigating",
+    "back swipe closes a filter layer without leaving its page",
+    "unsaved entry prompts on swipe; continuing retains the amount; discard returns without saving",
+    "iOS-UA reservation branch accepts a 36px start (Chrome engine, not an iPhone test)",
+    "a real touch on the entry button near the right history edge opens the form under iOS UA"
+  ]
+}

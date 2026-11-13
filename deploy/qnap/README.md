@@ -4,7 +4,11 @@
 
 家庭 NAS 已接收实际账本。2026-11-03 用户确认厘序与 MoneyWiz 并跑试用。自动备份关闭，升级前单独创建 SQLite 一致性恢复点。
 
-2026-11-05 当前服务镜像为 `fine-ledger:0.14.5-nas-running-balance-cd95256`，发布指纹为 `0.14.5-cd952560086e7f5b`。逐笔余额版沿用上一版服务并保留其前端资源。HTTPS、健康检查、API 元数据和发布资源均已核对，用户已在 iPhone 上确认逐笔余额显示正常。
+2026-11-11 当前镜像为 `fine-ledger:0.14.5-nas-entry-gesture-760054d`，发布指纹为 `0.14.5-760054d8f5570596`。记账按钮保留原右侧位置，进入账户明细不再下沉；左侧返回候选范围扩大到 44px，并改善斜向起步。此次在原逐笔余额镜像上仅叠加已验收前端，服务端、数据库版本、Caddy 与证书保持不变，旧前端资源继续保留。
+
+本次升级恢复点位于 `/share/Container/fine-ledger/data/pre-upgrade-entry-gesture-760054d8/`，包含 SQLite 一致性副本、Container Station 实际 Compose、资源覆盖配置及宿主 Compose。升级前后均为 19 个账户、16,313 笔交易、水位 22；业务表哈希完全相同，完整性和外键检查通过。HTTPS、健康检查、API 元数据、新发布资源字节匹配和旧版入口均已核对。详见[部署证据](../../docs/evidence/2026-11-11-nas-entry-gesture/README.md)。
+
+2026-11-05 上一版镜像为 `fine-ledger:0.14.5-nas-running-balance-cd95256`，发布指纹为 `0.14.5-cd952560086e7f5b`。逐笔余额版沿用上一版服务并保留其前端资源。HTTPS、健康检查、API 元数据和发布资源均已核对，用户已在 iPhone 上确认逐笔余额显示正常。
 
 本次升级前的 SQLite 恢复点和旧 Compose 配置位于 NAS 的 `/share/Container/fine-ledger/data/pre-upgrade-running-balance-cd95256/`。恢复点通过 SQLite 完整性和外键检查。升级前后水位均为 16，交易均为 16,277 笔。
 

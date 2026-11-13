@@ -267,6 +267,7 @@ export function ExpenseDonut({
       onContextMenu={(e) => e.preventDefault()}
     >
       <svg
+        data-no-back
         ref={svg}
         viewBox="0 0 300 300"
         role="group"

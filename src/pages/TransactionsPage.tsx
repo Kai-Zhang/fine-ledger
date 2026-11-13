@@ -1,4 +1,5 @@
 import { transactionSelection } from "../domain/transaction-view.ts";
+import { EntryAction } from "../components/EntryAction.tsx";
 import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { PostingDialog } from "../components/PostingDialog.tsx";
 import { TransactionFilters } from "../components/TransactionFilters.tsx";
@@ -394,24 +395,19 @@ export function TransactionsPage() {
         />
       )}
       {!account?.archived && book.accounts.some((a) => !a.archived) && (
-        <div className="floating-entry">
-          <IconButton
-            className="entry-action"
-            name="SquarePen"
-            label="记一笔"
-            onClick={() =>
-              app.go({
-                page: "entry",
-                accountId:
-                  account?.id ||
-                  (filters.accounts.length === 1
-                    ? filters.accounts[0]
-                    : undefined) ||
-                  book.accounts.find((a) => !a.archived)?.id,
-              })
-            }
-          />
-        </div>
+        <EntryAction
+          onClick={() =>
+            app.go({
+              page: "entry",
+              accountId:
+                account?.id ||
+                (filters.accounts.length === 1
+                  ? filters.accounts[0]
+                  : undefined) ||
+                book.accounts.find((a) => !a.archived)?.id,
+            })
+          }
+        />
       )}
     </>
   );
