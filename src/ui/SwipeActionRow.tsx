@@ -41,6 +41,7 @@ export function SwipeActionRow({
   return (
     <div
       className={`swipe-action-row ${editing ? "editing" : ""}`}
+      data-no-back
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           onOpenChange(false);

@@ -367,23 +367,10 @@ export function App() {
   } = useSwipe(
     navigation,
     () => !book || pendingLeave.current || !!confirmState,
-    () => !!layers.current.length,
+    () => layers.current.at(-1),
     (d) => requestRef.current(d),
     () => dirtyRef.current,
-    async () => {
-      if (pendingLeave.current) return false;
-      pendingLeave.current = true;
-      const yes = await confirm({
-        title: "放弃未保存的修改？",
-        message: "修改尚未保存。",
-        label: "放弃修改",
-        cancelLabel: "继续填写",
-        danger: true,
-      });
-      pendingLeave.current = false;
-      if (yes) setDirty(false);
-      return yes;
-    },
+    true,
   );
   function restored() {
     views.clear();
@@ -530,71 +517,73 @@ export function App() {
             </span>
           </div>
         </aside>
-        {swipeTarget && (
-          <AppContext.Provider
-            value={{
-              preview: true,
-              frameKey: swipeTarget.key,
-              localSync,
-              currentReferenceQuotes,
-              restored: () => {},
-              views,
-              book,
-              mode,
-              route: swipeTarget.route,
-              go: () => {},
-              back: () => {},
-              backAfterSave: () => {},
-              forward: () => {},
-              swipe: () => {},
-              registerLayer: () => () => {},
-              leave: () => {},
-              save: async () => false,
-              toast: () => {},
-              setDirty: () => {},
-              confirm: async () => false,
-              open: () => {},
-              close: () => {},
-            }}
-          >
-            <section
-              className={`workspace navigation-underlay ${swipeTarget.key === branch.past[0].key ? "preview-root" : ""}`}
-              inert
-              aria-hidden="true"
-              ref={(el) => {
-                if (el) {
-                  const scroll = el.querySelector(".page-content");
-                  if (scroll)
-                    scroll.scrollTop =
-                      scrolls.current.get(String(swipeTarget!.key)) || 0;
-                }
+        <div className="workspace-region">
+          {swipeTarget && (
+            <AppContext.Provider
+              value={{
+                preview: true,
+                frameKey: swipeTarget.key,
+                localSync,
+                currentReferenceQuotes,
+                restored: () => {},
+                views,
+                book,
+                mode,
+                route: swipeTarget.route,
+                go: () => {},
+                back: () => {},
+                backAfterSave: () => {},
+                forward: () => {},
+                swipe: () => {},
+                registerLayer: () => () => {},
+                leave: () => {},
+                save: async () => false,
+                toast: () => {},
+                setDirty: () => {},
+                confirm: async () => false,
+                open: () => {},
+                close: () => {},
               }}
             >
-              {pages[swipeTarget.route.page]}
-              {swipeTarget.key === branch.past[0].key && (
-                <nav className="preview-bottom-nav">
-                  {navItems.map(([p, icon, label]) => (
-                    <span
-                      className={p === navigation.tab ? "selected" : ""}
-                      key={p}
-                    >
-                      <Icon name={icon} />
-                      {label}
-                    </span>
-                  ))}
-                </nav>
-              )}
-            </section>
-          </AppContext.Provider>
-        )}
-        <section
-          data-active="true"
-          className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
-          ref={attachSurface}
-          key={frame.key}
-        >
-          {pages[route.page]}
-        </section>
+              <section
+                className={`workspace navigation-underlay ${swipeTarget.key === branch.past[0].key ? "preview-root" : ""}`}
+                inert
+                aria-hidden="true"
+                ref={(el) => {
+                  if (el) {
+                    const scroll = el.querySelector(".page-content");
+                    if (scroll)
+                      scroll.scrollTop =
+                        scrolls.current.get(String(swipeTarget!.key)) || 0;
+                  }
+                }}
+              >
+                {pages[swipeTarget.route.page]}
+                {swipeTarget.key === branch.past[0].key && (
+                  <nav className="preview-bottom-nav">
+                    {navItems.map(([p, icon, label]) => (
+                      <span
+                        className={p === navigation.tab ? "selected" : ""}
+                        key={p}
+                      >
+                        <Icon name={icon} />
+                        {label}
+                      </span>
+                    ))}
+                  </nav>
+                )}
+              </section>
+            </AppContext.Provider>
+          )}
+          <section
+            data-active="true"
+            className={`workspace ${route.page === "account" || route.page === "transactions" ? "ledger-list-workspace" : ""}`}
+            ref={attachSurface}
+            key={frame.key}
+          >
+            {pages[route.page]}
+          </section>
+        </div>
         {isRoot && (
           <nav className="bottom-nav" aria-label="主导航">
             {navItems.map(([page, icon, label]) => (
@@ -702,10 +691,9 @@ function Welcome({
   } = useSwipe(
     navigation,
     () => busy || serviceBusy,
-    () => false,
+    () => undefined,
     step,
     () => false,
-    async () => true,
   );
   const title = (page: StartPage) =>
     page === "create"

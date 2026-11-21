@@ -98,6 +98,7 @@ export function PeriodChart({
         <div
           ref={viewport}
           className="period-chart-scroll"
+          data-no-back
           onScroll={(e) => setScroll(e.currentTarget.scrollLeft)}
         >
           <svg

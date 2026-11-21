@@ -1,72 +1,109 @@
-import { edgeDirection, nativeHistoryEdgeWidth } from "./edge-gesture.ts";
+import { nativeHistoryEdgeWidth, type SwipeDirection } from "./edge-gesture.ts";
 
-export function captureEdges(
+type Directions = SwipeDirection | "both";
+
+export function captureSwipe(
   target: Document,
   width: () => number,
   callbacks: {
-    start: (x: number, y: number) => boolean | undefined;
-    move: (x: number, y: number) => boolean;
+    start: (x: number, y: number, origin: Element) => Directions | undefined;
+    move: (x: number, y: number) => boolean | "rejected";
     end: (cancel?: boolean) => void;
   },
-  cancelNativeHistoryOnStart = false,
+  { reserveNativeHistory = false, usePointerEvents = false } = {},
 ) {
-  let active = false;
+  let direction: Directions | undefined;
+  let pointerId: number | undefined;
   let claimed = false;
   let suppressClickUntil = 0;
-  const start = (e: TouchEvent) => {
+
+  function begin(x: number, y: number, origin: Element) {
+    if (
+      direction ||
+      origin?.closest?.(
+        ".drag-handle, [data-no-back], input, textarea, select, [contenteditable]:not([contenteditable=false]), [role=slider]",
+      )
+    )
+      return;
+    direction = callbacks.start(x, y, origin);
+    claimed = false;
+  }
+
+  function finish(cancel = false) {
+    if (!direction) return;
+    direction = undefined;
+    pointerId = undefined;
+    if (claimed) suppressClickUntil = performance.now() + 500;
+    claimed = false;
+    callbacks.end(cancel);
+  }
+
+  function track(x: number, y: number) {
+    const result = callbacks.move(x, y);
+    if (result === "rejected") finish(true);
+    else if (result) claimed = true;
+    return result === true;
+  }
+
+  function release(x?: number, y?: number) {
+    if (claimed && x !== undefined && y !== undefined) track(x, y);
+    finish();
+  }
+
+  const pointerDown = (e: PointerEvent) => {
+    if (e.pointerType !== "touch") return;
+    suppressClickUntil = 0;
+    if (!e.isPrimary) {
+      finish(true);
+      return;
+    }
+    begin(e.clientX, e.clientY, e.target as Element);
+    if (direction) pointerId = e.pointerId;
+  };
+  const pointerMove = (e: PointerEvent) => {
+    if (e.pointerId === pointerId) track(e.clientX, e.clientY);
+  };
+  const pointerUp = (e: PointerEvent) => {
+    if (e.pointerId === pointerId) release(e.clientX, e.clientY);
+  };
+  const pointerCancel = (e: PointerEvent) => {
+    if (e.pointerId === pointerId) finish(true);
+  };
+
+  const touchStart = (e: TouchEvent) => {
     suppressClickUntil = 0;
     if (e.touches.length !== 1) {
       finish(true);
       return;
     }
-    if (active) return;
     const t = e.touches[0];
-    if (!edgeDirection(t.clientX, width())) return;
     const origin = e.target as Element;
+    if (!usePointerEvents) begin(t.clientX, t.clientY, origin);
+    // Keep the established physical-edge reservation on iOS. Movement in
+    // the content uses Pointer Events and touch-action to share native scroll.
     if (
-      origin?.closest?.(
-        ".drag-handle, [data-no-back], input, textarea, select, [contenteditable=true], [role=slider]",
-      )
-    )
-      return;
-    if (!callbacks.start(t.clientX, t.clientY)) return;
-    active = true;
-    claimed = false;
-    // iOS can claim the system history gesture before the first touchmove.
-    if (
-      cancelNativeHistoryOnStart &&
+      reserveNativeHistory &&
+      direction &&
       e.cancelable &&
-      !origin?.closest?.("[data-page-back], .amount-keyboard button") &&
-      (t.clientX <= nativeHistoryEdgeWidth ||
-        t.clientX >= width() - nativeHistoryEdgeWidth)
+      !origin?.closest?.("button, a[href], summary, [role=button]") &&
+      ((direction !== "forward" && t.clientX <= nativeHistoryEdgeWidth) ||
+        (direction !== "back" && t.clientX >= width() - nativeHistoryEdgeWidth))
     )
       e.preventDefault();
-    // Only an edge candidate needs a blocking listener. Ordinary scrolling
-    // should not wait for JS to decide whether its touchmove can be canceled.
-    target.addEventListener("touchmove", move, {
-      passive: false,
-      capture: true,
-    });
   };
-  const move = (e: TouchEvent) => {
+  const touchMove = (e: TouchEvent) => {
+    if (!direction) return;
     if (e.touches.length !== 1 || !e.cancelable) {
       finish(true);
       return;
     }
     const t = e.touches[0];
-    if (callbacks.move(t.clientX, t.clientY)) {
-      claimed = true;
-      e.preventDefault();
-    }
+    if (track(t.clientX, t.clientY)) e.preventDefault();
   };
-  function finish(cancel = false) {
-    if (!active) return;
-    active = false;
-    if (claimed) suppressClickUntil = performance.now() + 500;
-    target.removeEventListener("touchmove", move, { capture: true });
-    callbacks.end(cancel);
-  }
-  const end = () => finish();
+  const touchEnd = (e: TouchEvent) => {
+    const t = e.changedTouches?.[0];
+    release(t?.clientX, t?.clientY);
+  };
   const cancel = () => finish(true);
   const click = (e: MouseEvent) => {
     if (e.detail > 0 && performance.now() < suppressClickUntil) {
@@ -75,19 +112,29 @@ export function captureEdges(
       suppressClickUntil = 0;
     }
   };
-  target.addEventListener("touchstart", start, {
-    passive: !cancelNativeHistoryOnStart,
-    capture: true,
+
+  const listeners = new AbortController();
+  const options = { capture: true, passive: true, signal: listeners.signal };
+  if (usePointerEvents) {
+    target.addEventListener("pointerdown", pointerDown, options);
+    target.addEventListener("pointermove", pointerMove, options);
+    target.addEventListener("pointerup", pointerUp, options);
+    target.addEventListener("pointercancel", pointerCancel, options);
+    target.addEventListener("lostpointercapture", pointerCancel, options);
+  } else {
+    // WebKit may decide a move is non-cancelable before touchstart runs.
+    target.addEventListener("touchmove", touchMove, {
+      ...options,
+      passive: false,
+    });
+    target.addEventListener("touchend", touchEnd, options);
+    target.addEventListener("touchcancel", cancel, options);
+  }
+  target.addEventListener("touchstart", touchStart, {
+    ...options,
+    passive: !reserveNativeHistory,
   });
-  target.addEventListener("touchend", end, { capture: true });
-  target.addEventListener("touchcancel", cancel, { capture: true });
-  target.addEventListener("click", click, { capture: true });
-  return () => {
-    active = false;
-    target.removeEventListener("touchstart", start, { capture: true });
-    target.removeEventListener("touchmove", move, { capture: true });
-    target.removeEventListener("touchend", end, { capture: true });
-    target.removeEventListener("touchcancel", cancel, { capture: true });
-    target.removeEventListener("click", click, { capture: true });
-  };
+  target.addEventListener("contextmenu", cancel, options);
+  target.addEventListener("click", click, { ...options, passive: false });
+  return () => listeners.abort();
 }

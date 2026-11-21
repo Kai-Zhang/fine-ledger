@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { edgeDirection, swipeIntent } from "../src/navigation/edge-gesture.ts";
+import { captureSwipe } from "../src/navigation/edge-capture.ts";
 import {
-  edgeDirection,
-  edgeSwipeIntent,
-} from "../src/navigation/edge-gesture.ts";
-import { completesSwipe } from "../src/navigation/motion.ts";
+  completesSwipe,
+  recordSwipePosition,
+  swipeReleaseVelocity,
+} from "../src/navigation/motion.ts";
 import {
   initialNavigation,
   currentFrame,
@@ -19,20 +21,38 @@ test("back candidates include the near edge without widening forward gestures", 
   for (const x of [366, 378, 390])
     assert.equal(edgeDirection(x, 390), "forward");
 });
-test("small diagonal starts can resolve horizontally while vertical and outward motion yield", () => {
-  assert.equal(edgeSwipeIntent(4, 6, "back"), "pending");
-  assert.equal(edgeSwipeIntent(8, 10, "back"), "pending");
-  assert.equal(edgeSwipeIntent(20, 12, "back"), "horizontal");
-  assert.equal(edgeSwipeIntent(2, 14, "back"), "rejected");
-  assert.equal(edgeSwipeIntent(24, 24, "back"), "rejected");
-  assert.equal(edgeSwipeIntent(-10, 0, "back"), "rejected");
-  assert.equal(edgeSwipeIntent(-20, 12, "forward"), "horizontal");
-  assert.equal(edgeSwipeIntent(10, 0, "forward"), "rejected");
+test("horizontal intent selects the direction while mostly vertical or ambiguous drags yield", () => {
+  assert.equal(swipeIntent(4, 6), "pending");
+  assert.equal(swipeIntent(8, 10), "pending");
+  assert.equal(swipeIntent(20, 12), "back");
+  assert.equal(swipeIntent(-20, 12), "forward");
+  assert.equal(swipeIntent(2, 14), "rejected");
+  assert.equal(swipeIntent(24, 24), "rejected");
+});
+test("release requires distance within the content width or a deliberate flick", () => {
   assert.equal(completesSwipe(30, 1, 390), false);
   assert.equal(completesSwipe(70, 0, 390), false);
-  assert.equal(completesSwipe(110, 0, 390), true);
-  assert.equal(completesSwipe(45, 0.5, 390), true);
+  assert.equal(completesSwipe(86, 0, 390), true);
+  assert.equal(completesSwipe(89, 0, 640), false);
+  assert.equal(completesSwipe(120, 0, 640), true);
+  assert.equal(completesSwipe(70, 0, 260), true);
+  assert.equal(completesSwipe(45, 0.5, 390), false);
+  assert.equal(completesSwipe(45, 0.6, 390), true);
   assert.equal(completesSwipe(200, 1, 390, true), false);
+});
+
+test("release velocity respects the final direction, stationary release and either swipe direction", () => {
+  const positions = [{ x: 300, at: 0 }];
+  recordSwipePosition(positions, 280, 30);
+  recordSwipePosition(positions, 254, 60);
+  recordSwipePosition(positions, 246, 70);
+  assert.ok(swipeReleaseVelocity(positions, 73, -1) > 0.6);
+  assert.equal(swipeReleaseVelocity(positions, 73, 1), 0);
+  assert.equal(swipeReleaseVelocity(positions, 151, -1), 0);
+  recordSwipePosition(positions, 248, 79);
+  assert.equal(swipeReleaseVelocity(positions, 81, -1), 0);
+  recordSwipePosition(positions, 288, 110);
+  assert.ok(swipeReleaseVelocity(positions, 112, 1) > 0);
 });
 
 function touch(doc, type, x, y = 150) {
@@ -43,40 +63,39 @@ function touch(doc, type, x, y = 150) {
   doc.dispatchEvent(event);
   return event;
 }
-test("the added back strip captures swipes without eagerly blocking taps or vertical moves on iOS", async () => {
-  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+test("full content candidates capture swipes without eagerly blocking taps or vertical moves on iOS", () => {
   const doc = new EventTarget();
   const starts = [];
-  const cleanup = captureEdges(
+  const cleanup = captureSwipe(
     doc,
-    () => 390,
+    () => 900,
     {
       start: (x) => {
+        if (x < 224) return;
         starts.push(x);
-        return true;
+        return "both";
       },
-      move: (x, y) => y === 150 && x > 60,
+      move: (x, y) => y === 150 && x > 310,
       end: () => {},
     },
-    true,
+    { reserveNativeHistory: true },
   );
-  for (const x of [25, 36, 44, 80, 100, 120, 121, 365, 366]) {
+  for (const x of [5, 120, 223, 224, 300, 450, 600, 875, 876]) {
     const event = touch(doc, "touchstart", x);
-    assert.equal(event.defaultPrevented, x === 366);
-    if (x === 100) {
+    assert.equal(event.defaultPrevented, x === 876);
+    if (x === 300) {
       assert.equal(touch(doc, "touchmove", x, 180).defaultPrevented, false);
-      assert.equal(touch(doc, "touchmove", 180).defaultPrevented, true);
+      assert.equal(touch(doc, "touchmove", 380).defaultPrevented, true);
     }
     touch(doc, "touchend", x);
   }
-  assert.deepEqual(starts, [25, 36, 44, 80, 100, 120, 366]);
+  assert.deepEqual(starts, [224, 300, 450, 600, 875, 876]);
   cleanup();
 });
-test("claimed drags suppress a trailing click but preserve keyboard activation and the next tap", async () => {
-  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+test("claimed drags suppress a trailing click but preserve keyboard activation and the next tap", () => {
   const doc = new EventTarget();
-  const cleanup = captureEdges(doc, () => 390, {
-    start: () => true,
+  const cleanup = captureSwipe(doc, () => 390, {
+    start: () => "both",
     move: () => true,
     end: () => {},
   });
@@ -100,23 +119,22 @@ test("claimed drags suppress a trailing click but preserve keyboard activation a
   assert.equal(click(1), false);
   cleanup();
 });
-test("controls with their own gestures are excluded before iOS history reservation", async () => {
-  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+test("controls with their own gestures are excluded before iOS history reservation", () => {
   const doc = new EventTarget();
   let started = false;
   doc.closest = () => ({});
-  const cleanup = captureEdges(
+  const cleanup = captureSwipe(
     doc,
     () => 390,
     {
       start: () => {
         started = true;
-        return true;
+        return "both";
       },
       move: () => true,
       end: () => {},
     },
-    true,
+    { reserveNativeHistory: true },
   );
   for (const x of [5, 100])
     assert.equal(touch(doc, "touchstart", x).defaultPrevented, false);
@@ -177,14 +195,13 @@ test("account shortcut report and nested drilldown return to their actual source
   assert.equal(back(n), n);
 });
 
-test("edge capture leaves vertical scroll alone and cancels only claimed moves", async () => {
-  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+test("touch capture lets vertical scrolling take over, and rejects multitouch", () => {
   const doc = new EventTarget();
   let started = 0,
     ends = [];
-  const cleanup = captureEdges(doc, () => 390, {
-    start: () => ++started !== 3,
-    move: (x, y) => x > 25 && y === 150,
+  const cleanup = captureSwipe(doc, () => 390, {
+    start: (x) => (x !== 200 && ++started !== 3 ? "both" : undefined),
+    move: (x, y) => (y > 170 ? "rejected" : x > 25),
     end: (cancel) => ends.push(cancel),
   });
   const fire = (type, x, y = 150, touches = 1, cancelable = true) => {
@@ -222,14 +239,13 @@ test("edge capture leaves vertical scroll alone and cancels only claimed moves",
   assert.equal(started, 4);
 });
 
-test("iOS reserves edge touchstart before the system history gesture", async () => {
-  const { captureEdges } = await import("../src/navigation/edge-capture.ts");
+test("iOS reserves physical edges only where the gesture direction can navigate", () => {
   const doc = new EventTarget();
-  const cleanup = captureEdges(
+  const cleanup = captureSwipe(
     doc,
     () => 390,
-    { start: () => true, move: () => true, end: () => {} },
-    true,
+    { start: () => "back", move: () => true, end: () => {} },
+    { reserveNativeHistory: true },
   );
   for (const [x, reserved] of [
     [195, false],
@@ -239,7 +255,7 @@ test("iOS reserves edge touchstart before the system history gesture", async () 
     [36, false],
     [120, false],
     [121, false],
-    [385, true],
+    [385, false],
   ]) {
     const event = new Event("touchstart", { cancelable: true });
     Object.defineProperty(event, "touches", { value: [{ clientX: x }] });
@@ -247,6 +263,57 @@ test("iOS reserves edge touchstart before the system history gesture", async () 
     assert.equal(event.defaultPrevented, reserved);
     doc.dispatchEvent(new Event("touchend"));
   }
+  cleanup();
+});
+
+test("content swipes use pointer moves even when Safari touch moves are non-cancelable", () => {
+  const doc = new EventTarget();
+  const moved = [],
+    ended = [];
+  const cleanup = captureSwipe(
+    doc,
+    () => 390,
+    {
+      start: () => "back",
+      move: (x) => {
+        moved.push(x);
+        return true;
+      },
+      end: (cancel) => ended.push(cancel),
+    },
+    { usePointerEvents: true, reserveNativeHistory: true },
+  );
+  const pointer = (type, x, id = 1) => {
+    const event = Object.assign(new Event(type), {
+      clientX: x,
+      clientY: 150,
+      pointerId: id,
+      pointerType: "touch",
+      isPrimary: id === 1,
+    });
+    doc.dispatchEvent(event);
+  };
+  const swipe = (x) => {
+    pointer("pointerdown", x);
+    assert.equal(touch(doc, "touchstart", x).defaultPrevented, x <= 24);
+    doc.dispatchEvent(new Event("touchmove", { cancelable: false }));
+    pointer("pointermove", x + 60);
+  };
+  swipe(150);
+  pointer("pointerup", 215);
+  assert.deepEqual(moved, [210, 215]);
+  assert.deepEqual(ended, [false]);
+  const click = Object.assign(new Event("click", { cancelable: true }), {
+    detail: 1,
+  });
+  assert.equal(doc.dispatchEvent(click), false);
+  swipe(5);
+  pointer("pointercancel", 65);
+  assert.deepEqual(ended, [false, true]);
+  swipe(150);
+  pointer("pointerdown", 180, 2);
+  pointer("pointerup", 210);
+  assert.deepEqual(ended, [false, true, true]);
   cleanup();
 });
 
