@@ -22,8 +22,9 @@ export function captureEdges(
     if (active) return;
     const t = e.touches[0];
     if (!edgeDirection(t.clientX, width())) return;
+    const origin = e.target as Element;
     if (
-      (e.target as Element)?.closest?.(
+      origin?.closest?.(
         ".drag-handle, [data-no-back], input, textarea, select, [contenteditable=true], [role=slider]",
       )
     )
@@ -35,6 +36,7 @@ export function captureEdges(
     if (
       cancelNativeHistoryOnStart &&
       e.cancelable &&
+      !origin?.closest?.("[data-page-back], .amount-keyboard button") &&
       (t.clientX <= nativeHistoryEdgeWidth ||
         t.clientX >= width() - nativeHistoryEdgeWidth)
     )

@@ -35,7 +35,8 @@ test("row swipes yield vertical scrolling and page edges, clamp to an exposed ac
   assert.equal(rowSwipeStart(24, 390), false);
   assert.equal(rowSwipeStart(36, 390), false);
   assert.equal(rowSwipeStart(44, 390), false);
-  assert.equal(rowSwipeStart(45, 390), true);
+  assert.equal(rowSwipeStart(120, 390), false);
+  assert.equal(rowSwipeStart(121, 390), true);
   assert.equal(rowSwipeStart(366, 390), false);
   assert.equal(rowSwipeStart(260, 390), true);
   assert.equal(rowSwipeIntent(-3, 2), "pending");

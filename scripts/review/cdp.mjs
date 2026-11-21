@@ -1,11 +1,12 @@
 export async function connect(url = "about:blank", targetId) {
+  const endpoint = `http://127.0.0.1:${process.env.REVIEW_CDP_PORT || 9337}`;
   const info = targetId
-    ? (await (await fetch("http://127.0.0.1:9337/json/list")).json()).find(
+    ? (await (await fetch(`${endpoint}/json/list`)).json()).find(
         (t) => t.id === targetId,
       )
     : await (
         await fetch(
-          "http://127.0.0.1:9337/json/new?" + encodeURIComponent("about:blank"),
+          `${endpoint}/json/new?` + encodeURIComponent("about:blank"),
           { method: "PUT" },
         )
       ).json();

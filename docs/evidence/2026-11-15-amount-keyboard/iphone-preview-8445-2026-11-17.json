@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-17",
+  "url": "https://zhangkaidemac-mini.local:8445",
+  "release": "0.14.5-62c650f3ee630e12",
+  "certificateValidated": true,
+  "certificateValidTo": "Nov 26 02:31:29 2026 GMT",
+  "calculatorBundleVerified": true,
+  "protocol": "fine-ledger-sync-v1",
+  "ledger": {
+    "id": "b1e9230a-ed40-4f57-91ed-9fe0352a0546",
+    "name": "我的账本",
+    "accounts": 5,
+    "entries": 35
+  },
+  "assets": [
+    {
+      "path": "/",
+      "status": 200,
+      "sha256": "0345ca0fbca7e9b3241acd263815b189d45abe0ea1b005ac145b873e5a9e98eb"
+    },
+    {
+      "path": "/sw.js",
+      "status": 200,
+      "sha256": "a66e7ebdf3bf63d7cf71182762b04f9f7ce37066e4a2230c9f0cd4ff3311ef3a"
+    },
+    {
+      "path": "/assets/0.14.5-62c650f3ee630e12/bootstrap.js",
+      "status": 200,
+      "sha256": "461d7da75f6e8924d17943a4f3cfc898ace042ef00cd416f4e9b46bb09216c89"
+    },
+    {
+      "path": "/assets/0.14.5-62c650f3ee630e12/calculate.worker-CQqDVp5K.js",
+      "status": 200,
+      "sha256": "08c38bfee4b40f7e1fde538b33ca1b746348b6647fc4478af7d87b6a7e884e98"
+    },
+    {
+      "path": "/assets/0.14.5-62c650f3ee630e12/index-CxEwSI_2.js",
+      "status": 200,
+      "sha256": "6eee9595dd7d099f049302bb7463826a799ec0ad8f8ec2b91e68d3a1c7d3f94a"
+    },
+    {
+      "path": "/assets/0.14.5-62c650f3ee630e12/index-xvaHK0EH.css",
+      "status": 200,
+      "sha256": "7263e21de8d8b0df1f8df39c7dd163293cd2edfcdaf697f04f77acd0cc8b7471"
+    },
+    {
+      "path": "/assets/0.14.5-62c650f3ee630e12/index.html",
+      "status": 200,
+      "sha256": "0345ca0fbca7e9b3241acd263815b189d45abe0ea1b005ac145b873e5a9e98eb"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "sha256": "b5fadccb8eec6f81b77cba5dc8ffe2d67234c3a92232286a2eb6d928d18ec121"
+    },
+    {
+      "path": "/icon.svg",
+      "status": 200,
+      "sha256": "c841c974720598902e2492c6cd4c8f2056d16b908aaae513827bd0806d2d6d47"
+    },
+    {
+      "path": "/icon-192.png",
+      "status": 200,
+      "sha256": "ffab66d16f31d9badcf9ca35a048623dbe325d5197b85e7d12fc88ebff56c5b6"
+    },
+    {
+      "path": "/icon-512.png",
+      "status": 200,
+      "sha256": "f24ab03c0b1c06cea99e51321bd3e37fef05069b91eab6daf26263b533266475"
+    },
+    {
+      "path": "/apple-touch-icon-ledger-v1.png",
+      "status": 200,
+      "sha256": "d908ef8aefcb4e412c6f907776b978f757edd7525372f4b492d15331df7d6a3a"
+    }
+  ]
+}

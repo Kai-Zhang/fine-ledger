@@ -1,4 +1,4 @@
-export const backEdgeWidth = 44;
+export const backEdgeWidth = 120;
 export const forwardEdgeWidth = 24;
 // Preserve the existing iOS system-history reservation. The wider back
 // candidate area must still allow taps and scrolling until intent is clear.

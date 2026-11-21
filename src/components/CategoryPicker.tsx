@@ -31,7 +31,7 @@ export function CategoryPicker({
   };
   return (
     <Dialog title="选择类目" onClose={onClose}>
-      <div className="category-accordion-picker">
+      <div className="category-accordion-picker" data-no-back>
         {parents.map((p) => {
           const children = book.categories
             .filter((c) => c.parentId === p.id && !c.archived)

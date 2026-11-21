@@ -117,6 +117,7 @@ export function useSwipe<T extends HistoryFrame>(
       s.intent = "horizontal";
       if (!latest.current.layerOpen()) {
         if (s.target) setTarget(s.target);
+        surface.current?.classList.add("edge-navigation-active");
         surface.current?.classList.toggle("boundary-motion", s.boundary);
       }
     }
@@ -132,7 +133,10 @@ export function useSwipe<T extends HistoryFrame>(
     stopFrame();
     settling.current = false;
     paint(0);
-    surface.current?.classList.remove("boundary-motion");
+    surface.current?.classList.remove(
+      "boundary-motion",
+      "edge-navigation-active",
+    );
     setTarget(undefined);
   }
   function after(ms: number, fn: () => void) {

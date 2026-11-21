@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import { AmountKeyboardProvider } from "./components/AmountInput.tsx";
 import { App } from "./App.tsx";
 import "./style.css";
 import "./ui/pine-theme.css";
@@ -32,6 +33,8 @@ class ErrorBoundary extends Component<
 }
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
-    <App />
+    <AmountKeyboardProvider>
+      <App />
+    </AmountKeyboardProvider>
   </ErrorBoundary>,
 );

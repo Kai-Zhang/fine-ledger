@@ -12,9 +12,9 @@ import {
 } from "../src/navigation/stack.ts";
 const open = (n, route) => navigate(n, { type: "open", route });
 test("back candidates include the near edge without widening forward gestures", () => {
-  for (const x of [0, 12, 24, 36, 44])
+  for (const x of [0, 12, 24, 44, 80, 100, 120])
     assert.equal(edgeDirection(x, 390), "back");
-  for (const x of [45, 195, 365])
+  for (const x of [121, 195, 365])
     assert.equal(edgeDirection(x, 390), undefined);
   for (const x of [366, 378, 390])
     assert.equal(edgeDirection(x, 390), "forward");
@@ -60,16 +60,16 @@ test("the added back strip captures swipes without eagerly blocking taps or vert
     },
     true,
   );
-  for (const x of [25, 36, 44, 45, 365, 366]) {
+  for (const x of [25, 36, 44, 80, 100, 120, 121, 365, 366]) {
     const event = touch(doc, "touchstart", x);
     assert.equal(event.defaultPrevented, x === 366);
-    if (x === 36) {
+    if (x === 100) {
       assert.equal(touch(doc, "touchmove", x, 180).defaultPrevented, false);
       assert.equal(touch(doc, "touchmove", 180).defaultPrevented, true);
     }
     touch(doc, "touchend", x);
   }
-  assert.deepEqual(starts, [25, 36, 44, 366]);
+  assert.deepEqual(starts, [25, 36, 44, 80, 100, 120, 366]);
   cleanup();
 });
 test("claimed drags suppress a trailing click but preserve keyboard activation and the next tap", async () => {
@@ -118,7 +118,8 @@ test("controls with their own gestures are excluded before iOS history reservati
     },
     true,
   );
-  assert.equal(touch(doc, "touchstart", 5).defaultPrevented, false);
+  for (const x of [5, 100])
+    assert.equal(touch(doc, "touchstart", x).defaultPrevented, false);
   assert.equal(started, false);
   cleanup();
 });
@@ -236,8 +237,8 @@ test("iOS reserves edge touchstart before the system history gesture", async () 
     [24, true],
     [25, false],
     [36, false],
-    [44, false],
-    [45, false],
+    [120, false],
+    [121, false],
     [385, true],
   ]) {
     const event = new Event("touchstart", { cancelable: true });

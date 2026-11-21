@@ -4275,3 +4275,78 @@ body {
     transition: none;
   }
 }
+
+/* Shared calculator: top-layer popover also works inside native modal dialogs.
+   Palette, type and control rhythm live in ui/pine-theme.css. */
+.amount-keyboard {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0 auto;
+  width: min(100%, 480px);
+  max-height: 65dvh;
+  overflow: auto;
+  padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.amount-keyboard-expression {
+  padding: 6px 4px 8px;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.amount-keyboard:has(> .amount-keyboard-expression) {
+  padding-top: 0;
+}
+.amount-keyboard-keys {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.amount-keyboard-keys button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+.amount-keyboard-done {
+  width: 100%;
+  margin-top: 8px;
+}
+input[data-amount-input] {
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+  cursor: text;
+}
+.amount-keyboard-open .bottom-nav {
+  display: none;
+}
+.amount-keyboard-open .workspace[data-active]:not(.edge-navigation-active) {
+  height: calc(100% - var(--amount-keyboard-height, 350px));
+}
+.amount-keyboard-dialog {
+  margin-top: max(12px, env(safe-area-inset-top));
+  margin-bottom: auto;
+  max-height: calc(
+    var(--view-height) - var(--amount-keyboard-height, 350px) - 24px
+  );
+}
+.amount-keyboard-open .entry-submit {
+  position: static;
+}
+.amount-keyboard-open
+  .start-frame:not(.start-underlay, .edge-navigation-active) {
+  height: calc(var(--view-height) - var(--amount-keyboard-height, 350px));
+}
+
+/* The keypad already contains the bottom safe area. Reserve it only once. */
+@media (max-width: 760px) {
+  .amount-keyboard-open .app-shell {
+    padding-bottom: 0;
+  }
+}
+
+/* Keep the full page opaque while an edge transition moves it horizontally. */
+html:has(.edge-navigation-active, .confirmation-dialog[open]) .amount-keyboard {
+  visibility: hidden;
+}

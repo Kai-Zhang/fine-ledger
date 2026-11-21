@@ -1,3 +1,7 @@
+import {
+  AmountInput,
+  activateAmountInput,
+} from "../components/AmountInput.tsx";
 import { descriptionSuggestions } from "../domain/description-view.ts";
 import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { referenceRateLookup } from "../domain/reference-rates.ts";
@@ -128,8 +132,8 @@ export function EntryForm() {
         initial.splits.some((s) => !!s.projectId) ||
         !!original?.splits.some((s) => !!s.projectId),
     ),
-    [focused, setFocused] = useState(!existing),
-    [showSuggestions, setShowSuggestions] = useState(!existing),
+    [focused, setFocused] = useState(false),
+    [showSuggestions, setShowSuggestions] = useState(false),
     [picker, setPicker] = useState<number | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -145,6 +149,7 @@ export function EntryForm() {
     to = book.accounts.find((a) => a.id === toId),
     catManual = useRef(!!existing),
     amountRef = useRef<HTMLInputElement>(null),
+    splitAmountRefs = useRef(new Map<string, HTMLInputElement>()),
     descriptionRef = useRef<HTMLInputElement>(null),
     secondsEdited = useRef(false),
     receivedSecondsEdited = useRef(false);
@@ -330,7 +335,8 @@ export function EntryForm() {
     return () => app.setDirty(false);
   }, [formJSON]);
   useEffect(() => {
-    if (!app.preview && !existing && !original) amountRef.current?.focus();
+    if (!app.preview && !existing && !original)
+      activateAmountInput(amountRef.current);
   }, []);
   const suggestions = useMemo(
     () => descriptionSuggestions(book, kind, description),
@@ -363,7 +369,7 @@ export function EntryForm() {
     setFocused(false);
     setShowSuggestions(false);
     descriptionRef.current?.blur();
-    if (!amount) amountRef.current?.focus();
+    if (!amount) activateAmountInput(amountRef.current);
   }
   function switchKind(value: Entry["kind"]) {
     if (value === kind) return;
@@ -556,20 +562,23 @@ export function EntryForm() {
             </label>
           </div>
           <div className="entry-amount-row">
-            <input
+            <AmountInput
+              currency={currency}
               id="entry-amount"
               ref={amountRef}
-              inputMode={kind === "adjustment" ? "text" : "decimal"}
+              allowNegative={kind === "adjustment"}
               value={amount}
-              onChange={(e) => updateTotal(e.target.value)}
+              onBeginEdit={() => () => {
+                setAmount(amount);
+                setSplits(splits);
+                setReceived(received);
+                setTransferDriver(transferDriver);
+                setAllocationError(allocationError);
+              }}
+              onValueChange={(value) => updateTotal(value)}
               placeholder={digits(currency) === 0 ? "0" : "0.00"}
               autoComplete="off"
               aria-label="金额"
-              onFocus={() => {
-                setFocused(true);
-                setShowSuggestions(true);
-              }}
-              onBlur={() => setFocused(false)}
             />
             {["expense", "income"].includes(kind) ? (
               <select
@@ -618,10 +627,10 @@ export function EntryForm() {
                   </select>
                 </Field>
                 <Field label="原始金额">
-                  <input
-                    inputMode="decimal"
+                  <AmountInput
+                    currency={originCurrency}
                     value={originValue}
-                    onChange={(e) => setOriginValue(e.target.value)}
+                    onValueChange={(value) => setOriginValue(value)}
                     placeholder="可留空"
                   />
                 </Field>
@@ -720,11 +729,15 @@ export function EntryForm() {
               {to && to.currency !== currency && (
                 <>
                   <Field label={`转入金额 · ${to.currency}`}>
-                    <input
-                      inputMode="decimal"
+                    <AmountInput
+                      currency={to.currency}
                       value={received}
-                      onChange={(e) => {
-                        setReceived(e.target.value);
+                      onBeginEdit={() => () => {
+                        setReceived(received);
+                        setTransferDriver(transferDriver);
+                      }}
+                      onValueChange={(value) => {
+                        setReceived(value);
                         setTransferDriver(
                           !amount || transferDriver === "in" ? "in" : null,
                         );
@@ -753,7 +766,10 @@ export function EntryForm() {
                 setFocused(true);
                 setShowSuggestions(true);
               }}
-              onBlur={() => setFocused(false)}
+              onBlur={() => {
+                setFocused(false);
+                setShowSuggestions(false);
+              }}
               onCompositionStart={() => {}}
               onKeyDown={(e) => {
                 if (
@@ -847,19 +863,71 @@ export function EntryForm() {
                     </button>
                     {splitMode && (
                       <>
-                        <input
+                        <AmountInput
+                          currency={currency}
                           aria-label={`第 ${i + 1} 个类目金额`}
-                          inputMode="decimal"
                           placeholder="金额"
                           value={s.amount}
+                          onBeginEdit={() => () => {
+                            setSplits(splits);
+                            setAllocationError(allocationError);
+                          }}
                           disabled={!!s.locked}
-                          onChange={(e) =>
+                          ref={(node) => {
+                            if (node) splitAmountRefs.current.set(s.id, node);
+                            else splitAmountRefs.current.delete(s.id);
+                          }}
+                          onCommit={(value, target) => {
+                            if (!value) throw Error("请填写类目金额");
+                            // The explicit lock button owns its toggle; do not toggle twice.
+                            if (
+                              target
+                                ?.closest(".split-lock")
+                                ?.closest(".split-row") ===
+                              splitAmountRefs.current
+                                .get(s.id)
+                                ?.closest(".split-row")
+                            )
+                              return;
+                            allocateSplits(
+                              BigInt(minor(amount || "0", currency)),
+                              splits.map((x) => ({
+                                id: x.id,
+                                amountMinor: minor(
+                                  x.id === s.id ? value : x.amount || "0",
+                                  currency,
+                                ),
+                                locked: x.locked || x.id === s.id,
+                              })),
+                            );
+                            setSplits((rows) =>
+                              rows.map((x) =>
+                                x.id === s.id
+                                  ? { ...x, amount: value, locked: true }
+                                  : x,
+                              ),
+                            );
+                          }}
+                          nextLabel={
+                            splits.some((x) => x.id !== s.id && !x.locked)
+                              ? "锁定并下一项 →"
+                              : "锁定并完成"
+                          }
+                          onNext={() => {
+                            const next = [
+                              ...splits.slice(i + 1),
+                              ...splits.slice(0, i),
+                            ].find((x) => !x.locked);
+                            if (next)
+                              activateAmountInput(
+                                splitAmountRefs.current.get(next.id),
+                              );
+                          }}
+                          onValueChange={(value) =>
                             setSplits(
                               distribute(
                                 splits.map((x, j) =>
-                                  j === i
-                                    ? { ...x, amount: e.target.value }
-                                    : x,
+                                  j === i ? { ...x, amount: value } : x,
                                 ),
                                 amount,
                                 s.id,
@@ -982,10 +1050,10 @@ export function EntryForm() {
               {kind === "transfer" && (
                 <>
                   <Field label={`独立手续费 · ${accountCurrency}`} optional>
-                    <input
-                      inputMode="decimal"
+                    <AmountInput
+                      currency={accountCurrency}
                       value={fee}
-                      onChange={(e) => setFee(e.target.value)}
+                      onValueChange={(value) => setFee(value)}
                       placeholder="本金之外的费用，可留空"
                     />
                   </Field>

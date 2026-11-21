@@ -1,3 +1,4 @@
+import { AmountInput } from "./AmountInput.tsx";
 import { useState } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
@@ -90,13 +91,17 @@ export function PostingDialog({ entry }: { entry: Entry }) {
         </div>
         <Field label="实际入账金额">
           <div className="currency-input">
-            <input
+            <AmountInput
+              currency={currency}
               aria-label={`实际入账金额 · ${currency}`}
               autoFocus
-              inputMode="decimal"
               value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
+              onBeginEdit={() => () => {
+                setAmount(amount);
+                setCustom(custom);
+              }}
+              onValueChange={(value) => {
+                setAmount(value);
                 setCustom(null);
               }}
               placeholder="填写银行实际金额"
@@ -119,13 +124,13 @@ export function PostingDialog({ entry }: { entry: Entry }) {
                 }
               >
                 <div className="currency-input">
-                  <input
+                  <AmountInput
+                    currency={currency}
                     aria-label={`入账类目 ${i + 1} 金额`}
-                    inputMode="decimal"
                     value={(custom || values)[i] || ""}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       const next = [...(custom || values)];
-                      next[i] = e.target.value;
+                      next[i] = value;
                       setCustom(next);
                     }}
                   />

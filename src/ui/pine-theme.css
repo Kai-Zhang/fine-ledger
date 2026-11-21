@@ -19,6 +19,8 @@
   --on-negative: #ffffff;
   --warning: #87602b;
   --overlay: rgb(20 35 29 / 28%);
+  /* Opaque equivalent of the overlay composited on --bg. */
+  --status-bar-dimmed: #b7bcb9;
   --category-lift: 0%;
   --radius-panel: 12px;
   --radius-input: 10px;
@@ -41,6 +43,7 @@
   --on-negative: #2d1712;
   --warning: #ddb877;
   --overlay: rgb(0 0 0 / 55%);
+  --status-bar-dimmed: #090c0b;
   --category-lift: 30%;
   color-scheme: dark;
 }
@@ -60,6 +63,7 @@
     --on-negative: #2d1712;
     --warning: #ddb877;
     --overlay: rgb(0 0 0 / 55%);
+    --status-bar-dimmed: #090c0b;
     --category-lift: 30%;
     color-scheme: dark;
   }
@@ -1641,4 +1645,79 @@ textarea::placeholder {
   display: grid;
   gap: 16px;
   padding-block: 8px 4px;
+}
+
+/* Amount calculator follows the same paper/pine tokens and 48px controls. */
+.amount-keyboard {
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: var(--bg);
+  color: var(--text);
+}
+@media (max-width: 760px) {
+  .amount-keyboard:has(> .amount-keyboard-expression) {
+    border-top: 0;
+    border-radius: 0;
+  }
+}
+.amount-keyboard-expression {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 24px;
+}
+.amount-keyboard-error {
+  color: var(--negative);
+}
+.amount-keyboard-keys button {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 400;
+}
+.amount-keyboard-keys .utility {
+  color: var(--muted);
+}
+.amount-keyboard-keys .operator {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+.amount-keyboard-keys button:active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.amount-keyboard-done {
+  min-height: 48px;
+  border-radius: var(--radius-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+.amount-keyboard button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[data-amount-input] {
+  caret-color: var(--accent);
+}
+
+input[data-calculator-active]:not(:focus):not(#entry-amount) {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Match the opaque theme-color above the modal's translucent page overlay. */
+.confirmation-dialog::backdrop {
+  background: linear-gradient(
+    to bottom,
+    var(--status-bar-dimmed) 0 env(safe-area-inset-top),
+    var(--overlay) env(safe-area-inset-top) 100%
+  );
+  backdrop-filter: none;
 }

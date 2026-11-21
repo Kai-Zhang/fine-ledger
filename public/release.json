@@ -1,11 +1,11 @@
 {
-  "release": "0.14.5-760054d8f5570596",
+  "release": "0.14.5-e96668a3a66330d4",
   "assets": [
-    "/assets/0.14.5-760054d8f5570596/bootstrap.js",
-    "/assets/0.14.5-760054d8f5570596/calculate.worker-CQqDVp5K.js",
-    "/assets/0.14.5-760054d8f5570596/index-DAQUoyXe.css",
-    "/assets/0.14.5-760054d8f5570596/index-DJ-yu_5F.js",
-    "/assets/0.14.5-760054d8f5570596/index.html",
+    "/assets/0.14.5-e96668a3a66330d4/bootstrap.js",
+    "/assets/0.14.5-e96668a3a66330d4/calculate.worker-CQqDVp5K.js",
+    "/assets/0.14.5-e96668a3a66330d4/index-BcTbUjvg.css",
+    "/assets/0.14.5-e96668a3a66330d4/index-CVINgeZ1.js",
+    "/assets/0.14.5-e96668a3a66330d4/index.html",
     "/manifest.webmanifest",
     "/icon.svg",
     "/icon-192.png",

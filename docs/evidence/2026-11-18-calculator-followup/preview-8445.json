@@ -1,0 +1,67 @@
+{
+  "url": "https://zhangkaidemac-mini.local:8445",
+  "release": "0.14.5-3bb7480285875164",
+  "tlsVerified": true,
+  "assets": [
+    {
+      "path": "/",
+      "status": 200,
+      "sha256": "906364afb21b6474522c6ac8b9e7ee393829d4a92109b5ca2a5bd98fa3ee7cab"
+    },
+    {
+      "path": "/sw.js",
+      "status": 200,
+      "sha256": "7ef3a664a5d540c76633654513d712175094a910fb3906671e40d87ce59e4ca4"
+    },
+    {
+      "path": "/assets/0.14.5-3bb7480285875164/bootstrap.js",
+      "status": 200,
+      "sha256": "461d7da75f6e8924d17943a4f3cfc898ace042ef00cd416f4e9b46bb09216c89"
+    },
+    {
+      "path": "/assets/0.14.5-3bb7480285875164/calculate.worker-CQqDVp5K.js",
+      "status": 200,
+      "sha256": "08c38bfee4b40f7e1fde538b33ca1b746348b6647fc4478af7d87b6a7e884e98"
+    },
+    {
+      "path": "/assets/0.14.5-3bb7480285875164/index-ClXd9nUu.css",
+      "status": 200,
+      "sha256": "d64c197768df9c48fba978f2955289456183c2a9a55a767f59c518896b524d36"
+    },
+    {
+      "path": "/assets/0.14.5-3bb7480285875164/index-DCYP2ybB.js",
+      "status": 200,
+      "sha256": "0e6c8af1900b95ac663baf42225837e4896dad9fdf08ba797205c1c328fe12cc"
+    },
+    {
+      "path": "/assets/0.14.5-3bb7480285875164/index.html",
+      "status": 200,
+      "sha256": "906364afb21b6474522c6ac8b9e7ee393829d4a92109b5ca2a5bd98fa3ee7cab"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "sha256": "b5fadccb8eec6f81b77cba5dc8ffe2d67234c3a92232286a2eb6d928d18ec121"
+    },
+    {
+      "path": "/icon.svg",
+      "status": 200,
+      "sha256": "c841c974720598902e2492c6cd4c8f2056d16b908aaae513827bd0806d2d6d47"
+    },
+    {
+      "path": "/icon-192.png",
+      "status": 200,
+      "sha256": "ffab66d16f31d9badcf9ca35a048623dbe325d5197b85e7d12fc88ebff56c5b6"
+    },
+    {
+      "path": "/icon-512.png",
+      "status": 200,
+      "sha256": "f24ab03c0b1c06cea99e51321bd3e37fef05069b91eab6daf26263b533266475"
+    },
+    {
+      "path": "/apple-touch-icon-ledger-v1.png",
+      "status": 200,
+      "sha256": "d908ef8aefcb4e412c6f907776b978f757edd7525372f4b492d15331df7d6a3a"
+    }
+  ]
+}

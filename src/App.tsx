@@ -1,3 +1,4 @@
+import { AmountInput } from "./components/AmountInput.tsx";
 import { useReferenceRates } from "./reports/useReferenceRates.ts";
 import { LocalBackup, LocalBackupPanel } from "./pages/LocalBackup.tsx";
 import { useSyncCoordinator } from "./sync/useSync.ts";
@@ -26,6 +27,7 @@ import {
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useCallback,
@@ -221,24 +223,23 @@ export function App() {
       vv?.removeEventListener("scroll", update);
     };
   }, []);
-  useEffect(() => {
+  const confirmationOpen = !!confirmState;
+  useLayoutEffect(() => {
     const theme = book?.settings.theme || "system";
     document.documentElement.dataset.theme = theme;
     const system = matchMedia("(prefers-color-scheme: dark)");
     const updateChrome = () => {
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.setAttribute(
-          "content",
-          getComputedStyle(document.documentElement)
-            .getPropertyValue("--bg")
-            .trim(),
-        );
+      document.querySelector('meta[name="theme-color"]')?.setAttribute(
+        "content",
+        getComputedStyle(document.documentElement)
+          .getPropertyValue(confirmationOpen ? "--status-bar-dimmed" : "--bg")
+          .trim(),
+      );
     };
     updateChrome();
     if (theme === "system") system.addEventListener("change", updateChrome);
     return () => system.removeEventListener("change", updateChrome);
-  }, [book?.settings.theme]);
+  }, [book?.settings.theme, confirmationOpen]);
   useEffect(() => {
     requestAnimationFrame(() => {
       const el = document.querySelector(
@@ -615,6 +616,7 @@ export function App() {
       {modal}
       {confirmState && (
         <Dialog
+          confirmation
           guard={false}
           title={confirmState.title}
           onClose={() => {
@@ -891,10 +893,11 @@ function Welcome({
                         />
                       </Field>
                       <Field label={`当前余额 · ${currency}`}>
-                        <input
-                          inputMode="decimal"
+                        <AmountInput
+                          currency={currency}
+                          allowNegative
                           value={opening}
-                          onChange={(e) => setOpening(e.target.value)}
+                          onValueChange={(value) => setOpening(value)}
                         />
                       </Field>
                       <ErrorMessage message={error} />

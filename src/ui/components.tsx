@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useId,
   useState,
@@ -102,7 +103,14 @@ export function Header({
       onClick={onClick}
       className={`page-header ${back ? "has-back" : ""}`}
     >
-      {back && <IconButton name="ArrowLeft" label="返回" onClick={app.back} />}
+      {back && (
+        <IconButton
+          name="ArrowLeft"
+          label="返回"
+          data-page-back=""
+          onClick={app.back}
+        />
+      )}
       <div className="header-title">
         {kicker && <span className="eyebrow">{kicker}</span>}
         <h1>{title}</h1>
@@ -188,18 +196,21 @@ export function Dialog({
   onClose,
   dirty,
   guard = true,
+  confirmation = false,
 }: {
   title: string;
   children: ReactNode;
   wide?: boolean;
   dirty?: boolean;
   guard?: boolean;
+  confirmation?: boolean;
   onClose: () => void;
 }) {
   const app = useApp();
   const ref = useRef<HTMLDialogElement>(null),
     id = useId();
   const [changed, setChanged] = useState(false);
+  const backdropPress = useRef(false);
   const closeRef = useRef(() => {}),
     dirtyRef = useRef(false);
   dirtyRef.current = guard && (dirty ?? changed);
@@ -213,7 +224,7 @@ export function Dialog({
       ),
     [app.registerLayer],
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
     const d = ref.current!;
     d.showModal();
     return () => d.close();
@@ -221,7 +232,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className={`dialog ${wide ? "wide" : ""}`}
+      className={`dialog ${wide ? "wide" : ""}${confirmation ? " confirmation-dialog" : ""}`}
       aria-labelledby={id}
       onChangeCapture={(e) => {
         if ((e.target as HTMLElement).closest("form")) setChanged(true);
@@ -230,8 +241,14 @@ export function Dialog({
         e.preventDefault();
         closeRef.current();
       }}
+      onPointerDownCapture={(e) => {
+        backdropPress.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) closeRef.current();
+        // Opening an amount keyboard can reposition this dialog during a tap.
+        // Only a press that began on the backdrop may dismiss it.
+        if (e.target === e.currentTarget && backdropPress.current)
+          closeRef.current();
       }}
     >
       <div className="dialog-head">

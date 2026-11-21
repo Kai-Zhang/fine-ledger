@@ -1,3 +1,4 @@
+import { AmountInput } from "./AmountInput.tsx";
 import { useState, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import {
@@ -191,19 +192,20 @@ export function AccountEditor({
         )}
         {type === "credit" && (
           <Field label={`信用额度 · ${currency}`} optional>
-            <input
-              inputMode="decimal"
+            <AmountInput
+              currency={currency}
               value={creditLimit}
-              onChange={(e) => setCreditLimit(e.target.value)}
+              onValueChange={(value) => setCreditLimit(value)}
               placeholder="可留空，不计入净值"
             />
           </Field>
         )}
         <Field label="期初余额">
-          <input
-            inputMode="decimal"
+          <AmountInput
+            currency={currency}
+            allowNegative
             value={opening}
-            onChange={(e) => setOpening(e.target.value)}
+            onValueChange={(value) => setOpening(value)}
             required
           />
         </Field>

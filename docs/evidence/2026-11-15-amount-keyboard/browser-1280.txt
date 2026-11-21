@@ -1,0 +1,5 @@
+PASS total calculation, native keyboard suppression, split auto-lock, fixed values, remaining allocation, next/done
+PASS unchanged rows stay unlocked, explicit lock does not toggle twice
+PASS exact split amounts persisted
+PASS modal keyboard, sign, division-by-zero guard, cancellation, negative balance saved
+PASS autofocus modal keyboard, foreign amount and exact settlement persistence

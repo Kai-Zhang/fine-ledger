@@ -1,3 +1,4 @@
+import { AmountInput } from "./AmountInput.tsx";
 import { sortedProjects } from "../domain/organization.ts";
 import { useState } from "react";
 import { useApp } from "../ui/context.tsx";
@@ -263,19 +264,19 @@ export function TransactionFilters({
             </Field>
             <div className="form-grid">
               <Field label="最低金额">
-                <input
-                  inputMode="decimal"
+                <AmountInput
+                  currency={draft.currency || book.currency}
                   value={draft.min}
                   placeholder="不限"
-                  onChange={(e) => change("min", e.target.value)}
+                  onValueChange={(value) => change("min", value)}
                 />
               </Field>
               <Field label="最高金额">
-                <input
-                  inputMode="decimal"
+                <AmountInput
+                  currency={draft.currency || book.currency}
                   value={draft.max}
                   placeholder="不限"
-                  onChange={(e) => change("max", e.target.value)}
+                  onValueChange={(value) => change("max", value)}
                 />
               </Field>
             </div>
