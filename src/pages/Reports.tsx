@@ -22,6 +22,7 @@ import {
 } from "../domain/reporting.ts";
 import { useReferenceRates } from "../reports/useReferenceRates.ts";
 import { useReport } from "../reports/useReport.ts";
+import { ReportColumns } from "../reports/ReportColumns.tsx";
 import { NetChart } from "../reports/NetChart.tsx";
 import { PeriodChart } from "../reports/PeriodChart.tsx";
 import { CategoryBreakdown } from "../reports/CategoryBreakdown.tsx";
@@ -56,7 +57,7 @@ interface View {
   layer: RingLayer;
   frame?: number;
 }
-export function Reports() {
+export function Reports({ wideLayout = false }: { wideLayout?: boolean }) {
   const app = useApp(),
     { book, route } = app;
   const saved = book.settings.savedReports.find(
@@ -403,6 +404,73 @@ export function Reports() {
     setSelectedCategory(null);
     setPoint(null);
   }
+  const flowSummary = summary && (
+    <section className="chart-panel report-flow-summary">
+      <div className="report-value">
+        <span>
+          {missing > 0 ? "已计入部分 · " : ""}
+          {type === "cashflow"
+            ? "收支结余"
+            : type === "project"
+              ? "项目净支出"
+              : valueName}
+          <small>{book.currency}</small>
+        </span>
+        <Amount
+          value={
+            type === "cashflow"
+              ? summary.surplus
+              : income
+                ? summary.income
+                : type === "project"
+                  ? summary.net
+                  : metric === "expense"
+                    ? summary.expense
+                    : metric === "refund"
+                      ? summary.refund
+                      : summary.net
+          }
+          currency={book.currency}
+        />
+      </div>
+      {!income && (
+        <div className="report-summary-grid">
+          {(type === "cashflow"
+            ? [
+                ["收入", summary.income, "income"],
+                ["支出", summary.expense, "expense"],
+                ["退款", summary.refund, "refund"],
+                ["净支出", summary.net, "net"],
+              ]
+            : [
+                ["支出", summary.expense, "expense"],
+                ["退款", summary.refund, "refund"],
+              ]
+          ).map(([name, value, mode]) => (
+            <button
+              key={String(name)}
+              onClick={() =>
+                drill(
+                  undefined,
+                  undefined,
+                  mode as "income" | "expense" | "refund" | "net",
+                )
+              }
+            >
+              <small>{String(name)}</small>
+              <Amount value={value as bigint} currency={book.currency} />
+              <Icon name="ChevronRight" size={13} />
+            </button>
+          ))}
+        </div>
+      )}
+      {type === "cashflow" && (
+        <p className="compact-note muted">
+          结余为收入减净支出，转账与余额调整不计收支。
+        </p>
+      )}
+    </section>
+  );
   return (
     <>
       <Header
@@ -669,281 +737,281 @@ export function Reports() {
                 )}
               </p>
             )}
-            {stock ? (
-              <>
-                <section className="chart-panel net-panel">
-                  <div className="report-value">
-                    <span>
-                      {current?.label || "—"} · {missing ? "已计入部分 · " : ""}
-                      {valueName}
-                      {current?.provisional ? " · 估值" : ""}
-                      <small>{currency}</small>
-                    </span>
-                    <Amount value={current?.total || 0n} currency={currency} />
-                    <small className="muted">
-                      {missing || result.baselineIncomplete
-                        ? "期初或期末金额不完整，暂不比较变化"
-                        : `较期初 ${money((current?.total || 0n) - result.baseline, currency)}`}
-                    </small>
-                  </div>
-                  {type === "balance" && selectedAccount?.type === "credit" && (
-                    <p className="compact-note muted">
-                      {(current?.total || 0n) < 0n
-                        ? "负余额表示欠款"
-                        : "正余额表示溢缴款"}
-                    </p>
-                  )}
-                  <NetChart
-                    values={result.points}
-                    selected={point === null ? null : index}
-                    onSelect={setPoint}
-                    currency={currency}
-                    label={valueName}
-                  />
-                  <p className="chart-help">
-                    各期取期末{valueName}，今天截至当前；余额不按日相加。
-                  </p>
-                </section>
-                {type === "net" && (
-                  <>
-                    <div className="section-title">
-                      <h2>账户构成</h2>
-                      <span>{current?.to}</span>
-                    </div>
-                    <div className="report-account-list">
-                      {accounts
-                        .filter((a) => ids.includes(a.id))
-                        .map((a) => (
-                          <button
-                            key={a.id}
-                            onClick={() => switchStock("balance", a.id)}
-                          >
-                            <span className="account-symbol">
-                              <Icon name={a.icon} />
-                            </span>
-                            <span>
-                              {a.name}
-                              {a.archived && <small>已归档</small>}
-                            </span>
-                            <Amount
-                              value={current?.balances[a.id] || 0n}
-                              currency={a.currency}
-                              code
-                            />
-                            <Icon name="ChevronRight" size={15} />
-                          </button>
-                        ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                {(type === "expense-trend" ||
-                  type === "income-trend" ||
-                  type === "cashflow" ||
-                  type === "project") && (
-                  <section className="chart-panel report-flow-summary">
-                    <div className="report-value">
-                      <span>
-                        {missing > 0 ? "已计入部分 · " : ""}
-                        {type === "cashflow"
-                          ? "收支结余"
-                          : type === "project"
-                            ? "项目净支出"
-                            : valueName}
-                        <small>{book.currency}</small>
-                      </span>
-                      <Amount
-                        value={
-                          type === "cashflow"
-                            ? summary!.surplus
-                            : income
-                              ? summary!.income
-                              : type === "project"
-                                ? summary!.net
-                                : metric === "expense"
-                                  ? summary!.expense
-                                  : metric === "refund"
-                                    ? summary!.refund
-                                    : summary!.net
-                        }
-                        currency={book.currency}
+            {series ? (
+              <ReportColumns
+                wideLayout={wideLayout}
+                summary={stock ? undefined : flowSummary}
+                chart={
+                  stock ? (
+                    <section className="chart-panel net-panel">
+                      <div className="report-value">
+                        <span>
+                          {current?.label || "—"} ·{" "}
+                          {missing ? "已计入部分 · " : ""}
+                          {valueName}
+                          {current?.provisional ? " · 估值" : ""}
+                          <small>{currency}</small>
+                        </span>
+                        <Amount
+                          value={current?.total || 0n}
+                          currency={currency}
+                        />
+                        <small className="muted">
+                          {missing || result.baselineIncomplete
+                            ? "期初或期末金额不完整，暂不比较变化"
+                            : `较期初 ${money((current?.total || 0n) - result.baseline, currency)}`}
+                        </small>
+                      </div>
+                      {type === "balance" &&
+                        selectedAccount?.type === "credit" && (
+                          <p className="compact-note muted">
+                            {(current?.total || 0n) < 0n
+                              ? "负余额表示欠款"
+                              : "正余额表示溢缴款"}
+                          </p>
+                        )}
+                      <NetChart
+                        values={result.points}
+                        compact={wideLayout}
+                        selected={point === null ? null : index}
+                        onSelect={setPoint}
+                        currency={currency}
+                        label={valueName}
                       />
-                    </div>
-                    {!income && (
-                      <div className="report-summary-grid">
-                        {(type === "cashflow"
-                          ? [
-                              ["收入", summary!.income, "income"],
-                              ["支出", summary!.expense, "expense"],
-                              ["退款", summary!.refund, "refund"],
-                              ["净支出", summary!.net, "net"],
-                            ]
-                          : [
-                              ["支出", summary!.expense, "expense"],
-                              ["退款", summary!.refund, "refund"],
-                            ]
-                        ).map(([name, value, mode]) => (
-                          <button
-                            key={String(name)}
-                            onClick={() =>
-                              drill(
-                                undefined,
-                                undefined,
-                                mode as "income" | "expense" | "refund" | "net",
-                              )
-                            }
+                      <p className="chart-help">
+                        各期取期末{valueName}，今天截至当前；余额不按日相加。
+                      </p>
+                    </section>
+                  ) : (
+                    <>
+                      <div className="section-title period-chart-heading">
+                        <h2>期间变化</h2>
+                        <div className="period-chart-controls">
+                          {!income && type !== "cashflow" && (
+                            <select
+                              aria-label="报表指标"
+                              value={metric}
+                              onChange={(e) => {
+                                setMetric(e.target.value as ReportMetric);
+                                reset();
+                              }}
+                            >
+                              <option value="expense">支出</option>
+                              <option value="net">净支出</option>
+                              <option value="refund">退款</option>
+                            </select>
+                          )}
+                          <div
+                            className="chart-style-switch"
+                            role="group"
+                            aria-label="图表样式"
                           >
-                            <small>{String(name)}</small>
+                            <IconButton
+                              name="ChartNoAxesColumn"
+                              label="条形图"
+                              aria-pressed={chart === "bar"}
+                              onClick={() => setChart("bar")}
+                            />
+                            <IconButton
+                              name="ChartNoAxesCombined"
+                              label="折线图"
+                              aria-pressed={chart === "line"}
+                              onClick={() => setChart("line")}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <section className="chart-panel period-panel">
+                        <PeriodChart
+                          compact={wideLayout}
+                          labels={periods.map(shortLabel)}
+                          series={
+                            type === "cashflow"
+                              ? [
+                                  {
+                                    name: "收入",
+                                    color: "var(--positive)",
+                                    values: periods.map((p) =>
+                                      p.missingIncomeCount ? null : p.income,
+                                    ),
+                                  },
+                                  {
+                                    name: "净支出",
+                                    color: "var(--negative)",
+                                    values: periods.map((p) =>
+                                      p.missingExpenseCount +
+                                      p.missingRefundCount
+                                        ? null
+                                        : p.net,
+                                    ),
+                                  },
+                                ]
+                              : [
+                                  {
+                                    name: valueName,
+                                    color: income
+                                      ? "var(--positive)"
+                                      : "var(--accent)",
+                                    values: periods.map((p) =>
+                                      periodMissing(p) ? null : periodValue(p),
+                                    ),
+                                  },
+                                ]
+                          }
+                          chart={chart}
+                          currency={book.currency}
+                          selected={point}
+                          onSelect={setPoint}
+                        />
+                        {current && (
+                          <div className="period-inspection" aria-live="polite">
+                            <span>
+                              <strong>{current.label}</strong>
+                              {type === "cashflow" ? (
+                                <small>
+                                  结余
+                                  {periodMissing(current)
+                                    ? " · 金额不完整"
+                                    : ""}
+                                </small>
+                              ) : (
+                                <small>
+                                  {periodCount(current)} 笔
+                                  {periodMissing(current)
+                                    ? " · 金额不完整"
+                                    : ""}
+                                </small>
+                              )}
+                            </span>
                             <Amount
-                              value={value as bigint}
+                              value={
+                                type === "cashflow"
+                                  ? current.surplus
+                                  : periodValue(current)
+                              }
                               currency={book.currency}
                             />
-                            <Icon name="ChevronRight" size={13} />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {type === "cashflow" && (
-                      <p className="compact-note muted">
-                        结余为收入减净支出，转账与余额调整不计收支。
-                      </p>
-                    )}
-                  </section>
-                )}
-                {(type === "expense" ||
-                  type === "income" ||
-                  type === "project") && (
-                  <CategoryBreakdown
-                    book={book}
-                    stats={result.stats}
-                    selectedCategory={selectedCategory}
-                    selectedCategoryLayer={layer}
-                    selectCategory={(id, nextLayer) => {
-                      setSelectedCategory(id);
-                      setLayer(nextLayer);
-                    }}
-                    onClear={() => setSelectedCategory(null)}
-                    drill={(id) => drill(undefined, id)}
-                    income={income}
-                    hideSummary={type === "project"}
-                  />
-                )}
-                {series && (
-                  <>
-                    <div className="section-title period-chart-heading">
-                      <h2>期间变化</h2>
-                      <div className="period-chart-controls">
-                        {!income && type !== "cashflow" && (
-                          <select
-                            aria-label="报表指标"
-                            value={metric}
-                            onChange={(e) => {
-                              setMetric(e.target.value as ReportMetric);
-                              reset();
-                            }}
-                          >
-                            <option value="expense">支出</option>
-                            <option value="net">净支出</option>
-                            <option value="refund">退款</option>
-                          </select>
+                            <IconButton
+                              name="List"
+                              label="查看选中期间交易"
+                              onClick={() => drill(current)}
+                            />
+                          </div>
                         )}
-                        <div
-                          className="chart-style-switch"
-                          role="group"
-                          aria-label="图表样式"
-                        >
-                          <IconButton
-                            name="ChartNoAxesColumn"
-                            label="条形图"
-                            aria-pressed={chart === "bar"}
-                            onClick={() => setChart("bar")}
-                          />
-                          <IconButton
-                            name="ChartNoAxesCombined"
-                            label="折线图"
-                            aria-pressed={chart === "line"}
-                            onClick={() => setChart("line")}
-                          />
+                      </section>
+                    </>
+                  )
+                }
+                details={
+                  <>
+                    {type === "net" && (
+                      <>
+                        <div className="section-title">
+                          <h2>账户构成</h2>
+                          <span>{current?.to}</span>
                         </div>
-                      </div>
+                        <div className="report-account-list">
+                          {accounts
+                            .filter((a) => ids.includes(a.id))
+                            .map((a) => (
+                              <button
+                                key={a.id}
+                                onClick={() => switchStock("balance", a.id)}
+                              >
+                                <span className="account-symbol">
+                                  <Icon name={a.icon} />
+                                </span>
+                                <span>
+                                  {a.name}
+                                  {a.archived && <small>已归档</small>}
+                                </span>
+                                <Amount
+                                  value={current?.balances[a.id] || 0n}
+                                  currency={a.currency}
+                                  code
+                                />
+                                <Icon name="ChevronRight" size={15} />
+                              </button>
+                            ))}
+                        </div>
+                      </>
+                    )}
+                    <div className="section-title">
+                      <h2>期间明细</h2>
+                      <span>{periods.length} 期</span>
                     </div>
-                    <section className="chart-panel period-panel">
-                      <PeriodChart
-                        labels={periods.map(shortLabel)}
-                        series={
-                          type === "cashflow"
-                            ? [
-                                {
-                                  name: "收入",
-                                  color: "var(--positive)",
-                                  values: periods.map((p) =>
-                                    p.missingIncomeCount ? null : p.income,
-                                  ),
-                                },
-                                {
-                                  name: "净支出",
-                                  color: "var(--negative)",
-                                  values: periods.map((p) =>
-                                    p.missingExpenseCount + p.missingRefundCount
-                                      ? null
-                                      : p.net,
-                                  ),
-                                },
-                              ]
-                            : [
-                                {
-                                  name: valueName,
-                                  color: income
-                                    ? "var(--positive)"
-                                    : "var(--accent)",
-                                  values: periods.map((p) =>
-                                    periodMissing(p) ? null : periodValue(p),
-                                  ),
-                                },
-                              ]
-                        }
-                        chart={chart}
-                        currency={book.currency}
-                        selected={point}
-                        onSelect={setPoint}
-                      />
-                      {current && (
-                        <div className="period-inspection" aria-live="polite">
-                          <span>
-                            <strong>{current.label}</strong>
-                            {type === "cashflow" ? (
-                              <small>
-                                结余
-                                {periodMissing(current) ? " · 金额不完整" : ""}
-                              </small>
-                            ) : (
-                              <small>
-                                {periodCount(current)} 笔
-                                {periodMissing(current) ? " · 金额不完整" : ""}
-                              </small>
-                            )}
-                          </span>
-                          <Amount
-                            value={
-                              type === "cashflow"
-                                ? current.surplus
-                                : periodValue(current)
-                            }
-                            currency={book.currency}
-                          />
-                          <IconButton
-                            name="List"
-                            label="查看选中期间交易"
-                            onClick={() => drill(current)}
-                          />
-                        </div>
-                      )}
-                    </section>
+                    <div className="report-period-list">
+                      {periods
+                        .map((p, i) => ({ p, i }))
+                        .reverse()
+                        .slice(0, limit)
+                        .map(({ p, i }) => (
+                          <div
+                            key={p.from}
+                            className={`report-period-row ${index === i ? "is-selected" : ""}`}
+                          >
+                            <button
+                              className="report-period-main"
+                              onClick={() => setPoint(i)}
+                            >
+                              <span>
+                                <strong>{p.label}</strong>
+                                <small>
+                                  {stock
+                                    ? `期末 ${valueName}`
+                                    : type === "cashflow"
+                                      ? "收支结余"
+                                      : `${periodCount(p)} 笔 ${valueName}`}
+                                  {periodMissing(p) ? " · 金额不完整" : ""}
+                                </small>
+                              </span>
+                              <Amount
+                                value={
+                                  type === "cashflow"
+                                    ? p.surplus
+                                    : periodValue(p)
+                                }
+                                currency={currency}
+                              />
+                            </button>
+                            <IconButton
+                              name="List"
+                              label={`查看${p.label}交易`}
+                              onClick={() =>
+                                stock ? snapshotDrill(p) : drill(p)
+                              }
+                            />
+                          </div>
+                        ))}
+                    </div>
+                    {periods.length > limit && (
+                      <button
+                        className="load-more"
+                        onClick={() => setLimit(limit + 48)}
+                      >
+                        加载更多 · 还有 {periods.length - limit} 期
+                      </button>
+                    )}
                   </>
-                )}
-              </>
+                }
+              />
+            ) : (
+              <CategoryBreakdown
+                wideLayout={wideLayout}
+                book={book}
+                stats={result.stats}
+                selectedCategory={selectedCategory}
+                selectedCategoryLayer={layer}
+                selectCategory={(id, nextLayer) => {
+                  setSelectedCategory(id);
+                  setLayer(nextLayer);
+                }}
+                onClear={() => setSelectedCategory(null)}
+                drill={(id) => drill(undefined, id)}
+                income={income}
+                hideSummary={type === "project"}
+                summary={type === "project" ? flowSummary : undefined}
+              />
             )}
             {result.unresolvedRefunds.length > 0 && (
               <p className="report-warning">
@@ -963,62 +1031,6 @@ export function Reports() {
                   <Icon name="ArrowRight" size={14} />
                 </button>
               </p>
-            )}
-            {series && (
-              <>
-                <div className="section-title">
-                  <h2>期间明细</h2>
-                  <span>{periods.length} 期</span>
-                </div>
-                <div className="report-period-list">
-                  {periods
-                    .map((p, i) => ({ p, i }))
-                    .reverse()
-                    .slice(0, limit)
-                    .map(({ p, i }) => (
-                      <div
-                        key={p.from}
-                        className={`report-period-row ${index === i ? "is-selected" : ""}`}
-                      >
-                        <button
-                          className="report-period-main"
-                          onClick={() => setPoint(i)}
-                        >
-                          <span>
-                            <strong>{p.label}</strong>
-                            <small>
-                              {stock
-                                ? `期末 ${valueName}`
-                                : type === "cashflow"
-                                  ? "收支结余"
-                                  : `${periodCount(p)} 笔 ${valueName}`}
-                              {periodMissing(p) ? " · 金额不完整" : ""}
-                            </small>
-                          </span>
-                          <Amount
-                            value={
-                              type === "cashflow" ? p.surplus : periodValue(p)
-                            }
-                            currency={currency}
-                          />
-                        </button>
-                        <IconButton
-                          name="List"
-                          label={`查看${p.label}交易`}
-                          onClick={() => (stock ? snapshotDrill(p) : drill(p))}
-                        />
-                      </div>
-                    ))}
-                </div>
-                {periods.length > limit && (
-                  <button
-                    className="load-more"
-                    onClick={() => setLimit(limit + 48)}
-                  >
-                    加载更多 · 还有 {periods.length - limit} 期
-                  </button>
-                )}
-              </>
             )}
           </>
         )}

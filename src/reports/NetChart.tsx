@@ -13,12 +13,14 @@ export function NetChart({
   selected,
   onSelect,
   currency,
+  compact = false,
   label = "净值",
 }: {
   values: NetPoint[];
   selected: number | null;
   onSelect: (n: number | null) => void;
   currency: string;
+  compact?: boolean;
   label?: string;
 }) {
   const fillId = useId();
@@ -27,11 +29,11 @@ export function NetChart({
   const hasValues = values.length > 0;
   const geometry = useMemo(() => {
     const width = 360,
-      height = 340,
+      height = compact ? 235 : 340,
       left = 10,
       right = 350,
       top = 30,
-      bottom = 307;
+      bottom = height - 33;
     let min = values.find((v) => !v.missing.length)?.total || 0n,
       max = min;
     for (const v of values) {
@@ -79,7 +81,7 @@ export function NetChart({
       })
       .join(" ");
     return { width, height, left, right, top, bottom, x, y, path, low, high };
-  }, [values]);
+  }, [values, compact]);
   useLayoutEffect(() => {
     const node = svg.current;
     if (!node) return;
@@ -224,10 +226,10 @@ export function NetChart({
               strokeWidth="2"
             />
           )}
-        <text x={left} y="333" className="chart-label">
+        <text x={left} y={height - 7} className="chart-label">
           {values[0].date.replaceAll("-", "/")}
         </text>
-        <text x={right} y="333" textAnchor="end" className="chart-label">
+        <text x={right} y={height - 7} textAnchor="end" className="chart-label">
           {values.at(-1)!.date.replaceAll("-", "/")}
         </text>
       </svg>

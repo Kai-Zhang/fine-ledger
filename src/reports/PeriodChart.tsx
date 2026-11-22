@@ -8,6 +8,7 @@ export function PeriodChart({
   series,
   currency,
   chart,
+  compact = false,
   selected,
   onSelect,
 }: {
@@ -15,6 +16,7 @@ export function PeriodChart({
   series: { name: string; values: (bigint | null)[]; color: string }[];
   currency: string;
   chart: "bar" | "line";
+  compact?: boolean;
   selected: number | null;
   onSelect: (index: number | null) => void;
 }) {
@@ -28,6 +30,8 @@ export function PeriodChart({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+  const height = compact ? 204 : 246;
+  const bottom = height - 41;
   const step = Math.max(
       36,
       (size - 2 * plotInset) / Math.max(1, Math.min(10, labels.length)),
@@ -49,7 +53,8 @@ export function PeriodChart({
   if (low < 0n) low -= span / 12n || 1n;
   const x = (i: number) => plotInset + (i + 0.5) * step;
   const y = (n: bigint) =>
-    205 - (Number(((n - low) * 1000000n) / (high - low)) / 1000000) * 175;
+    bottom -
+    (Number(((n - low) * 1000000n) / (high - low)) / 1000000) * (bottom - 30);
   function select(index: number) {
     onSelect(index);
     const node = viewport.current;
@@ -76,7 +81,7 @@ export function PeriodChart({
         <svg
           className="period-chart-axis"
           width="41"
-          height="246"
+          height={height}
           aria-hidden="true"
         >
           {[high, low + (high - low) / 2n, low].map((tick, i) => (
@@ -103,13 +108,13 @@ export function PeriodChart({
         >
           <svg
             width={width}
-            height="246"
-            viewBox={`0 0 ${width} 246`}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
             role="img"
             aria-label={`${series.map((s) => s.name).join("与")}分期${chart === "bar" ? "条形" : "折线"}图，可横向浏览，使用下方滑块选择期间`}
             onClick={() => onSelect(null)}
           >
-            {[30, y(low + (high - low) / 2n), 205, y(0n)].map((v, i) => (
+            {[30, y(low + (high - low) / 2n), bottom, y(0n)].map((v, i) => (
               <line
                 key={i}
                 x1="0"
@@ -124,7 +129,7 @@ export function PeriodChart({
                 x={x(selected) - step / 2}
                 y="24"
                 width={step}
-                height="188"
+                height={bottom - 17}
                 className="period-selection"
               />
             )}
@@ -164,7 +169,7 @@ export function PeriodChart({
                         <text
                           key={i}
                           x={x(i)}
-                          y="120"
+                          y={(height - 6) / 2}
                           textAnchor="middle"
                           className="chart-label"
                         >
@@ -222,7 +227,7 @@ export function PeriodChart({
                 <text
                   key={i}
                   x={x(i)}
-                  y="235"
+                  y={height - 11}
                   textAnchor="middle"
                   className="chart-label"
                 >

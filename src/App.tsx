@@ -452,7 +452,7 @@ export function App() {
     transactions: <TransactionsPage />,
     account: <TransactionsPage wideLayout={wideLayout} />,
     reports: <ReportCatalog />,
-    report: <Reports />,
+    report: <Reports wideLayout={wideLayout} />,
     settings: <Settings />,
     entry: <EntryForm />,
     detail: <Detail />,

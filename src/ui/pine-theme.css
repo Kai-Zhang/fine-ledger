@@ -1510,6 +1510,114 @@ textarea::placeholder {
 .report-tasks {
   margin-top: 24px;
 }
+.report-columns,
+.report-chart-column,
+.report-detail-column {
+  display: contents;
+}
+.wide-layout .workspace:has(> .reports-page) > .page-header {
+  min-height: 76px;
+  padding-block: 12px 4px;
+}
+.wide-layout .reports-page {
+  max-width: none;
+  padding-inline: clamp(20px, 3vw, 32px);
+}
+.wide-layout .reports-page:has(> .report-columns) {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+.wide-layout .reports-page:has(> .report-columns) > :not(.report-columns) {
+  flex-shrink: 0;
+}
+.wide-layout .reports-page > .compact-note {
+  margin-block: 0 8px;
+}
+.wide-layout .report-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px 18px;
+  flex: 1;
+  min-height: min(320px, 56dvh);
+}
+.wide-layout .report-columns:has(> .report-flow-summary) {
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: min(380px, 66dvh);
+}
+.wide-layout .report-chart-column,
+.wide-layout .report-detail-column {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.wide-layout .report-detail-column {
+  padding-bottom: 12px;
+}
+.wide-layout .report-columns > .report-flow-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 24px;
+  padding: 12px 16px;
+  margin: 0;
+}
+.wide-layout .report-flow-summary .report-summary-grid {
+  flex: 1 1 340px;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  margin: 0;
+}
+.wide-layout .report-flow-summary > .compact-note {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+}
+.wide-layout .report-chart-column .chart-panel {
+  padding: 14px 16px;
+}
+.wide-layout .report-chart-column .net-chart {
+  margin-top: 12px;
+}
+.wide-layout .report-chart-column .expense-panel {
+  display: block;
+}
+.wide-layout .report-chart-column .expense-summary {
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+}
+.wide-layout .report-chart-column .expense-breakdown {
+  min-width: 0;
+}
+.wide-layout .report-chart-column .donut-wrap {
+  max-width: 244px;
+  margin: 8px auto 0;
+}
+.wide-layout .report-chart-column .period-chart-heading,
+.wide-layout .report-detail-column > .section-title:first-child {
+  margin-top: 0;
+}
+.wide-layout .report-detail-column .report-period-main {
+  min-height: 52px;
+}
+.wide-layout .report-detail-column .report-period-main strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+.wide-layout .report-detail-column .report-account-list > button {
+  min-height: 48px;
+}
+.wide-layout
+  .report-detail-column
+  .report-account-list
+  > button
+  > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 500px) {
   .project-report-row {
     grid-template-columns: 24px minmax(0, 1fr) 16px;
