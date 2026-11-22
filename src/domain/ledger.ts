@@ -1,4 +1,5 @@
 import { compareTime, deviceTimeZone, sortEntries } from "./dates.ts";
+import { descriptionSuggestionLimit } from "./description-view.ts";
 import {
   uid,
   type Book,
@@ -378,7 +379,7 @@ export function descriptions(book: Book, kind: Kind, query: string) {
         Number(norm(b.description).startsWith(q)) -
         Number(norm(a.description).startsWith(q)),
     )
-    .slice(0, 8);
+    .slice(0, descriptionSuggestionLimit);
 }
 export function rateFor(
   book: Book,

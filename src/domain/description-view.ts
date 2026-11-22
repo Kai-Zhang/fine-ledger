@@ -1,5 +1,8 @@
 import type { Book, Entry, Kind } from "./types.ts";
 import { compareTime } from "./dates.ts";
+
+export const descriptionSuggestionLimit = 16;
+
 const indexes = new WeakMap<
   Book["entries"],
   Map<Kind, { key: string; entry: Entry }[]>
@@ -29,9 +32,12 @@ export function descriptionSuggestions(book: Book, kind: Kind, query: string) {
   for (const row of rows) {
     if (row.key.startsWith(q)) {
       prefix.push(row.entry);
-      if (prefix.length === 8) break;
-    } else if (contains.length < 8 && row.key.includes(q))
+      if (prefix.length === descriptionSuggestionLimit) break;
+    } else if (
+      contains.length < descriptionSuggestionLimit &&
+      row.key.includes(q)
+    )
       contains.push(row.entry);
   }
-  return [...prefix, ...contains].slice(0, 8);
+  return [...prefix, ...contains].slice(0, descriptionSuggestionLimit);
 }
