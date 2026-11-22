@@ -33,8 +33,6 @@ type Props = Omit<
   onBeginEdit?: () => () => void;
   allowNegative?: boolean;
   onCommit?: (value: string, target: HTMLElement | null) => void;
-  nextLabel?: string;
-  onNext?: () => void;
   ref?: Ref<HTMLInputElement>;
 };
 type Target = { element: HTMLInputElement; options: () => Props };
@@ -78,7 +76,7 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
     current.current = null;
     refresh();
   };
-  function finish(target: HTMLElement | null = null, commitUnchanged = false) {
+  function finish(target: HTMLElement | null = null) {
     const s = current.current;
     if (!s) return true;
     const options = s.options();
@@ -88,7 +86,7 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
         options.currency,
         options.allowNegative,
       );
-      if (s.changed || commitUnchanged) {
+      if (s.changed) {
         options.onValueChange(value);
         options.onCommit?.(value, target);
       }
@@ -238,23 +236,39 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
     // A popover joins the top layer, including when the field is in a modal dialog.
     element.showPopover();
     const html = document.documentElement;
-    const dialog = session.element.closest("dialog");
-    session.element.setAttribute("data-calculator-active", "");
+    const input = session.element;
+    const dialog = input.closest("dialog");
+    const editor = dialog ?? input.closest(".workspace-region, .start-frame");
+    input.setAttribute("data-calculator-active", "");
     html.classList.add("amount-keyboard-open");
     dialog?.classList.add("amount-keyboard-dialog");
     const measure = () => {
+      // The top-layer keyboard is positioned in viewport coordinates.
+      const rect = editor?.getBoundingClientRect();
+      const width = html.clientWidth;
+      element.style.setProperty(
+        "--amount-editor-left",
+        `${rect ? Math.max(0, rect.left) : 0}px`,
+      );
+      element.style.setProperty(
+        "--amount-editor-right",
+        `${rect ? Math.max(0, width - rect.right) : 0}px`,
+      );
       html.style.setProperty(
         "--amount-keyboard-height",
         `${element.getBoundingClientRect().height}px`,
       );
-      session.element.scrollIntoView({ block: "nearest" });
+      input.scrollIntoView({ block: "nearest", inline: "nearest" });
     };
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (editor) observer.observe(editor);
+    window.addEventListener("resize", measure);
     measure();
     return () => {
       observer.disconnect();
-      session.element.removeAttribute("data-calculator-active");
+      window.removeEventListener("resize", measure);
+      input.removeAttribute("data-calculator-active");
       if (element.matches(":popover-open")) element.hidePopover();
       html.classList.remove("amount-keyboard-open");
       html.style.removeProperty("--amount-keyboard-height");
@@ -443,7 +457,7 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
                   ) : k === "undo" ? (
                     <Icon name="Undo2" size={22} />
                   ) : k === "back" ? (
-                    <Icon name="Delete" size={24} />
+                    <Icon name="Delete" size={21} />
                   ) : k === "sign" ? (
                     "±"
                   ) : (
@@ -452,22 +466,6 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className="amount-keyboard-done"
-              onClick={() => {
-                let ok = false;
-                flushSync(() => {
-                  ok = finish(null, !!options.onNext);
-                });
-                if (ok) {
-                  session.element.blur();
-                  options.onNext?.();
-                }
-              }}
-            >
-              {options.nextLabel || "完成"}
-            </button>
           </div>,
           session.element.closest("dialog") || document.body,
         )}
@@ -487,8 +485,6 @@ export function AmountInput({ ref, ...props }: Props) {
     onValueChange,
     onBeginEdit,
     onCommit,
-    onNext,
-    nextLabel,
     autoFocus,
     ...inputProps
   } = props;
@@ -498,13 +494,7 @@ export function AmountInput({ ref, ...props }: Props) {
   }, [keyboard, currency, props.disabled]);
   useLayoutEffect(() => {
     if (element.current) keyboard.sync(element.current);
-  }, [
-    keyboard,
-    props.value,
-    props.nextLabel,
-    props.allowNegative,
-    props.currency,
-  ]);
+  }, [keyboard, props.value, props.allowNegative, props.currency]);
   const open = () => {
     if (element.current && !props.disabled)
       keyboard.open({

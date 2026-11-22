@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import assert from "node:assert/strict";
 const port = Number(process.argv[2] || 4198);
 const width = Number(process.env.REVIEW_WIDTH || 390);
+const height = Number(process.env.REVIEW_HEIGHT || 844);
 const touch = process.env.REVIEW_TOUCH === "1";
 const ios = process.env.REVIEW_IOS === "1";
 const theme = process.env.REVIEW_THEME || "light";
@@ -15,8 +16,24 @@ const frames = () =>
     "new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))",
   );
 async function tap(selector, inset) {
+  await c.evaluate(
+    `(() => {
+      const e = document.querySelector(${JSON.stringify(selector)});
+      if (!e) throw Error('missing ' + ${JSON.stringify(selector)});
+      e.scrollIntoView({block:'center'});
+    })()`,
+  );
+  await frames();
   const p = await c.evaluate(
-    `(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('missing '+${JSON.stringify(selector)});e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return {x:r.x+(${inset ?? "r.width/2"}),y:r.y+r.height/2}})()`,
+    `(() => {
+      const e = document.querySelector(${JSON.stringify(selector)});
+      if (!e) throw Error('missing ' + ${JSON.stringify(selector)});
+      const r = e.getBoundingClientRect();
+      const x = r.x + (${inset ?? "r.width/2"}), y = r.y + r.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      if (!e.contains(hit)) throw Error('tap target covered: ' + e.outerHTML.slice(0, 180) + ' at ' + x + ',' + y + ' by ' + hit?.outerHTML.slice(0, 180));
+      return {x, y};
+    })()`,
   );
   if (touch) {
     await c.send("Input.dispatchTouchEvent", {
@@ -56,6 +73,26 @@ async function expression(raw) {
   await tap('.amount-keyboard [aria-label="清空"]');
   for (const k of raw) await text(k);
 }
+async function assertKeypadCentered() {
+  const layout = await c.evaluate(`(() => {
+    const field = document.querySelector("[data-calculator-active]");
+    const editor = field.closest("dialog, .workspace-region, .start-frame").getBoundingClientRect();
+    const keypad = document.querySelector(".amount-keyboard").getBoundingClientRect();
+    return { editorLeft:editor.left, editorRight:editor.right, left:keypad.left, right:keypad.right, width:keypad.width, height:keypad.height };
+  })()`);
+  assert.ok(
+    Math.abs(
+      layout.left + layout.right - layout.editorLeft - layout.editorRight,
+    ) <= 1,
+    JSON.stringify(layout),
+  );
+  assert.ok(
+    layout.left >= layout.editorLeft - 1 &&
+      layout.right <= layout.editorRight + 1,
+  );
+  assert.ok(layout.width <= 360);
+  return layout;
+}
 async function input(selector, value) {
   await c.evaluate(
     `(()=>{const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`,
@@ -65,7 +102,7 @@ async function input(selector, value) {
 try {
   await c.send("Emulation.setDeviceMetricsOverride", {
     width,
-    height: 844,
+    height,
     deviceScaleFactor: 1,
     mobile: width <= 760,
   });
@@ -99,6 +136,14 @@ try {
     ),
     true,
   );
+  const initialLayout = await assertKeypadCentered();
+  assert.ok(initialLayout.height <= 250);
+  assert.equal(
+    await c.evaluate(`[".amount-keyboard [data-calculator-key=undo] .lucide-undo-2",
+      ".amount-keyboard [data-calculator-key=back] .lucide-delete"
+    ].every(s => !!document.querySelector(s))`),
+    true,
+  );
   assert.equal(
     await c.evaluate('document.querySelector("#entry-amount").inputMode'),
     "none",
@@ -113,6 +158,30 @@ try {
     await c.evaluate('document.querySelector("#entry-amount").value'),
     "100.00",
   );
+  if (width > 760) {
+    await c.send("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await frames();
+    assert.equal(await c.evaluate("innerWidth"), 390);
+    await assertKeypadCentered();
+    assert.equal(
+      await c.evaluate('document.querySelector("#entry-amount").value'),
+      "100.00",
+    );
+    await c.send("Emulation.setDeviceMetricsOverride", {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await frames();
+    assert.equal(await c.evaluate("innerWidth"), width);
+    await assertKeypadCentered();
+  }
   await expression("100+");
   assert.equal(
     await c.evaluate(
@@ -124,7 +193,7 @@ try {
     await c.evaluate('!!document.querySelector(".amount-keyboard-error")'),
     false,
   );
-  await text("完成");
+  await tap(".workspace[data-active] .page-header h1");
   assert.equal(
     await c.evaluate(
       '!!document.querySelector(".amount-keyboard:popover-open")',
@@ -137,7 +206,7 @@ try {
     ),
     "100 +",
   );
-  if (ios && touch) {
+  if (ios && touch && width <= 760) {
     assert.equal(
       await c.evaluate(
         'document.activeElement === document.querySelector("#entry-amount")',
@@ -176,7 +245,7 @@ try {
       "100 +",
     );
   }
-  if (ios && touch) {
+  if (ios && touch && width <= 760) {
     const keyY = await c.evaluate(`(() => {
       const key = document.querySelector('.amount-keyboard-keys button').getBoundingClientRect();
       return key.top + key.height / 2;
@@ -233,13 +302,16 @@ try {
     "168.60",
   );
   const keySizes = await c.evaluate(
-    `[...document.querySelectorAll('.amount-keyboard-keys button')].map(e=>({key:e.getAttribute('data-calculator-key'),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height}))`,
+    `[...document.querySelectorAll('.amount-keyboard button')].map(e=>({key:e.getAttribute('data-calculator-key'),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height,left:e.getBoundingClientRect().left}))`,
   );
   assert.equal(keySizes.length, 20);
   assert.equal(keySizes[0].key, "undo");
   assert.equal(keySizes[2].key, "back");
   assert.equal(keySizes[3].key, "÷");
-  assert.ok(keySizes.every((k) => k.width >= 44 && k.height >= 48));
+  assert.ok(keySizes.every((k) => k.width >= 44 && k.height === 44));
+  assert.equal(keySizes.at(-1).key, "=");
+  assert.equal(keySizes.at(-1).left, keySizes[3].left);
+  assert.equal(keySizes.at(-1).width, keySizes[3].width);
   assert.equal(
     await c.evaluate(
       `!!document.querySelector('.amount-keyboard-result,.amount-keyboard-heading,.amount-keyboard-tools')`,
@@ -261,7 +333,17 @@ try {
     output + `/total-${width}-${theme}.png`,
     Buffer.from(totalShot.data, "base64"),
   );
-  await text("完成");
+  await tap(".workspace[data-active] .page-header h1");
+  assert.equal(
+    await c.evaluate(
+      '!!document.querySelector(".amount-keyboard:popover-open")',
+    ),
+    false,
+  );
+  assert.equal(
+    await c.evaluate('document.querySelector("#entry-amount").value'),
+    "168.60",
+  );
   await text("拆分类目");
   await text("添加类目");
   // Assign real categories and persist the calculated split amounts.
@@ -274,16 +356,19 @@ try {
       `document.querySelector('[data-select-category=yes]')?.removeAttribute('data-select-category')`,
     );
     if (ios && touch && index === 0) {
-      const pickerY = await c.evaluate(
-        `document.querySelector('.picker-parent-row').getBoundingClientRect().top + 12`,
+      const start = await c.evaluate(
+        `(() => {
+          const row = document.querySelector('.picker-parent-row').getBoundingClientRect();
+          return { x: row.left + Math.min(75, row.width / 3), y: row.top + 12 };
+        })()`,
       );
       await c.send("Input.dispatchTouchEvent", {
         type: "touchStart",
-        touchPoints: [{ x: 100, y: pickerY }],
+        touchPoints: [start],
       });
       await c.send("Input.dispatchTouchEvent", {
         type: "touchMove",
-        touchPoints: [{ x: 205, y: pickerY }],
+        touchPoints: [{ x: start.x + 105, y: start.y }],
       });
       await c.send("Input.dispatchTouchEvent", {
         type: "touchEnd",
@@ -346,7 +431,7 @@ try {
   );
   await tap('[aria-label="第 2 个类目金额"]');
   await expression("20+5");
-  await text("锁定并下一项 →");
+  await tap('[aria-label="第 3 个类目金额"]');
   assert.equal(
     await c.evaluate(
       'document.querySelectorAll(".split-row input")[1].disabled',
@@ -374,13 +459,13 @@ try {
     output + `/split-${width}-${theme}.png`,
     Buffer.from(shot.data, "base64"),
   );
-  await text("锁定并完成");
+  await tap('[aria-label="锁定第 3 个类目金额"]');
   assert.equal(
     await c.evaluate('!!document.querySelector(".amount-keyboard")'),
     false,
   );
   console.log(
-    "PASS total calculation, native keyboard suppression, split auto-lock, fixed values, remaining allocation, next/done",
+    "PASS total calculation, native keyboard suppression, split auto-lock, fixed values and remaining allocation",
   );
 
   await tap('[aria-label="解锁第 1 个类目金额"]');
@@ -417,6 +502,7 @@ try {
     ),
     true,
   );
+  await assertKeypadCentered();
   await expression("0−12.5");
   assert.equal(
     await c.evaluate(
@@ -432,7 +518,7 @@ try {
     "12.50",
   );
   await expression("1÷0");
-  await text("完成");
+  await tap("dialog[open] .dialog-head h2");
   assert.equal(
     await c.evaluate(
       'document.querySelector(".amount-keyboard-error").textContent',
@@ -448,7 +534,6 @@ try {
   );
   await tap("dialog[open] input[data-amount-input]");
   await expression("0−12.5");
-  await text("完成");
   await text("保存账户");
   await c.wait('!document.querySelector("dialog[open]")');
   assert.equal(
@@ -460,6 +545,8 @@ try {
   console.log(
     "PASS modal keyboard, sign, division-by-zero guard, cancellation, negative balance saved",
   );
+  if (await c.evaluate('!!document.querySelector(".toast")'))
+    await tap(".toast");
   await tap('[aria-label="完成账户管理"]');
   // Foreign-currency settlement auto-focuses an amount inside a native dialog.
   await c.evaluate(
@@ -471,15 +558,17 @@ try {
   );
   await tap("[data-pending-review=yes]");
   await text("确认入账");
-  await frames();
+  await c.wait(
+    '!!document.querySelector("dialog[open] .amount-keyboard:popover-open")',
+  );
+  await expression("70+2.5");
+  await text("=");
   assert.equal(
     await c.evaluate(
-      '!!document.querySelector("dialog[open] .amount-keyboard:popover-open")',
+      '!!document.querySelector(".amount-keyboard:popover-open")',
     ),
     true,
   );
-  await expression("70+2.5");
-  await text("完成");
   await text("确认入账");
   await c.wait('!document.querySelector("dialog[open]")');
   const posted = await c.evaluate(
@@ -499,7 +588,7 @@ try {
     [],
   );
 } catch (error) {
-  console.log("FAIL", error.message.slice(0, 650));
+  console.log("FAIL", (error.stack || error.message).slice(0, 1000));
   console.log("UI", await c.evaluate("document.body.innerText.slice(-2200)"));
   process.exitCode = 1;
 } finally {

@@ -1647,7 +1647,6 @@ textarea::placeholder {
   padding-block: 8px 4px;
 }
 
-/* Amount calculator follows the same paper/pine tokens and 48px controls. */
 .amount-keyboard {
   border: 1px solid var(--line);
   border-bottom: 0;
@@ -1670,12 +1669,12 @@ textarea::placeholder {
   color: var(--negative);
 }
 .amount-keyboard-keys button {
-  min-height: 48px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--radius-input);
   background: var(--surface);
-  font-size: 24px;
-  line-height: 28px;
+  font-size: 22px;
+  line-height: 26px;
   font-weight: 400;
 }
 .amount-keyboard-keys .utility {
@@ -1689,15 +1688,6 @@ textarea::placeholder {
 .amount-keyboard-keys button:active {
   background: var(--accent-soft);
   color: var(--accent);
-}
-.amount-keyboard-done {
-  min-height: 48px;
-  border-radius: var(--radius-button);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 500;
 }
 .amount-keyboard button:focus-visible {
   outline: 2px solid var(--accent);

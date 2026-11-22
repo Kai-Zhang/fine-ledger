@@ -908,21 +908,6 @@ export function EntryForm() {
                               ),
                             );
                           }}
-                          nextLabel={
-                            splits.some((x) => x.id !== s.id && !x.locked)
-                              ? "锁定并下一项 →"
-                              : "锁定并完成"
-                          }
-                          onNext={() => {
-                            const next = [
-                              ...splits.slice(i + 1),
-                              ...splits.slice(0, i),
-                            ].find((x) => !x.locked);
-                            if (next)
-                              activateAmountInput(
-                                splitAmountRefs.current.get(next.id),
-                              );
-                          }}
                           onValueChange={(value) =>
                             setSplits(
                               distribute(

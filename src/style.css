@@ -4282,18 +4282,29 @@ body {
 /* Shared calculator: top-layer popover also works inside native modal dialogs.
    Palette, type and control rhythm live in ui/pine-theme.css. */
 .amount-keyboard {
+  --amount-keyboard-left: max(
+    var(--amount-editor-left, 0px),
+    env(safe-area-inset-left, 0px)
+  );
+  --amount-keyboard-right: max(
+    var(--amount-editor-right, 0px),
+    env(safe-area-inset-right, 0px)
+  );
   position: fixed;
-  inset: auto 0 0;
+  inset: auto var(--amount-keyboard-right) 0 var(--amount-keyboard-left);
   margin: 0 auto;
-  width: min(100%, 480px);
+  width: min(
+    360px,
+    calc(100% - var(--amount-keyboard-left) - var(--amount-keyboard-right))
+  );
   max-height: 65dvh;
   overflow: auto;
-  padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom));
   overscroll-behavior: contain;
   touch-action: pan-y;
 }
 .amount-keyboard-expression {
-  padding: 6px 4px 8px;
+  padding: 4px 4px 6px;
   text-align: right;
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
@@ -4304,16 +4315,12 @@ body {
 .amount-keyboard-keys {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 .amount-keyboard-keys button {
   display: grid;
   place-items: center;
   min-width: 0;
-}
-.amount-keyboard-done {
-  width: 100%;
-  margin-top: 8px;
 }
 input[data-amount-input] {
   -webkit-touch-callout: none;
@@ -4325,13 +4332,15 @@ input[data-amount-input] {
   display: none;
 }
 .amount-keyboard-open .workspace[data-active]:not(.edge-navigation-active) {
-  height: calc(100% - var(--amount-keyboard-height, 350px));
+  height: calc(100% - var(--amount-keyboard-height, 249px));
 }
 .amount-keyboard-dialog {
-  margin-top: max(12px, env(safe-area-inset-top));
+  --amount-dialog-top: max(12px, env(safe-area-inset-top));
+  margin-top: var(--amount-dialog-top);
   margin-bottom: auto;
   max-height: calc(
-    var(--view-height) - var(--amount-keyboard-height, 350px) - 24px
+    var(--view-height) - var(--amount-keyboard-height, 249px) -
+      var(--amount-dialog-top) - 12px
   );
 }
 .amount-keyboard-open .entry-submit {
@@ -4339,7 +4348,7 @@ input[data-amount-input] {
 }
 .amount-keyboard-open
   .start-frame:not(.start-underlay, .edge-navigation-active) {
-  height: calc(var(--view-height) - var(--amount-keyboard-height, 350px));
+  height: calc(var(--view-height) - var(--amount-keyboard-height, 249px));
 }
 
 /* The keypad already contains the bottom safe area. Reserve it only once. */
