@@ -2,7 +2,7 @@ import { transactionOrder } from "../domain/transaction-view.ts";
 import { PostingDialog } from "./PostingDialog.tsx";
 import { categoryColor } from "../ui/category-color.ts";
 import { incomingEndpoint } from "../domain/filters.ts";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useApp } from "../ui/context.tsx";
 import { Icon } from "../ui/icons.tsx";
 import { Amount, Empty, IconButton } from "../ui/components.tsx";
@@ -14,6 +14,7 @@ import {
   changePosted,
 } from "../domain/ledger.ts";
 import type { Entry } from "../domain/types.ts";
+const transactionPageSize = 40;
 const dayFormat = new Intl.DateTimeFormat("zh-CN", {
   month: "long",
   day: "numeric",
@@ -77,23 +78,43 @@ export function Transactions({
   reportMatched?: Map<string, string>;
 }) {
   const app = useApp(),
-    { book } = app;
+    { book, route, views, preview } = app;
   const ledgerAccount = book.accounts.find((a) => a.id === scope);
   const balances = useMemo(
     () => ledgerAccount && balancesAfterEntries(book.entries, ledgerAccount),
     [book.entries, ledgerAccount],
   );
-  const limitKey = `transaction-limit:${JSON.stringify(app.route)}`;
-  // Bound the initial row rendering; totals and filtering
-  // still use the complete result. Further pages remain explicitly available.
-  const [limit, setLimit] = useState((app.views.get(limitKey) as number) || 40);
+  const limitKey = `transaction-limit:${JSON.stringify(route)}`;
+  const [limit, setLimit] = useState(
+    () => (views.get(limitKey) as number) ?? transactionPageSize,
+  );
   useEffect(() => {
-    app.views.set(limitKey, limit);
-  }, [limitKey, limit]);
+    if (!preview) views.set(limitKey, limit);
+  }, [limitKey, limit, preview, views]);
   const sorted = useMemo(
     () => transactionOrder(book, entries, scope, currency),
     [book, entries, scope, currency],
   );
+  const listEnd = useRef<HTMLDivElement>(null);
+  const hasMore = sorted.length > limit;
+  const canObserve = typeof IntersectionObserver !== "undefined";
+  useEffect(() => {
+    const end = listEnd.current;
+    if (!end || !hasMore || preview || !canObserve) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        setLimit(limit + transactionPageSize);
+      },
+      {
+        root: end.closest(".page-content"),
+        rootMargin: "0px 0px 320px 0px",
+      },
+    );
+    observer.observe(end);
+    return () => observer.disconnect();
+  }, [canObserve, hasMore, limit, preview]);
   const timeFormat = useMemo(
     () =>
       new Intl.DateTimeFormat("zh-CN", {
@@ -234,11 +255,21 @@ export function Transactions({
           </section>
         );
       })}
-      {sorted.length > limit && (
-        <button className="load-more" onClick={() => setLimit(limit + 40)}>
-          加载更多 · 还有 {sorted.length - limit} 笔
-        </button>
-      )}
+      {hasMore &&
+        (canObserve ? (
+          <div
+            className="transaction-list-end"
+            ref={listEnd}
+            aria-hidden="true"
+          />
+        ) : (
+          <button
+            className="load-more"
+            onClick={() => setLimit(limit + transactionPageSize)}
+          >
+            加载更多 · 还有 {sorted.length - limit} 笔
+          </button>
+        ))}
     </div>
   );
 }

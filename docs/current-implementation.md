@@ -24,7 +24,7 @@
 
 `domain/transaction-view.ts` 管理路由范围、筛选、排序；`domain/account-view.ts` 管理当前余额；`domain/description-view.ts` 管理描述建议。缓存依赖不可变对象，用 WeakMap 随快照回收；交易筛选每本最多 24 项，排序最多 8 项。相对日期筛选按账本本地日期失效；余额在下个未来端点生效或时钟回拨时重算。
 
-交易列表初次渲染 40 行，每次“加载更多”追加 40 行。总笔数、筛选、报表和账户逐笔余额始终基于完整数据。路由类型在 `navigation/routes.ts`，领域模块不导入 React Context。
+交易列表首次打开时渲染 40 行，滚动接近列表底部时自动追加下一批 40 行。总笔数、筛选、报表和账户逐笔余额始终基于完整数据。路由类型在 `navigation/routes.ts`，领域模块不导入 React Context。
 
 ## 更新、历史与诊断
 

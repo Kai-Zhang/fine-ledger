@@ -219,18 +219,19 @@ try {
   await css('button[aria-label="返回"]');
   await click("交易");
   await input('input[aria-label="搜索交易描述和备注"]', "");
-  const first = await c.evaluate(
-    'document.querySelectorAll(".transaction-row").length',
-  );
-  await c.evaluate(
-    `[...document.querySelectorAll('button')].find(e=>e.textContent.startsWith('加载更多')).click()`,
-  );
-  await frames();
-  assert.ok(
-    (await c.evaluate('document.querySelectorAll(".transaction-row").length')) >
-      first,
-  );
-  result.checks.push("分页加载更多不丢失交易");
+  const transactionRows = `Array.from(document.querySelectorAll('.transaction-main'), e => e.textContent)`;
+  let visibleRows = await c.evaluate(transactionRows);
+  assert.equal(visibleRows.length, 40);
+  for (const count of [80, 120]) {
+    await c.evaluate(
+      `document.querySelector('.transaction-list-end').scrollIntoView({block:'end'})`,
+    );
+    await c.wait(`${transactionRows}.length === ${count}`);
+    const nextRows = await c.evaluate(transactionRows);
+    assert.deepEqual(nextRows.slice(0, visibleRows.length), visibleRows);
+    visibleRows = nextRows;
+  }
+  result.checks.push("滚动连续追加两批交易并保留已显示的记录");
   await c.evaluate("navigator.serviceWorker.ready.then(()=>true)");
   if (!(await c.evaluate("!!navigator.serviceWorker.controller"))) {
     origin = await c.evaluate("performance.timeOrigin");
