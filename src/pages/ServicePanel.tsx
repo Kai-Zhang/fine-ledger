@@ -131,7 +131,7 @@ export function ServicePanel({
       cached?.backups || [],
     ),
     [devices, setDevices] = useState<ServiceDevice[]>(cached?.devices || []);
-  const [loading, setLoading] = useState(!cached),
+  const [loading, setLoading] = useState(!cached || page === "review"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
@@ -296,6 +296,7 @@ export function ServicePanel({
     setDevices(deviceList.devices);
     if ((onboarding || page === "restore") && current.ledger)
       await readPreview(current, signal);
+    if (page === "review") await new SyncEngine().refreshRecoveryReview();
   }
   async function perform(action: () => Promise<void>) {
     setBusy(true);
@@ -325,7 +326,7 @@ export function ServicePanel({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [refreshKey, previewOnly]);
+  }, [page, refreshKey, previewOnly]);
   useEffect(() => {
     if (
       previewOnly ||
@@ -689,8 +690,13 @@ export function ServicePanel({
             </>
           )}
           {page === "review" &&
-            (syncIssue ? (
+            (loading ? (
+              <p className="section-note">正在读取最新远端账本。</p>
+            ) : connectionUnavailable ? (
+              <p className="section-note">请刷新后再核对远端账本。</p>
+            ) : syncIssue ? (
               <SyncReview
+                key={syncIssue.id}
                 issue={syncIssue}
                 onResolved={() => onSyncReviewed?.()}
                 onBusyChange={onBusyChange || (() => {})}

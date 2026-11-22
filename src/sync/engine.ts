@@ -243,6 +243,7 @@ export class SyncEngine {
     session: ServiceSession,
     kind: SyncIssue["kind"],
     message: string,
+    previous?: SyncIssue,
   ) {
     const snapshot = await this.snapshot(session);
     await this.write(async () => {
@@ -259,7 +260,7 @@ export class SyncEngine {
         );
         return;
       }
-      const original = base?.book || snapshot.book;
+      const original = previous?.baseBook || base?.book || snapshot.book;
       let items = itemsFor(original, local, snapshot.book);
       if (kind === "recovery" || kind === "migration") {
         const localRows = new Map(
@@ -291,6 +292,10 @@ export class SyncEngine {
             remote: structuredClone(entity(snapshot.book, c.collection, c.id)),
           }));
       }
+      const unchanged =
+        previous?.serverEpoch === snapshot.serverEpoch &&
+        previous.cursor === snapshot.cursor &&
+        same(previous.items, items);
       const issue: SyncIssue = {
         id: crypto.randomUUID(),
         kind,
@@ -303,9 +308,15 @@ export class SyncEngine {
         versions: snapshot.versions,
         at: nowISO(),
       };
-      await this.db.state.put(issue, "sync-issue");
+      if (!unchanged) await this.db.state.put(issue, "sync-issue");
+      const status = (await this.db.state.get("sync-status")) as
+        SyncStatus | undefined;
       await this.db.state.put(
-        { phase: kind === "recovery" ? "recovery" : "conflict", message },
+        {
+          phase: kind === "recovery" ? "recovery" : "conflict",
+          message,
+          lastSuccess: status?.lastSuccess,
+        },
         "sync-status",
       );
     });
@@ -701,6 +712,15 @@ export class SyncEngine {
       const existingIssue = (await this.db.state.get("sync-issue")) as
         SyncIssue | undefined;
       if (existingIssue) {
+        if (force && existingIssue.kind !== "conflict") {
+          await this.issueFromSnapshot(
+            session,
+            existingIssue.kind,
+            existingIssue.message,
+            existingIssue,
+          );
+          return;
+        }
         await this.status(
           existingIssue.kind === "recovery" ? "recovery" : "conflict",
           existingIssue.message,
@@ -817,14 +837,34 @@ export class SyncEngine {
       this.running = false;
     }
   }
-  async resolve(choices: Record<string, "local" | "remote">) {
+  async refreshRecoveryReview() {
+    if (this.running || !(await this.acquire()))
+      throw Error("正在同步，请稍后刷新核对内容");
+    this.running = true;
+    try {
+      const issue = (await this.db.state.get("sync-issue")) as
+        SyncIssue | undefined;
+      if (issue && issue.kind !== "conflict")
+        await this.issueFromSnapshot(
+          await this.session(),
+          issue.kind,
+          issue.message,
+          issue,
+        );
+    } finally {
+      await this.release();
+      this.running = false;
+    }
+  }
+  async resolve(choices: Record<string, "local" | "remote">, reviewedId?: string) {
     if (this.running || !(await this.acquire()))
       throw Error("正在同步，请稍后再处理");
     this.running = true;
     try {
       const issue = (await this.db.state.get("sync-issue")) as
         SyncIssue | undefined;
-      if (!issue) throw Error("待处理内容已变化，请重新查看");
+      if (!issue || (reviewedId && issue.id !== reviewedId))
+        throw Error("待处理内容已变化，请重新查看");
       const target = canonical({
         book: await this.db.state.get("book"),
         operations: await this.db.outbox.toArray(),

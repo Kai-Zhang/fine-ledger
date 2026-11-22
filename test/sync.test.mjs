@@ -141,6 +141,52 @@ test('server epoch changes stop the frozen old request and recovery can restore 
   assert.equal(s.store.book().name,'本机最新名称');assert(s.store.book().projects.some(p=>p.id==='after-backup'));
 });
 
+test('refreshing a recovery review drops repaired category differences without applying or uploading local work', async t => {
+  const s = await setup(t);
+  const device = await s.client('original device');
+  const category = (await device.book()).categories[0];
+  const oldBaseline = await device.db.state.get('remote-baseline');
+  s.store.setMeta('epoch', crypto.randomUUID());
+  const remote = await s.client('restored service operator');
+  await remote.edit('import replaced icon', book => {
+    book.categories.find(c => c.id === category.id).icon = 'Shield';
+  });
+  await remote.engine.run(true);
+  await device.edit('pending local edit', book => { book.name = '本机未上传'; });
+  await device.engine.run(true);
+  const original = await device.db.state.get('sync-issue');
+  assert.equal(original.kind, 'recovery');
+  assert.equal(original.items.find(i => i.id === category.id).remote.icon, 'Shield');
+  const local = await device.book();
+  const outbox = await device.db.outbox.toArray();
+
+  await remote.edit('restore original icon', book => {
+    book.categories.find(c => c.id === category.id).icon = category.icon;
+  });
+  await remote.engine.run(true);
+  await device.engine.refreshRecoveryReview();
+  const refreshed = await device.db.state.get('sync-issue');
+  assert.notEqual(refreshed.id, original.id);
+  assert.equal(refreshed.cursor, s.store.cursor);
+  assert.equal(refreshed.remoteBook.categories.find(c => c.id === category.id).icon, category.icon);
+  assert(!refreshed.items.some(i => i.id === category.id));
+  assert(refreshed.items.some(i => i.collection === 'book' && i.local.name === local.name));
+  await assert.rejects(device.engine.resolve({}, original.id), /待处理内容已变化/);
+
+  await remote.edit('another remote update', book => { book.name = '远端新名称'; });
+  await remote.engine.run(true);
+  await device.engine.run(true);
+  const manual = await device.db.state.get('sync-issue');
+  assert.equal(manual.remoteBook.name, '远端新名称');
+  assert.equal(manual.cursor, s.store.cursor);
+  await device.engine.run(true);
+  assert.equal((await device.db.state.get('sync-issue')).id, manual.id);
+  assert.deepEqual(await device.book(), local);
+  assert.deepEqual(await device.db.outbox.toArray(), outbox);
+  assert.deepEqual(await device.db.state.get('remote-baseline'), oldBaseline);
+  assert.equal(device.sent.length, 0);
+});
+
 test('an empty service can be initialized from local state; edits made during initialization remain pending and then sync',async t=>{
   const s=await setup(t,{empty:true}),a=await s.client('A');
   await a.db.state.put(blankBook(),'book');

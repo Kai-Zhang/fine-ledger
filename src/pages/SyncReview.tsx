@@ -392,7 +392,7 @@ export function SyncReview({
             onBusyChange(true);
             setError("");
             void new SyncEngine()
-              .resolve(choices)
+              .resolve(choices, issue.id)
               .then(onResolved)
               .catch((e) => {
                 setError(e.message);
