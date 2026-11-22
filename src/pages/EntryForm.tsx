@@ -132,8 +132,9 @@ export function EntryForm() {
         initial.splits.some((s) => !!s.projectId) ||
         !!original?.splits.some((s) => !!s.projectId),
     ),
-    [focused, setFocused] = useState(false),
-    [showSuggestions, setShowSuggestions] = useState(false),
+    [descriptionMode, setDescriptionMode] = useState<
+      "recent" | "editing" | "hidden"
+    >("recent"),
     [picker, setPicker] = useState<number | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -342,6 +343,12 @@ export function EntryForm() {
     () => descriptionSuggestions(book, kind, description),
     [book, kind, description],
   );
+  const showRecentDescriptions =
+    !existing &&
+    !original &&
+    descriptionMode === "recent" &&
+    !description.trim() &&
+    (kind === "expense" || kind === "income");
   let total = 0n,
     allocated = 0n;
   try {
@@ -366,8 +373,7 @@ export function EntryForm() {
       if (template.some((row) => !row.categoryId) && e.splits.length)
         app.toast("部分历史类目已归档或不可用，请重新选择。");
     }
-    setFocused(false);
-    setShowSuggestions(false);
+    setDescriptionMode("hidden");
     descriptionRef.current?.blur();
     if (!amount) activateAmountInput(amountRef.current);
   }
@@ -387,7 +393,7 @@ export function EntryForm() {
   );
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setFocused(false);
+    setDescriptionMode("hidden");
     setError("");
     try {
       if (!account) throw Error("请选择账户");
@@ -759,17 +765,12 @@ export function EntryForm() {
           )}
           <Field label={kind === "adjustment" ? "调整原因" : "描述"}>
             <input
+              className="entry-description-input"
               ref={descriptionRef}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onFocus={() => {
-                setFocused(true);
-                setShowSuggestions(true);
-              }}
-              onBlur={() => {
-                setFocused(false);
-                setShowSuggestions(false);
-              }}
+              onFocus={() => setDescriptionMode("editing")}
+              onBlur={() => setDescriptionMode("hidden")}
               onCompositionStart={() => {}}
               onKeyDown={(e) => {
                 if (
@@ -779,7 +780,7 @@ export function EntryForm() {
                   e.preventDefault();
                 else if (e.key === "Enter") {
                   e.preventDefault();
-                  setFocused(false);
+                  setDescriptionMode("hidden");
                   e.currentTarget.blur();
                 }
               }}
@@ -790,14 +791,18 @@ export function EntryForm() {
               maxLength={120}
             />
           </Field>
-          {showSuggestions && (
-            <DescriptionSuggestions
-              items={suggestions}
-              active={focused}
-              onPick={pickDescription}
-              preview={app.preview}
-            />
-          )}
+          <DescriptionSuggestions
+            items={suggestions}
+            mode={
+              showRecentDescriptions
+                ? "recent"
+                : descriptionMode === "editing"
+                  ? "editing"
+                  : "hidden"
+            }
+            onPick={pickDescription}
+            preview={app.preview}
+          />
           {["expense", "income", "refund"].includes(kind) && (
             <div className="category-field">
               <div className="split-header">

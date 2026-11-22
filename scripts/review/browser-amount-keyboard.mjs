@@ -7,6 +7,7 @@ const height = Number(process.env.REVIEW_HEIGHT || 844);
 const touch = process.env.REVIEW_TOUCH === "1";
 const ios = process.env.REVIEW_IOS === "1";
 const theme = process.env.REVIEW_THEME || "light";
+const descriptionField = 'input[placeholder="这笔交易是什么"]';
 const output =
   process.env.REVIEW_OUTPUT || "/tmp/fine-ledger-amount-keyboard-review";
 await mkdir(output, { recursive: true });
@@ -93,10 +94,98 @@ async function assertKeypadCentered() {
   assert.ok(layout.width <= 360);
   return layout;
 }
+async function assertKeypadFollowsVisualViewport() {
+  const properties = ["scale", "width", "height", "offsetLeft", "offsetTop"];
+  await c.evaluate(`(() => {
+    const viewport = window.visualViewport;
+    const scale = 1.2;
+    const values = { scale, width: innerWidth / scale, height: innerHeight / scale, offsetLeft: 80, offsetTop: 20 };
+    for (const [name, value] of Object.entries(values))
+      Object.defineProperty(viewport, name, { configurable: true, value });
+    viewport.dispatchEvent(new Event("resize"));
+  })()`);
+  try {
+    for (const offset of [80, 115]) {
+      await c.evaluate(`(() => {
+        const viewport = window.visualViewport;
+        Object.defineProperty(viewport, "offsetLeft", { configurable: true, value: ${offset} });
+        viewport.dispatchEvent(new Event("scroll"));
+      })()`);
+      await frames();
+      const layout = await c.evaluate(`(() => {
+        const viewport = window.visualViewport;
+        const pane = document.querySelector(".workspace-region").getBoundingClientRect();
+        const keypad = document.querySelector(".amount-keyboard").getBoundingClientRect();
+        const key = document.querySelector(".amount-keyboard-keys button").getBoundingClientRect();
+        const center = (Math.max(pane.left, viewport.offsetLeft) + Math.min(pane.right, viewport.offsetLeft + viewport.width)) / 2;
+        return { center, actualCenter: (keypad.left + keypad.right) / 2,
+          bottom: viewport.offsetTop + viewport.height, actualBottom: keypad.bottom,
+          displayedWidth: keypad.width * viewport.scale, displayedKeyHeight: key.height * viewport.scale };
+      })()`);
+      assert.ok(
+        Math.abs(layout.actualCenter - layout.center) <= 1,
+        JSON.stringify(layout),
+      );
+      assert.ok(
+        Math.abs(layout.actualBottom - layout.bottom) <= 1,
+        JSON.stringify(layout),
+      );
+      assert.ok(
+        Math.abs(layout.displayedWidth - 360) <= 1,
+        JSON.stringify(layout),
+      );
+      assert.ok(
+        Math.abs(layout.displayedKeyHeight - 44) <= 1,
+        JSON.stringify(layout),
+      );
+    }
+  } finally {
+    await c.evaluate(`(() => {
+      const viewport = window.visualViewport;
+      for (const name of ${JSON.stringify(properties)}) delete viewport[name];
+      viewport.dispatchEvent(new Event("resize"));
+    })()`);
+    await frames();
+  }
+}
 async function input(selector, value) {
   await c.evaluate(
     `(()=>{const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`,
   );
+  await frames();
+}
+async function pickDuringDescriptionBlur() {
+  await c.evaluate(`(() => {
+    const viewport = window.visualViewport;
+    Object.defineProperty(viewport, "height", { configurable: true, value: innerHeight - 220 });
+    viewport.dispatchEvent(new Event("resize"));
+  })()`);
+  await c.wait('!!document.querySelector(".description-accessory button")');
+  const start = await c.evaluate(`(() => {
+    const button = document.querySelector(".description-accessory button");
+    const bounds = button.getBoundingClientRect();
+    return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
+  })()`);
+  await c.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [start],
+  });
+  await c.evaluate(`(() => {
+    document.querySelector(${JSON.stringify(descriptionField)}).blur();
+    delete window.visualViewport.height;
+    window.visualViewport.dispatchEvent(new Event("resize"));
+  })()`);
+  await frames();
+  assert.equal(
+    await c.evaluate(
+      `document.elementFromPoint(${start.x}, ${start.y})?.closest(".description-accessory button")?.textContent`,
+    ),
+    "地铁通勤",
+  );
+  await c.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
   await frames();
 }
 try {
@@ -118,7 +207,7 @@ try {
   await c.send("Page.navigate", { url: "http://127.0.0.1:" + port + "/" });
   await c.wait('!!document.querySelector(".start-flow,.app-shell")');
   await c.evaluate(
-    `(async()=>{const {exampleBook}=await import('/src/domain/example.ts');const {databases}=await import('/src/storage/repository.ts');const b=exampleBook();b.name='键盘回归测试';b.entries=[];b.categories=[{id:'fruit',name:'水果',kind:'expense',icon:'Apple',color:'#608D9D',order:0,archived:false},{id:'snack',name:'零食',kind:'expense',icon:'Cookie',color:'#608D9D',order:1,archived:false},{id:'home',name:'日用品',kind:'expense',icon:'Package',color:'#608D9D',order:2,archived:false}];const at=new Date().toISOString();b.entries.push({id:'keyboard-history',kind:'expense',accountId:'bank',amountMinor:'100',description:'超市购物',occurredAt:at,createdAt:at,updatedAt:at,posted:true,revision:1,splits:[{id:'keyboard-history-split',categoryId:'fruit',amountMinor:'100'}]});await databases.personal.state.put(b,'book');await databases.personal.state.put(false,'sync-enabled');})()`,
+    `(async()=>{const {exampleBook}=await import('/src/domain/example.ts');const {databases}=await import('/src/storage/repository.ts');const b=exampleBook();b.name='键盘回归测试';b.categories=[{id:'fruit',name:'水果',kind:'expense',icon:'Apple',color:'#608D9D',order:0,archived:false},{id:'snack',name:'零食',kind:'expense',icon:'Cookie',color:'#608D9D',order:1,archived:false},{id:'home',name:'日用品',kind:'expense',icon:'Package',color:'#608D9D',order:2,archived:false}];const at=new Date().toISOString();b.entries=[['超市购物','fruit'],['地铁通勤','snack']].map(([description,categoryId], i)=>({id:'keyboard-history-'+i,kind:'expense',accountId:'bank',amountMinor:'100',description,occurredAt:at,createdAt:at,updatedAt:at,posted:true,revision:1,splits:[{id:'keyboard-history-split-'+i,categoryId,amountMinor:'100'}]}));await databases.personal.state.put(b,'book');await databases.personal.state.put(false,'sync-enabled');})()`,
   );
   const previousOrigin = await c.evaluate("performance.timeOrigin");
   await c.send("Page.reload", { ignoreCache: true });
@@ -138,6 +227,10 @@ try {
   );
   const initialLayout = await assertKeypadCentered();
   assert.ok(initialLayout.height <= 250);
+  if (width > 760) {
+    await assertKeypadFollowsVisualViewport();
+    await assertKeypadCentered();
+  }
   assert.equal(
     await c.evaluate(`[".amount-keyboard [data-calculator-key=undo] .lucide-undo-2",
       ".amount-keyboard [data-calculator-key=back] .lucide-delete"
@@ -148,9 +241,37 @@ try {
     await c.evaluate('document.querySelector("#entry-amount").inputMode'),
     "none",
   );
+  const suggestions = '.suggestions-inline[aria-label="描述候选"]';
+  assert.ok(
+    await c.evaluate(`(() => {
+      const row = document.querySelector(${JSON.stringify(suggestions)});
+      const field = document.querySelector(${JSON.stringify(descriptionField)});
+      return !!row?.previousElementSibling?.contains(field);
+    })()`),
+    "recent history must render below the description on entry",
+  );
   assert.equal(
-    await c.evaluate(`!!document.querySelector('[aria-label="描述候选"]')`),
-    false,
+    await c.evaluate(
+      `getComputedStyle(document.querySelector(${JSON.stringify(descriptionField)})).fontSize`,
+    ),
+    "16px",
+    "the description must meet the iOS focus zoom threshold at every width",
+  );
+  const descriptionValue = `document.querySelector(${JSON.stringify(descriptionField)}).value`;
+  const selectedCategory =
+    'document.querySelector(".category-field .category-choice").textContent.trim()';
+  await text("超市购物");
+  assert.equal(await c.evaluate(descriptionValue), "超市购物");
+  assert.equal(await c.evaluate(selectedCategory), "水果");
+  await tap(descriptionField);
+  await input(descriptionField, "地铁");
+  if (touch) await pickDuringDescriptionBlur();
+  else await text("地铁通勤");
+  assert.equal(await c.evaluate(descriptionValue), "地铁通勤");
+  assert.equal(await c.evaluate(selectedCategory), "零食");
+  await c.wait('!!document.querySelector(".amount-keyboard:popover-open")');
+  console.log(
+    "PASS recent descriptions on entry and category completion across description blur",
   );
   await text("1");
   await tap('.amount-keyboard [aria-label="输入两个零"]');

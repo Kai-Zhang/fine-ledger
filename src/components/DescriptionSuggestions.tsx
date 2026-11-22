@@ -1,24 +1,32 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Entry } from "../domain/types.ts";
+
+type AccessoryPosition = { top: number; left: number; width: number };
+
 export function DescriptionSuggestions({
   items,
-  active,
+  mode,
   onPick,
   preview = false,
 }: {
   items: Entry[];
-  active: boolean;
+  mode: "recent" | "editing" | "hidden";
   onPick: (e: Entry) => void;
   preview?: boolean;
 }) {
   const baseline = useRef(typeof window === "undefined" ? 0 : innerHeight);
-  const [viewport, setViewport] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    keyboard: boolean;
-  }>({ top: 0, left: 0, width: 0, keyboard: false });
+  const [accessory, setAccessory] = useState<AccessoryPosition | null>(null);
+  const [pressed, setPressed] = useState<{
+    items: Entry[];
+    position: AccessoryPosition | null;
+  } | null>(null);
+  const releaseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const clearPress = () => {
+    clearTimeout(releaseTimer.current);
+    setPressed(null);
+  };
+  useEffect(() => () => clearTimeout(releaseTimer.current), []);
   useEffect(() => {
     if (preview) return;
     const vv = window.visualViewport;
@@ -29,13 +37,16 @@ export function DescriptionSuggestions({
           document.documentElement.clientHeight,
           baseline.current,
         );
-      if (!active) baseline.current = Math.max(innerHeight, height);
-      setViewport({
-        top: (vv?.offsetTop || 0) + height - 46,
-        left: vv?.offsetLeft || 0,
-        width: vv?.width || innerWidth,
-        keyboard: active && layout - height > 110,
-      });
+      if (mode !== "editing") baseline.current = Math.max(innerHeight, height);
+      setAccessory(
+        mode === "editing" && layout - height > 110
+          ? {
+              top: (vv?.offsetTop || 0) + height - 46,
+              left: vv?.offsetLeft || 0,
+              width: vv?.width || innerWidth,
+            }
+          : null,
+      );
     };
     const orientation = () => {
       baseline.current = innerHeight;
@@ -52,30 +63,50 @@ export function DescriptionSuggestions({
       window.removeEventListener("resize", update);
       window.removeEventListener("orientationchange", orientation);
     };
-  }, [active, preview]);
-  if (preview || !items.length) return null;
-  const content = items.map((e) => (
+  }, [mode, preview]);
+  const visible = pressed ?? {
+    items: mode === "hidden" ? [] : items,
+    position: mode === "editing" ? accessory : null,
+  };
+  if (preview || !visible.items.length) return null;
+  const content = visible.items.map((e) => (
     <button
       key={e.id}
       type="button"
-      onPointerDown={(event) => event.preventDefault()}
-      onClick={() => onPick(e)}
+      onPointerDown={(event) => {
+        if (!event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        if (event.pointerType === "touch") {
+          // iOS can blur the input and move the viewport before delivering click.
+          // Keep this exact set of buttons in place until the tap is resolved.
+          clearTimeout(releaseTimer.current);
+          setPressed(visible);
+        }
+      }}
+      onMouseDown={(event) => event.preventDefault()}
+      onPointerUp={(event) => {
+        if (event.pointerType === "touch") {
+          clearTimeout(releaseTimer.current);
+          releaseTimer.current = setTimeout(clearPress, 400);
+        }
+      }}
+      onPointerCancel={clearPress}
+      onClick={() => {
+        clearPress();
+        onPick(e);
+      }}
     >
       {e.description}
     </button>
   ));
-  if (viewport.keyboard && active)
+  if (visible.position)
     return createPortal(
       <div
         className="description-accessory"
         role="region"
         aria-label="描述候选"
         data-no-back
-        style={{
-          top: viewport.top,
-          left: viewport.left,
-          width: viewport.width,
-        }}
+        style={visible.position}
       >
         {content}
       </div>,

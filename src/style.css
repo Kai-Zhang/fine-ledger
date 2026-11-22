@@ -4290,14 +4290,23 @@ body {
     var(--amount-editor-right, 0px),
     env(safe-area-inset-right, 0px)
   );
+  --amount-keyboard-width: calc(
+    100% - var(--amount-keyboard-left) - var(--amount-keyboard-right)
+  );
   position: fixed;
-  inset: auto var(--amount-keyboard-right) 0 var(--amount-keyboard-left);
-  margin: 0 auto;
+  inset: auto auto var(--amount-keyboard-bottom, 0px)
+    calc(var(--amount-keyboard-left) + var(--amount-keyboard-width) / 2);
+  margin: 0;
   width: min(
     360px,
-    calc(100% - var(--amount-keyboard-left) - var(--amount-keyboard-right))
+    calc(var(--amount-keyboard-width) / var(--amount-keyboard-scale, 1))
   );
-  max-height: 65dvh;
+  max-height: min(
+    65dvh,
+    calc(var(--view-height) * 0.65 / var(--amount-keyboard-scale, 1))
+  );
+  transform: translateX(-50%) scale(var(--amount-keyboard-scale, 1));
+  transform-origin: center bottom;
   overflow: auto;
   padding: 6px 8px max(6px, env(safe-area-inset-bottom));
   overscroll-behavior: contain;

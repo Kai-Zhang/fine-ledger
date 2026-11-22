@@ -239,35 +239,59 @@ export function AmountKeyboardProvider({ children }: { children: ReactNode }) {
     const input = session.element;
     const dialog = input.closest("dialog");
     const editor = dialog ?? input.closest(".workspace-region, .start-frame");
+    const viewport = window.visualViewport;
     input.setAttribute("data-calculator-active", "");
     html.classList.add("amount-keyboard-open");
     dialog?.classList.add("amount-keyboard-dialog");
-    const measure = () => {
-      // The top-layer keyboard is positioned in viewport coordinates.
+    const position = () => {
+      // Resolve the editor and the visible viewport into fixed-position coordinates.
       const rect = editor?.getBoundingClientRect();
       const width = html.clientWidth;
+      const origin = html.getBoundingClientRect().left + html.scrollLeft;
+      const visibleLeft = Math.max(0, viewport?.offsetLeft || 0);
+      const visibleRight = Math.min(
+        width,
+        (viewport?.offsetLeft || 0) + (viewport?.width || width),
+      );
+      const left = Math.max(visibleLeft, rect ? rect.left - origin : 0);
+      const right = Math.min(visibleRight, rect ? rect.right - origin : width);
+      const bottom =
+        (viewport?.offsetTop || 0) + (viewport?.height || html.clientHeight);
+      const scale = 1 / Math.max(1, viewport?.scale || 1);
       element.style.setProperty(
         "--amount-editor-left",
-        `${rect ? Math.max(0, rect.left) : 0}px`,
+        `${left < right ? left : visibleLeft}px`,
       );
       element.style.setProperty(
         "--amount-editor-right",
-        `${rect ? Math.max(0, width - rect.right) : 0}px`,
+        `${width - (left < right ? right : visibleRight)}px`,
       );
+      element.style.setProperty(
+        "--amount-keyboard-bottom",
+        `${Math.max(0, html.clientHeight - bottom)}px`,
+      );
+      element.style.setProperty("--amount-keyboard-scale", String(scale));
       html.style.setProperty(
         "--amount-keyboard-height",
         `${element.getBoundingClientRect().height}px`,
       );
+    };
+    const measure = () => {
+      position();
       input.scrollIntoView({ block: "nearest", inline: "nearest" });
     };
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     if (editor) observer.observe(editor);
     window.addEventListener("resize", measure);
+    viewport?.addEventListener("resize", position);
+    viewport?.addEventListener("scroll", position);
     measure();
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", measure);
+      viewport?.removeEventListener("resize", position);
+      viewport?.removeEventListener("scroll", position);
       input.removeAttribute("data-calculator-active");
       if (element.matches(":popover-open")) element.hidePopover();
       html.classList.remove("amount-keyboard-open");

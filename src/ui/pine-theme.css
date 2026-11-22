@@ -151,6 +151,10 @@ textarea::placeholder {
 .entry-form .field > textarea {
   min-height: 48px;
 }
+.entry-form .field > .entry-description-input {
+  /* iOS zooms when focusing text fields with a smaller font. */
+  font-size: 16px;
+}
 .form-grid {
   gap: 16px;
 }
