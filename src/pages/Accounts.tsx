@@ -1,7 +1,14 @@
 import { referenceRateLookup } from "../domain/reference-rates.ts";
 import { EntryAction } from "../components/EntryAction.tsx";
 import { currentAccountBalances } from "../domain/account-view.ts";
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import {
   DndContext,
   useDroppable,
@@ -40,6 +47,40 @@ import {
 import { netWorth, rateFor } from "../domain/ledger.ts";
 import { moveAccount } from "../domain/organization.ts";
 import type { Account, Group, Book } from "../domain/types.ts";
+
+const ungrouped = { id: "", name: "未分组", order: -1 };
+function activeAccountsInGroup(book: Book, groupId: string) {
+  return book.accounts
+    .filter((a) => a.groupId === groupId && !a.archived)
+    .sort((a, b) => a.order - b.order);
+}
+function groupBalanceTotals(
+  accounts: Account[],
+  balances: ReadonlyMap<string, bigint>,
+) {
+  const totals = new Map<string, bigint>();
+  for (const { id, currency } of accounts) {
+    totals.set(
+      currency,
+      (totals.get(currency) ?? 0n) + (balances.get(id) ?? 0n),
+    );
+  }
+  return totals;
+}
+
+function GroupTotals({ totals }: { totals: ReadonlyMap<string, bigint> }) {
+  return (
+    <div className="group-totals">
+      {[...totals].map(([currency, value]) => (
+        <span key={currency}>
+          <Amount value={value} currency={currency} />
+          <small>{currency}</small>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function AccountRow({
   account,
   manage,
@@ -161,16 +202,7 @@ function GroupSection({
     },
     [sort.setNodeRef, bucket.setNodeRef],
   );
-  const accounts = book.accounts
-      .filter((a) => a.groupId === group.id && !a.archived)
-      .sort((a, b) => a.order - b.order),
-    totals = new Map<string, bigint>();
-  accounts.forEach((a) =>
-    totals.set(
-      a.currency,
-      (totals.get(a.currency) || 0n) + (balances.get(a.id) ?? 0n),
-    ),
-  );
+  const accounts = activeAccountsInGroup(book, group.id);
   return (
     <section
       ref={ref}
@@ -201,14 +233,7 @@ function GroupSection({
           ) : (
             <h2>{group.name}</h2>
           )}
-          <div className="group-totals">
-            {[...totals].map(([currency, n]) => (
-              <span key={currency}>
-                <Amount value={n} currency={currency} />
-                <small>{currency}</small>
-              </span>
-            ))}
-          </div>
+          <GroupTotals totals={groupBalanceTotals(accounts, balances)} />
           {manage && !!group.id && (
             <IconButton
               className="subtle-action"
@@ -244,7 +269,96 @@ function GroupSection({
     </section>
   );
 }
-export function Accounts() {
+export function AccountListPane({
+  selectedId,
+  onSelect,
+}: {
+  selectedId?: string;
+  onSelect: (accountId: string) => void;
+}) {
+  const app = useApp();
+  const list = useRef<HTMLElement>(null);
+  const scrollKey = `${app.mode}:accounts:split-list-scroll`;
+  useLayoutEffect(() => {
+    if (list.current)
+      list.current.scrollTop = (app.views.get(scrollKey) as number) ?? 0;
+  }, [app.views, scrollKey]);
+  useLayoutEffect(() => {
+    const container = list.current;
+    const selected = container?.querySelector(
+      ".account-main[aria-current=true]",
+    );
+    if (!container || !selected) return;
+    const row = selected.getBoundingClientRect();
+    const area = container.getBoundingClientRect();
+    if (row.top < area.top) container.scrollTop += row.top - area.top;
+    else if (row.bottom > area.bottom)
+      container.scrollTop += row.bottom - area.bottom;
+  }, [selectedId]);
+  const groups = [
+    ungrouped,
+    ...app.book.groups.slice().sort((a, b) => a.order - b.order),
+  ];
+  const balances = useMemo(
+    () => currentAccountBalances(app.book, new Date().toISOString()),
+    [app.book],
+  );
+  return (
+    <aside className="account-pane" aria-label="账户列表">
+      <h2>账户</h2>
+      <nav
+        ref={list}
+        aria-label="选择账户"
+        className="account-pane-list"
+        onScroll={(event) =>
+          app.views.set(scrollKey, event.currentTarget.scrollTop)
+        }
+      >
+        <button
+          type="button"
+          className="account-pane-overview"
+          aria-current={!selectedId ? "page" : undefined}
+          onClick={() => app.go({ page: "accounts" })}
+        >
+          <Icon name="Wallet" size={18} />
+          总览
+        </button>
+        {groups.map((group) => {
+          const accounts = activeAccountsInGroup(app.book, group.id);
+          if (!accounts.length) return null;
+          return (
+            <section className="account-pane-group" key={group.id}>
+              <h3>{group.name}</h3>
+              {accounts.map((account) => (
+                <button
+                  type="button"
+                  className="account-main"
+                  key={account.id}
+                  aria-current={selectedId === account.id ? true : undefined}
+                  onClick={() => onSelect(account.id)}
+                >
+                  <span className={`account-symbol ${account.type}`}>
+                    <Icon name={account.icon} size={18} />
+                  </span>
+                  <span className="account-name">
+                    <strong title={account.name}>{account.name}</strong>
+                    <Amount
+                      value={balances.get(account.id) ?? 0n}
+                      currency={account.currency}
+                      code
+                    />
+                  </span>
+                </button>
+              ))}
+            </section>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
+
+export function Accounts({ overview = false }: { overview?: boolean }) {
   const app = useApp(),
     { book, commit } = useOrganization(),
     [manage, setManage] = useState(false),
@@ -293,6 +407,7 @@ export function Accounts() {
   }, [addMenu, app.preview]);
   const sensors = useDragSensors();
   useDragSelection(!!drag);
+  const hasActiveAccounts = book.accounts.some((a) => !a.archived);
   const netAccounts = book.accounts.filter((account) => account.netWorth);
   const lookup = referenceRateLookup(
     app.currentReferenceQuotes,
@@ -378,7 +493,7 @@ export function Accounts() {
   }
   return (
     <>
-      <Header title="账户">
+      <Header title={overview ? "账户总览" : "账户"}>
         <IconButton
           name={manage ? "Check" : "Pencil"}
           label={manage ? "完成账户管理" : "管理账户"}
@@ -417,6 +532,28 @@ export function Accounts() {
           </div>
           <Icon name="ArrowUpRight" />
         </button>
+        {overview && !manage && hasActiveAccounts && (
+          <section className="account-overview-groups">
+            <h2>分组余额</h2>
+            <div className="account-surface">
+              {[ungrouped, ...groups].map((group) => {
+                const accounts = activeAccountsInGroup(book, group.id);
+                if (!accounts.length) return null;
+                return (
+                  <div key={group.id} className="account-overview-group">
+                    <div>
+                      <h3>{group.name}</h3>
+                      <small>{accounts.length} 个账户</small>
+                    </div>
+                    <GroupTotals
+                      totals={groupBalanceTotals(accounts, balances)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
         <DndContext
           sensors={sensors}
           accessibility={{
@@ -491,28 +628,29 @@ export function Accounts() {
             items={groups.map((g) => dragId("group", g.id))}
             strategy={verticalListSortingStrategy}
           >
-            {[{ id: "", name: "未分组", order: -1 }, ...groups]
-              .filter(
-                (g) =>
-                  g.id ||
-                  manage ||
-                  book.accounts.some((a) => !a.groupId && !a.archived),
-              )
-              .map((g) => (
-                <GroupSection
-                  key={g.id}
-                  group={g}
-                  manage={manage}
-                  book={book}
-                  balances={balances}
-                  edit={editAccount}
-                  archive={(a) => void archive(a)}
-                  editGroup={() => editGroup(g.id)}
-                  deleteGroup={() => void deleteGroup(g)}
-                  drop={drop}
-                  after={after}
-                />
-              ))}
+            {(!overview || manage) &&
+              [ungrouped, ...groups]
+                .filter(
+                  (g) =>
+                    g.id ||
+                    manage ||
+                    book.accounts.some((a) => !a.groupId && !a.archived),
+                )
+                .map((g) => (
+                  <GroupSection
+                    key={g.id}
+                    group={g}
+                    manage={manage}
+                    book={book}
+                    balances={balances}
+                    edit={editAccount}
+                    archive={(a) => void archive(a)}
+                    editGroup={() => editGroup(g.id)}
+                    deleteGroup={() => void deleteGroup(g)}
+                    drop={drop}
+                    after={after}
+                  />
+                ))}
           </SortableContext>
           <DragOverlay>
             {drag && (
@@ -572,7 +710,7 @@ export function Accounts() {
           />
         </div>
       )}
-      {!manage && book.accounts.some((a) => !a.archived) && (
+      {!manage && hasActiveAccounts && (
         <EntryAction
           onClick={() =>
             app.go({

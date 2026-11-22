@@ -506,10 +506,6 @@ textarea::placeholder {
   font-size: 16px;
   font-weight: 500;
 }
-/* SVG text scales with its viewBox; compensate at narrow widths. */
-.net-chart .chart-label {
-  font-size: 24px;
-}
 .donut-caption {
   font-size: 14px;
 }
@@ -548,9 +544,6 @@ textarea::placeholder {
   background: currentColor;
 }
 @media (max-width: 350px) {
-  .net-chart .chart-label {
-    font-size: 30px;
-  }
   .account-row:has(> .drag-handle) .account-main {
     display: grid;
     grid-template-columns: 32px minmax(0, 1fr);
@@ -768,7 +761,7 @@ textarea::placeholder {
   touch-action: pan-y;
 }
 .net-chart .chart-label {
-  font-size: 12px;
+  font-size: var(--net-axis-font-size, 12px);
 }
 .net-chart .chart-accessible-slider:not(:focus-visible) {
   position: absolute;

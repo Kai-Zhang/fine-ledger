@@ -1,4 +1,10 @@
-import { useMemo, useId, useRef, type PointerEvent } from "react";
+import {
+  useMemo,
+  useId,
+  useRef,
+  useLayoutEffect,
+  type PointerEvent,
+} from "react";
 import type { NetPoint } from "../domain/reporting.ts";
 import { compactMoney, money } from "../domain/money.ts";
 
@@ -17,6 +23,8 @@ export function NetChart({
 }) {
   const fillId = useId();
   const dragging = useRef<number | null>(null);
+  const svg = useRef<SVGSVGElement>(null);
+  const hasValues = values.length > 0;
   const geometry = useMemo(() => {
     const width = 360,
       height = 340,
@@ -72,7 +80,24 @@ export function NetChart({
       .join(" ");
     return { width, height, left, right, top, bottom, x, y, path, low, high };
   }, [values]);
-  if (!values.length) return null;
+  useLayoutEffect(() => {
+    const node = svg.current;
+    if (!node) return;
+    // Keep the axis labels at 12 CSS pixels as the viewBox scales.
+    const resize = () => {
+      const renderedWidth = node.getBoundingClientRect().width;
+      if (renderedWidth > 0)
+        node.style.setProperty(
+          "--net-axis-font-size",
+          `${(12 * geometry.width) / renderedWidth}px`,
+        );
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasValues, geometry.width]);
+  if (!hasValues) return null;
   const { width, height, left, right, top, bottom, x, y, path, low, high } =
       geometry,
     index = Math.min(
@@ -111,6 +136,7 @@ export function NetChart({
   return (
     <div className="net-chart" onContextMenu={(e) => e.preventDefault()}>
       <svg
+        ref={svg}
         data-no-back
         viewBox={`0 0 ${width} ${height}`}
         role="img"

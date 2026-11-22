@@ -9,8 +9,16 @@ import {
   categoryMatches,
   type TransactionFilter,
 } from "../domain/filters.ts";
-import { useMemo, useState, useEffect } from "react";
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type UIEvent,
+} from "react";
 import { useApp } from "../ui/context.tsx";
+import { wideLayoutQuery } from "../ui/layout.ts";
 import {
   Header,
   Button,
@@ -38,7 +46,11 @@ import {
 import { localDate, displayTime } from "../domain/dates.ts";
 import { money } from "../domain/money.ts";
 import { reportRows } from "../domain/reporting.ts";
-export function TransactionsPage() {
+export function TransactionsPage({
+  wideLayout = false,
+}: {
+  wideLayout?: boolean;
+}) {
   const app = useApp(),
     { book, route } = app;
   const viewKey = `${app.mode}:transactions:${JSON.stringify(route)}`;
@@ -58,6 +70,32 @@ export function TransactionsPage() {
       },
     ),
     [showFilters, setShowFilters] = useState(false);
+  const ledger = useRef<HTMLElement>(null);
+  const wideViewport = useMemo(() => window.matchMedia(wideLayoutQuery), []);
+  const scrollAnchor = useRef<{ section: HTMLElement; offset: number } | null>(
+    null,
+  );
+  function rememberScrollAnchor(event: UIEvent<HTMLElement>) {
+    // A viewport resize can dispatch a scroll event before React updates the layout.
+    if (wideViewport.matches !== wideLayout) return;
+    const container = event.currentTarget;
+    const { left, top, width } = container.getBoundingClientRect();
+    const section = document
+      .elementFromPoint(left + width / 2, top + 1)
+      ?.closest<HTMLElement>(".transaction-list > section");
+    scrollAnchor.current =
+      section && container.contains(section)
+        ? { section, offset: section.getBoundingClientRect().top - top }
+        : null;
+  }
+  useLayoutEffect(() => {
+    const container = ledger.current,
+      anchor = scrollAnchor.current;
+    if (!container || !anchor || !container.contains(anchor.section)) return;
+    const top = container.getBoundingClientRect().top;
+    container.scrollTop +=
+      anchor.section.getBoundingClientRect().top - top - anchor.offset;
+  }, [wideLayout]);
   useEffect(() => {
     app.views.set(viewKey, { query, filters });
   }, [viewKey, query, filters]);
@@ -300,7 +338,11 @@ export function TransactionsPage() {
           onClick={() => setShowFilters(!showFilters)}
         />
       </Header>
-      <main className="page-content transactions-page">
+      <main
+        className={`page-content transactions-page${account ? " account-ledger-page" : ""}`}
+        ref={account && !app.preview ? ledger : undefined}
+        onScroll={account && !app.preview ? rememberScrollAnchor : undefined}
+      >
         {priced && (
           <div className="report-drill-summary">
             <span>

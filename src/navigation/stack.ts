@@ -43,9 +43,30 @@ export function rootRoute(r: Route): boolean {
   );
 }
 export type NavigationAction =
-  { type: "open"; route: Route } | { type: "back" | "forward" };
+  | { type: "open"; route: Route }
+  | { type: "select-account"; id: string }
+  | { type: "back" | "forward" };
 export function navigate(n: Navigation, a: NavigationAction): Navigation {
   const b = n.stacks[n.tab];
+  if (a.type === "select-account") {
+    if (n.tab !== "accounts") return n;
+    const selected = (frame: Frame) =>
+      frame.route.page === "account" && frame.route.id === a.id;
+    if (selected(currentFrame(n))) return n;
+    const existing = b.past.findLast(selected);
+    const frame = existing ?? {
+      key: n.serial,
+      route: { page: "account" as const, id: a.id },
+    };
+    return {
+      ...n,
+      serial: existing ? n.serial : n.serial + 1,
+      stacks: {
+        ...n.stacks,
+        accounts: { past: [b.past[0], frame], future: [] },
+      },
+    };
+  }
   if (a.type === "open") {
     if (rootRoute(a.route)) {
       const tab = a.route.page as Tab;

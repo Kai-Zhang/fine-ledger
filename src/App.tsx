@@ -17,6 +17,7 @@ import {
   initialNavigation,
   currentFrame,
   navigate,
+  type Frame,
   type NavigationAction,
 } from "./navigation/stack.ts";
 import {
@@ -35,6 +36,7 @@ import {
 } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AppContext, type Route } from "./ui/context.tsx";
+import { wideLayoutQuery } from "./ui/layout.ts";
 import { Icon } from "./ui/icons.tsx";
 import {
   Button,
@@ -45,7 +47,11 @@ import {
   ErrorMessage,
   BrandMark,
 } from "./ui/components.tsx";
-import { Accounts, ArchiveAccounts } from "./pages/Accounts.tsx";
+import {
+  AccountListPane,
+  Accounts,
+  ArchiveAccounts,
+} from "./pages/Accounts.tsx";
 import { TransactionsPage, Detail, Trash } from "./pages/TransactionsPage.tsx";
 import { EntryForm } from "./pages/EntryForm.tsx";
 import { Reports, ReportCatalog } from "./pages/Reports.tsx";
@@ -66,11 +72,21 @@ const navItems = [
   ["reports", "ChartNoAxesCombined", "报表"],
   ["settings", "Settings", "设置"],
 ] as const;
+
+function pageScrollKey(frame: Frame) {
+  return frame.route.page === "account"
+    ? `account:${JSON.stringify(frame.route)}`
+    : String(frame.key);
+}
+
 export function App() {
   const mode = "personal" as const;
   const [ready, setReady] = useState(false),
     [failure, setFailure] = useState(""),
     [navigation, setNavigation] = useState(initialNavigation),
+    [wideLayout, setWideLayout] = useState(
+      () => window.matchMedia(wideLayoutQuery).matches,
+    ),
     [modal, setModal] = useState<ReactNode>(null),
     [message, setMessage] = useState(""),
     [confirmState, setConfirm] = useState<{
@@ -241,13 +257,16 @@ export function App() {
     return () => system.removeEventListener("change", updateChrome);
   }, [book?.settings.theme, confirmationOpen]);
   useEffect(() => {
-    requestAnimationFrame(() => {
-      const el = document.querySelector(
-        ".workspace[data-active] .page-content",
-      );
-      if (el) el.scrollTop = scrolls.current.get(String(frame.key)) || 0;
-    });
-  }, [frame.key]);
+    const query = window.matchMedia(wideLayoutQuery);
+    const update = () => setWideLayout(query.matches);
+    query.addEventListener("change", update);
+    update();
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useLayoutEffect(() => {
+    const el = document.querySelector(".workspace[data-active] .page-content");
+    if (el) el.scrollTop = scrolls.current.get(pageScrollKey(frame)) ?? 0;
+  }, [frame]);
   async function confirm(options: {
     title: string;
     message: string;
@@ -289,7 +308,7 @@ export function App() {
     );
     if (scroll)
       scrolls.current.set(
-        String(currentFrame(navigationRef.current).key),
+        pageScrollKey(currentFrame(navigationRef.current)),
         scroll.scrollTop,
       );
     setDirty(false);
@@ -360,6 +379,14 @@ export function App() {
   }
   const branch = navigation.stacks[navigation.tab];
   const isRoot = branch.past.length === 1;
+  const accountRoute =
+    route.page === "detail"
+      ? branch.past.findLast(({ route }) => route.page !== "detail")?.route
+      : route;
+  const accountSplit =
+    wideLayout &&
+    navigation.tab === "accounts" &&
+    (route.page === "accounts" || accountRoute?.page === "account");
   const {
     target: swipeTarget,
     pointer,
@@ -421,9 +448,9 @@ export function App() {
       />
     );
   const pages: Record<Route["page"], ReactNode> = {
-    accounts: <Accounts />,
+    accounts: <Accounts overview={accountSplit} />,
     transactions: <TransactionsPage />,
-    account: <TransactionsPage />,
+    account: <TransactionsPage wideLayout={wideLayout} />,
     reports: <ReportCatalog />,
     report: <Reports />,
     settings: <Settings />,
@@ -472,7 +499,7 @@ export function App() {
       }}
     >
       <div
-        className={`app-shell ${isRoot ? "root-page" : "sub-page"} ${route.page === "entry" ? "editing-page" : ""}`}
+        className={`app-shell ${isRoot ? "root-page" : "sub-page"} ${route.page === "entry" ? "editing-page" : ""}${wideLayout ? " wide-layout" : ""}${accountSplit ? " account-split" : ""}`}
       >
         {
           <div
@@ -489,9 +516,14 @@ export function App() {
           />
         }
         <aside className="sidebar">
-          <button className="brand" onClick={() => go({ page: "accounts" })}>
+          <button
+            className="brand"
+            aria-label="厘序"
+            title="厘序"
+            onClick={() => go({ page: "accounts" })}
+          >
             <BrandMark />
-            <span>
+            <span className="brand-copy">
               厘序<small>让每一笔，有迹可循</small>
             </span>
           </button>
@@ -500,23 +532,38 @@ export function App() {
               <button
                 key={page}
                 className={navigation.tab === page ? "selected" : ""}
+                aria-current={navigation.tab === page ? "page" : undefined}
+                aria-label={label}
+                title={label}
                 onClick={() => {
                   go({ page });
                 }}
               >
                 <Icon name={icon} />
-                {label}
+                <span>{label}</span>
               </button>
             ))}
           </nav>
-          <div className="sidebar-book">
-            <Icon name="BookOpen" />
-            <span>
-              {book.name}
-              <small>{book.currency}</small>
-            </span>
-          </div>
+          {!wideLayout && (
+            <div className="sidebar-book" title={book.name}>
+              <Icon name="BookOpen" />
+              <span>
+                {book.name}
+                <small>{book.currency}</small>
+              </span>
+            </div>
+          )}
         </aside>
+        {accountSplit && (
+          <AccountListPane
+            selectedId={
+              accountRoute?.page === "account" ? accountRoute.id : undefined
+            }
+            onSelect={(id) =>
+              leave(() => commit({ type: "select-account", id }))
+            }
+          />
+        )}
         <div className="workspace-region">
           {swipeTarget && (
             <AppContext.Provider
@@ -554,7 +601,7 @@ export function App() {
                     const scroll = el.querySelector(".page-content");
                     if (scroll)
                       scroll.scrollTop =
-                        scrolls.current.get(String(swipeTarget!.key)) || 0;
+                        scrolls.current.get(pageScrollKey(swipeTarget)) ?? 0;
                   }
                 }}
               >

@@ -195,6 +195,28 @@ test("account shortcut report and nested drilldown return to their actual source
   assert.equal(back(n), n);
 });
 
+test("selecting a different account replaces the account branch from the list", () => {
+  const select = (n, id) => navigate(n, { type: "select-account", id });
+  let n = select(initialNavigation(), "bank");
+  const bank = currentFrame(n);
+  assert.equal(select(n, "bank"), n);
+  n = open(n, { page: "detail", id: "one" });
+  assert.deepEqual(currentFrame(back(n)), bank);
+  assert.deepEqual(currentFrame(select(n, "bank")), bank);
+  n = select(n, "wallet");
+  assert.deepEqual(currentFrame(n).route, { page: "account", id: "wallet" });
+  const home = back(n);
+  assert.equal(currentFrame(home).route.page, "accounts");
+  assert.equal(back(home), home);
+  assert.deepEqual(currentFrame(forward(home)), currentFrame(n));
+  const settings = open(open(n, { page: "settings" }), { page: "categories" });
+  assert.equal(select(settings, "bank"), settings);
+  assert.deepEqual(
+    currentFrame(open(settings, { page: "accounts" })),
+    currentFrame(n),
+  );
+});
+
 test("touch capture lets vertical scrolling take over, and rejects multitouch", () => {
   const doc = new EventTarget();
   let started = 0,
